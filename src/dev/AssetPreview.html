@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Asset Preview</title>
+  <style>
+    body {
+      background: #111;
+      color: #eee;
+      font-family: sans-serif;
+      padding: 24px;
+    }
+
+    h1 {
+      margin-bottom: 24px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 16px;
+    }
+
+    .card {
+      background: #1e1e1e;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .card .avatar {
+      width: 100px;
+      height: 100px;
+      margin: 0 auto;
+    }
+
+    .card .badge {
+      width: 40px;
+      height: 40px;
+      margin: 8px auto 0;
+    }
+
+    .card .name {
+      margin-top: 8px;
+      font-weight: bold;
+    }
+
+    .card .club {
+      color: #aaa;
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+<body>
+  <h1>Asset Preview</h1>
+  <div id="grid" class="grid"></div>
+
+  <script type="module">
+    import { generatePlayerAvatar } from '../utils/avatarGenerator.js';
+    import { generateClubBadge } from '../utils/badgeGenerator.js';
+
+    const mockPlayers = [
+      { id: 1, name: 'Juan Pérez', club: 'Deportivo Norte' },
+      { id: 2, name: 'Carlos Gómez', club: 'Atlético Sur' },
+      { id: 3, name: 'Lucas Fernández', club: 'Unión Central' },
+      { id: 4, name: 'Martín Álvarez', club: 'Estrella del Este' },
+      { id: 5, name: 'Diego Romero', club: 'Racing Oeste' },
+    ];
+
+    const grid = document.getElementById('grid');
+
+    for (const player of mockPlayers) {
+      const card = document.createElement('div');
+      card.className = 'card';
+
+      const avatarSvg = generatePlayerAvatar(player.id);
+      const badgeSvg = generateClubBadge(player.club);
+
+      card.innerHTML = `
+        <div class="avatar">${avatarSvg}</div>
+        <div class="badge">${badgeSvg}</div>
+        <div class="name">${player.name}</div>
+        <div class="club">${player.club}</div>
+      `;
+
+      grid.appendChild(card);
+    }
+  </script>
+</body>
+</html>

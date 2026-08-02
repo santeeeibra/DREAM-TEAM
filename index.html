@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dream Team</title>
+  </head>
+  <body>
+    <div id="auth-container" class="pantalla-centrada">
+      <h1>Dream Team ⚽</h1>
+      <input id="auth-email" type="email" placeholder="Email" autocomplete="email" />
+      <div class="campo-password">
+        <input id="auth-password" type="password" placeholder="Contraseña" autocomplete="current-password" />
+        <button
+          type="button"
+          id="btn-toggle-password"
+          class="boton-ojo"
+          title="Mostrar contraseña"
+          aria-label="Mostrar contraseña"
+        >
+          👁
+        </button>
+      </div>
+      <button id="btn-login">Ingresar</button>
+      <button id="btn-signup" class="boton-secundario">Crear cuenta</button>
+      <button id="btn-guest" class="boton-secundario">Jugar como invitado</button>
+      <p id="auth-error" class="mensaje-error"></p>
+    </div>
+
+    <div id="manager-form-container" class="pantalla-centrada" style="display: none">
+      <h1>Creá tu DT</h1>
+      <input id="manager-name" type="text" placeholder="Nombre del DT" />
+      <input id="manager-age" type="number" placeholder="Edad" min="18" max="99" />
+      <input id="manager-country" type="text" placeholder="País" />
+      <select id="manager-region">
+        <option value="" disabled selected>Elegí tu región</option>
+        <option value="Europa">Europa</option>
+        <option value="América">América</option>
+        <option value="Asia">Asia</option>
+      </select>
+      <button id="btn-create-manager">Crear DT y abrir sobres</button>
+      <p id="manager-error" class="mensaje-error"></p>
+    </div>
+
+    <div id="app"></div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

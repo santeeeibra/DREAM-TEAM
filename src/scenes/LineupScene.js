@@ -1,0 +1,491 @@
+// LineupScene.js — pantalla de armado del 11 titular.
+// Muestra las cartas del manager en una grilla (mismo estilo visual que
+// CollectionScene/PackOpeningScene), deja tocar hasta 11 para seleccionarlas,
+// sugiere una formación y deja guardar el resultado en la tabla `lineups`.
+import Phaser from 'phaser';
+import { RevealCardSprite, CARD_WIDTH, CARD_HEIGHT, claveImagenCarta } from '../objects/RevealCardSprite.js';
+import { FORMATIONS } from '../engine/matchEngine.js';
+import { countByPosition, formationFit, positionCountsForFormation, saveLineup } from '../lineups.js';
+
+const COLUMNAS = 4;
+const ESPACIO = 20;
+const MARGEN_SUPERIOR = 16;
+const ALTO_FOOTER = 150; // franja fija de abajo: formación + aviso + botón confirmar
+
+// Nombres en español de cada posición, para armar el texto del aviso
+// ("te faltan 2 defensores"). El segundo valor es el plural.
+const NOMBRE_POSICION = {
+  POR: ['arquero', 'arqueros'],
+  DEF: ['defensor', 'defensores'],
+  MED: ['mediocampista', 'mediocampistas'],
+  DEL: ['delantero', 'delanteros'],
+};
+
+function nombrePosicion(posicion, cantidad) {
+  const [singular, plural] = NOMBRE_POSICION[posicion];
+  return cantidad === 1 ? singular : plural;
+}
+
+// construirStarters arma la lista { slot, card_id } que se guarda en la
+// base a partir de las cartas elegidas y la formación activa. Si sobran o
+// faltan jugadores de una posición respecto de lo que pide la formación
+// (guardado no bloqueante: ver LineupScene.confirmar), igual les asigna un
+// slot numerado (DEF1, DEF2, ...) en vez de perderlos.
+function construirStarters(cartasSeleccionadas, formationKey) {
+  const requeridos = positionCountsForFormation(formationKey);
+  const porPosicion = { POR: [], DEF: [], MED: [], DEL: [] };
+  for (const carta of cartasSeleccionadas) {
+    porPosicion[carta.position]?.push(carta);
+  }
+
+  const starters = [];
+  for (const posicion of ['POR', 'DEF', 'MED', 'DEL']) {
+    porPosicion[posicion].forEach((carta, indice) => {
+      const esArqueroUnico = posicion === 'POR' && requeridos.POR === 1 && indice === 0;
+      const slot = esArqueroUnico ? 'GK' : `${posicion}${indice + 1}`;
+      starters.push({ slot, card_id: carta.user_card_id });
+    });
+  }
+  return starters;
+}
+
+export class LineupScene extends Phaser.Scene {
+  constructor() {
+    super('LineupScene');
+  }
+
+  // data = { managerId, cards: [ ...las cartas del manager, ver getManagerCards ], seasonNumber? }
+  // seasonNumber es opcional: si no viene, saveLineup usa la temporada
+  // actual del manager (managers.current_season).
+  init(data) {
+    this.managerId = data.managerId;
+    this.seasonNumber = data.seasonNumber ?? null;
+    this.cards = data.cards;
+
+    this.seleccionIds = new Set();
+    this.cartasPorId = new Map(this.cards.map((carta) => [carta.user_card_id, carta]));
+    this.contenedoresPorId = new Map();
+
+    // A diferencia de antes, la formación se elige desde el arranque (no
+    // recién al llegar a 11 cartas): así el contador y el bloqueo de cartas
+    // saben desde el primer toque cuántos jugadores de cada posición hacen
+    // falta. Arranca en la primera formación de la lista (4-4-2).
+    this.formacionElegida = Object.keys(FORMATIONS)[0];
+    this.listaFormacionesAbierta = null;
+  }
+
+  // Las fotos de estas cartas casi seguro ya se cargaron en PackOpeningScene
+  // (son las mismas 25 cartas, con la misma clave de textura por id de
+  // catálogo), así que evitamos re-pedirlas si ya están en caché.
+  preload() {
+    for (const carta of this.cards) {
+      const clave = claveImagenCarta(carta.id);
+      if (carta.photo_url && !this.textures.exists(clave)) {
+        this.load.image(clave, carta.photo_url);
+      }
+    }
+  }
+
+  create() {
+    const anchoPantalla = this.scale.width;
+    const altoPantalla = this.scale.height;
+
+    this.add
+      .text(anchoPantalla / 2, 20, 'Elegí tu 11 titular', {
+        fontFamily: 'Arial',
+        fontSize: '20px',
+        color: '#ffffff',
+      })
+      .setOrigin(0.5);
+
+    // Contador de posiciones en vivo (POR 1/1 · DEF 3/4 · ...). Es un
+    // container vacío: los textos de adentro se arman en
+    // actualizarContadorPosiciones() porque necesitan un color distinto por
+    // segmento (verde/gris/rojo), y Phaser no permite pintar de varios
+    // colores un mismo objeto de texto.
+    this.contenedorContador = this.add.container(anchoPantalla / 2, 44);
+
+    this.crearGrilla(anchoPantalla, altoPantalla);
+    this.crearFooter(anchoPantalla, altoPantalla);
+    this.actualizarUI();
+  }
+
+  // ---------------------------------------------------------------------
+  // Grilla de cartas (scrollable, igual que CollectionScene) con una
+  // máscara para que no se dibujen encima del footer de abajo.
+  // ---------------------------------------------------------------------
+  crearGrilla(anchoPantalla, altoPantalla) {
+    const altoVisible = altoPantalla - ALTO_FOOTER;
+
+    this.gridContainer = this.add.container(0, 70);
+
+    const anchoGrilla = COLUMNAS * CARD_WIDTH + (COLUMNAS - 1) * ESPACIO;
+    const offsetX = (anchoPantalla - anchoGrilla) / 2;
+
+    this.cards.forEach((carta, indice) => {
+      const columna = indice % COLUMNAS;
+      const fila = Math.floor(indice / COLUMNAS);
+      const x = offsetX + columna * (CARD_WIDTH + ESPACIO) + CARD_WIDTH / 2;
+      const y = MARGEN_SUPERIOR + fila * (CARD_HEIGHT + ESPACIO) + CARD_HEIGHT / 2;
+
+      const contenedor = this.crearCartaSeleccionable(carta, x, y);
+      this.gridContainer.add(contenedor);
+      this.contenedoresPorId.set(carta.user_card_id, contenedor);
+    });
+
+    // Máscara: recorta el contenido de gridContainer a la franja
+    // [70, altoVisible] de la pantalla, para que al hacer scroll las
+    // cartas no se sigan viendo por encima del footer fijo de abajo.
+    const formaMascara = this.make.graphics({ add: false });
+    formaMascara.fillRect(0, 70, anchoPantalla, altoVisible - 70);
+    this.gridContainer.setMask(formaMascara.createGeometryMask());
+
+    const filasTotales = Math.ceil(this.cards.length / COLUMNAS);
+    const altoContenido = MARGEN_SUPERIOR + filasTotales * CARD_HEIGHT + (filasTotales - 1) * ESPACIO + MARGEN_SUPERIOR;
+
+    this.scrollMinY = Math.min(70, altoVisible - altoContenido);
+    this.scrollMaxY = 70;
+    this.gridContainer.y = 70;
+
+    this.input.on('wheel', (_pointer, _gameObjects, _deltaX, deltaY) => {
+      const nuevaY = this.gridContainer.y - deltaY;
+      this.gridContainer.y = Phaser.Math.Clamp(nuevaY, this.scrollMinY, this.scrollMaxY);
+    });
+  }
+
+  // Arma una carta "clickeable": la carta visual (RevealCardSprite) más un
+  // marco verde (se muestra si está seleccionada) y un velo oscuro (se
+  // muestra si ya hay 11 elegidas y esta carta no es una de ellas, para
+  // dejar claro que no se puede sumar una más).
+  crearCartaSeleccionable(cardData, x, y) {
+    const contenedor = this.add.container(x, y);
+
+    const sprite = new RevealCardSprite(this, 0, 0, cardData);
+    contenedor.add(sprite);
+
+    const marco = this.add.graphics();
+    marco.lineStyle(5, 0x2ecc71, 1);
+    marco.strokeRoundedRect(-CARD_WIDTH / 2 - 4, -CARD_HEIGHT / 2 - 4, CARD_WIDTH + 8, CARD_HEIGHT + 8, 10);
+    marco.setVisible(false);
+    contenedor.add(marco);
+
+    const velo = this.add.rectangle(0, 0, CARD_WIDTH, CARD_HEIGHT, 0x000000, 0.55);
+    velo.setVisible(false);
+    contenedor.add(velo);
+
+    // veloPosicion: velo ámbar para "esta posición ya está completa en la
+    // formación actual". Distinto del velo negro de arriba (que es "ya
+    // elegiste 11 en total"), para que el usuario entienda la diferencia
+    // de un vistazo.
+    const veloPosicion = this.add.rectangle(0, 0, CARD_WIDTH, CARD_HEIGHT, 0xf4a300, 0.45);
+    veloPosicion.setVisible(false);
+    contenedor.add(veloPosicion);
+
+    const zona = this.add.zone(0, 0, CARD_WIDTH, CARD_HEIGHT);
+    zona.setInteractive({ useHandCursor: true });
+    zona.on('pointerdown', () => this.alternarSeleccion(cardData.user_card_id));
+    contenedor.add(zona);
+
+    contenedor.marco = marco;
+    contenedor.velo = velo;
+    contenedor.veloPosicion = veloPosicion;
+    return contenedor;
+  }
+
+  alternarSeleccion(id) {
+    const carta = this.cartasPorId.get(id);
+    const yaEstaba = this.seleccionIds.has(id);
+
+    if (!yaEstaba) {
+      if (this.seleccionIds.size >= 11) return; // ya hay 11, no deja sumar más
+      if (this.posicionCompleta(carta.position)) return; // esa posición ya está completa, no deja sumar otra
+    }
+
+    if (yaEstaba) {
+      this.seleccionIds.delete(id);
+    } else {
+      this.seleccionIds.add(id);
+    }
+
+    this.actualizarUI();
+  }
+
+  cartasSeleccionadas() {
+    return [...this.seleccionIds].map((id) => this.cartasPorId.get(id));
+  }
+
+  // posicionCompleta indica si ya elegiste tantos jugadores de esa posición
+  // como pide la formación actual (ej: ya tenés 4 defensores en una 4-4-2).
+  // Se usa para bloquear el toque de cartas nuevas de esa posición.
+  posicionCompleta(posicion) {
+    const requeridos = positionCountsForFormation(this.formacionElegida);
+    const seleccionados = countByPosition(this.cartasSeleccionadas());
+    return seleccionados[posicion] >= requeridos[posicion];
+  }
+
+  // ---------------------------------------------------------------------
+  // Footer fijo: panel de formación (siempre visible, ya no espera a que
+  // haya 11 cartas elegidas) y botón de confirmar.
+  // ---------------------------------------------------------------------
+  crearFooter(anchoPantalla, altoPantalla) {
+    const yFooter = altoPantalla - ALTO_FOOTER;
+    this.yFooter = yFooter;
+
+    this.add.rectangle(anchoPantalla / 2, yFooter + ALTO_FOOTER / 2, anchoPantalla, ALTO_FOOTER, 0x0f1626, 0.97);
+    this.add.rectangle(anchoPantalla / 2, yFooter, anchoPantalla, 2, 0xd4af37, 0.6);
+
+    // Formación + botón "Cambiar" + aviso de lo que falta: se redibuja
+    // entero cada vez que cambia algo (dibujarPanelFormacion), porque el
+    // texto de la formación y el aviso cambian de contenido.
+    this.panelFormacion = this.add.container(0, 0);
+
+    // El botón "Confirmar 11" se crea UNA sola vez acá (a diferencia del
+    // panel de arriba) porque solo necesitamos prender/apagar su estado
+    // habilitado, no recrearlo.
+    this.botonConfirmar = this.add
+      .text(anchoPantalla / 2, yFooter + ALTO_FOOTER - 26, 'Confirmar 11', {
+        fontFamily: 'Arial',
+        fontSize: '16px',
+        fontStyle: 'bold',
+        color: '#1a1a2e',
+        backgroundColor: '#2ecc71',
+        padding: { x: 18, y: 10 },
+      })
+      .setOrigin(0.5);
+    this.botonConfirmar.on('pointerdown', () => this.confirmar());
+
+    this.dibujarPanelFormacion();
+  }
+
+  actualizarUI() {
+    const requeridos = positionCountsForFormation(this.formacionElegida);
+    const seleccionados = countByPosition(this.cartasSeleccionadas());
+    const totalCompleto = this.seleccionIds.size >= 11;
+
+    this.actualizarContadorPosiciones(requeridos, seleccionados);
+
+    for (const [id, contenedor] of this.contenedoresPorId) {
+      const carta = this.cartasPorId.get(id);
+      const seleccionada = this.seleccionIds.has(id);
+      const posicionCompleta = seleccionados[carta.position] >= requeridos[carta.position];
+
+      contenedor.marco.setVisible(seleccionada);
+      // Velo negro: ya hay 11 en total, esta carta se queda afuera sí o sí.
+      contenedor.velo.setVisible(!seleccionada && totalCompleto);
+      // Velo ámbar: todavía no hay 11, pero la posición de esta carta ya
+      // está completa para la formación elegida (no se puede sumar otra).
+      contenedor.veloPosicion.setVisible(!seleccionada && !totalCompleto && posicionCompleta);
+    }
+
+    this.dibujarPanelFormacion();
+    this.actualizarBotonConfirmar();
+  }
+
+  // Dibuja la fila "POR 1/1  ·  DEF 3/4  ·  MED 2/3  ·  DEL 1/3" arriba de
+  // la grilla. Cada posición es un Text aparte (con su propio color) porque
+  // Phaser no permite pintar de varios colores un mismo objeto de texto;
+  // por eso también hay que recalcular a mano el ancho total para centrar
+  // la fila entera.
+  actualizarContadorPosiciones(requeridos, seleccionados) {
+    this.contenedorContador.removeAll(true);
+
+    const orden = ['POR', 'DEF', 'MED', 'DEL'];
+    const piezas = [];
+    orden.forEach((posicion, indice) => {
+      const tengo = seleccionados[posicion];
+      const necesito = requeridos[posicion];
+      let color = '#9aa5b8'; // gris: todavía falta
+      if (tengo === necesito) color = '#2ecc71'; // verde: posición completa
+      else if (tengo > necesito) color = '#e74c3c'; // rojo: sobran (pasa si cambiaste de formación con cartas ya elegidas)
+      piezas.push({ texto: `${posicion} ${tengo}/${necesito}`, color });
+      if (indice < orden.length - 1) piezas.push({ texto: '   ·   ', color: '#5a6478' });
+    });
+
+    const textos = piezas.map((pieza) =>
+      this.add.text(0, 0, pieza.texto, { fontFamily: 'Arial', fontSize: '15px', color: pieza.color })
+    );
+    const anchoTotal = textos.reduce((suma, texto) => suma + texto.width, 0);
+
+    let x = -anchoTotal / 2;
+    for (const texto of textos) {
+      texto.setPosition(x, 0);
+      x += texto.width;
+      this.contenedorContador.add(texto);
+    }
+  }
+
+  // Habilita/deshabilita visualmente "Confirmar 11": solo se puede tocar
+  // cuando la selección calza exacto con la formación elegida (11
+  // jugadores, con el mínimo de cada posición, ni de más ni de menos).
+  actualizarBotonConfirmar() {
+    const fit = formationFit(this.cartasSeleccionadas(), this.formacionElegida);
+
+    if (fit.exact) {
+      this.botonConfirmar.setInteractive({ useHandCursor: true });
+      this.botonConfirmar.setStyle({ backgroundColor: '#2ecc71', color: '#1a1a2e' });
+      this.botonConfirmar.setAlpha(1);
+    } else {
+      this.botonConfirmar.disableInteractive();
+      this.botonConfirmar.setStyle({ backgroundColor: '#3a4256', color: '#7a8296' });
+      this.botonConfirmar.setAlpha(0.8);
+    }
+  }
+
+  dibujarPanelFormacion() {
+    this.panelFormacion.removeAll(true); // limpia lo que había dibujado antes de redibujar
+
+    const anchoPantalla = this.scale.width;
+    const y = this.yFooter;
+    const fit = formationFit(this.cartasSeleccionadas(), this.formacionElegida);
+    const label = FORMATIONS[this.formacionElegida].label;
+
+    const textoFormacion = this.add.text(30, y + 22, `Formación: ${label}`, {
+      fontFamily: 'Arial',
+      fontSize: '16px',
+      color: '#ffffff',
+    });
+    this.panelFormacion.add(textoFormacion);
+
+    const botonCambiar = this.add
+      .text(anchoPantalla - 30, y + 22, 'Cambiar ▼', {
+        fontFamily: 'Arial',
+        fontSize: '14px',
+        color: '#1a1a2e',
+        backgroundColor: '#d4af37',
+        padding: { x: 10, y: 6 },
+      })
+      .setOrigin(1, 0)
+      .setInteractive({ useHandCursor: true });
+    botonCambiar.on('pointerdown', () => this.alternarListaFormaciones(anchoPantalla, y));
+    this.panelFormacion.add(botonCambiar);
+
+    if (!fit.exact) {
+      const partes = [];
+      for (const [posicion, cantidad] of Object.entries(fit.faltan)) {
+        partes.push(`te faltan ${cantidad} ${nombrePosicion(posicion, cantidad)}`);
+      }
+      for (const [posicion, cantidad] of Object.entries(fit.sobran)) {
+        partes.push(`te sobran ${cantidad} ${nombrePosicion(posicion, cantidad)}`);
+      }
+      const aviso = this.add.text(30, y + 54, `Con ${label} ${partes.join(' y ')}.`, {
+        fontFamily: 'Arial',
+        fontSize: '13px',
+        color: '#f4a300',
+        wordWrap: { width: anchoPantalla - 60 },
+      });
+      this.panelFormacion.add(aviso);
+    }
+  }
+
+  // Dropdown casero: como Phaser no trae un <select>, la lista de
+  // formaciones es simplemente 4 textos apilados que aparecen al tocar
+  // "Cambiar" y se cierran solos al elegir una.
+  alternarListaFormaciones(anchoPantalla, yFooter) {
+    if (this.listaFormacionesAbierta) {
+      this.cerrarListaFormaciones();
+      return;
+    }
+
+    const lista = this.add.container(anchoPantalla - 150, yFooter - 4 * 30);
+    Object.keys(FORMATIONS).forEach((clave, indice) => {
+      const opcion = this.add
+        .text(0, indice * 30, FORMATIONS[clave].label, {
+          fontFamily: 'Arial',
+          fontSize: '13px',
+          color: '#ffffff',
+          backgroundColor: '#1e2a4a',
+          padding: { x: 10, y: 6 },
+        })
+        .setInteractive({ useHandCursor: true });
+      opcion.on('pointerdown', () => {
+        this.formacionElegida = clave;
+        this.cerrarListaFormaciones();
+        // Al cambiar de formación cambian los requeridos por posición, así
+        // que hay que refrescar todo: contador, velos de las cartas y el
+        // botón de confirmar (no solo el panel de formación).
+        this.actualizarUI();
+      });
+      lista.add(opcion);
+    });
+
+    this.listaFormacionesAbierta = lista;
+  }
+
+  cerrarListaFormaciones() {
+    this.listaFormacionesAbierta?.destroy();
+    this.listaFormacionesAbierta = null;
+  }
+
+  async confirmar() {
+    // Esto solo puede pasar si el botón está habilitado (ver
+    // actualizarBotonConfirmar), pero lo chequeamos igual por las dudas de
+    // que llegue algún click mientras se está redibujando la pantalla.
+    if (!formationFit(this.cartasSeleccionadas(), this.formacionElegida).exact) return;
+
+    this.botonConfirmar.disableInteractive();
+    this.botonConfirmar.setText('Guardando...');
+
+    const seleccionadas = this.cartasSeleccionadas();
+    const starters = construirStarters(seleccionadas, this.formacionElegida);
+    const bench = this.cards
+      .filter((carta) => !this.seleccionIds.has(carta.user_card_id))
+      .map((carta) => carta.user_card_id);
+
+    const slots = { formation: this.formacionElegida, starters, bench };
+
+    try {
+      await saveLineup(this.managerId, this.seasonNumber, this.formacionElegida, slots);
+      this.mostrarExito();
+    } catch (error) {
+      console.error('No se pudo guardar el lineup:', error);
+      this.botonConfirmar.setText('Confirmar 11');
+      this.actualizarBotonConfirmar(); // vuelve a habilitarlo (la selección sigue siendo válida)
+      this.mostrarError(error);
+    }
+  }
+
+  mostrarError(error) {
+    const anchoPantalla = this.scale.width;
+    this.textoError?.destroy();
+    this.textoError = this.add
+      .text(anchoPantalla / 2, this.yFooter + ALTO_FOOTER - 4, `No se pudo guardar: ${error.message}`, {
+        fontFamily: 'Arial',
+        fontSize: '12px',
+        color: '#e74c3c',
+      })
+      .setOrigin(0.5, 1);
+  }
+
+  mostrarExito() {
+    const anchoPantalla = this.scale.width;
+    const altoPantalla = this.scale.height;
+
+    // Tapamos toda la pantalla con el mensaje final; no hace falta
+    // desarmar prolijamente la grilla de atrás, esta escena termina acá.
+    this.add.rectangle(anchoPantalla / 2, altoPantalla / 2, anchoPantalla, altoPantalla, 0x1a1a2e, 0.97);
+
+    this.add
+      .text(anchoPantalla / 2, altoPantalla / 2 - 30, '¡Once titular guardado!', {
+        fontFamily: 'Arial',
+        fontSize: '22px',
+        color: '#ffffff',
+      })
+      .setOrigin(0.5);
+
+    // TODO: conectar con Fase 4 - motor de temporada (en vez de volver a
+    // la colección, acá debería arrancar el flujo de jugar la temporada).
+    const boton = this.add
+      .text(anchoPantalla / 2, altoPantalla / 2 + 30, 'Volver a mi colección', {
+        fontFamily: 'Arial',
+        fontSize: '16px',
+        color: '#1a1a2e',
+        backgroundColor: '#d4af37',
+        padding: { x: 16, y: 10 },
+      })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true });
+    boton.on('pointerdown', () =>
+      this.scene.start('CollectionScene', { managerId: this.managerId, cards: this.cards })
+    );
+  }
+}

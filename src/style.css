@@ -1,0 +1,99 @@
+@import 'flag-icons/css/flag-icons.min.css';
+
+/* Pantallas de login y creación de DT: son simples formularios en HTML,
+   no Phaser, porque para inputs de texto es mucho más simple usar el DOM
+   que dibujar cajas de texto adentro del canvas del juego. */
+body {
+  margin: 0;
+  background: #0f0f1a;
+  color: #ffffff;
+  font-family: Arial, sans-serif;
+}
+
+.pantalla-centrada {
+  max-width: 320px;
+  margin: 100px auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pantalla-centrada h1 {
+  margin: 0 0 10px;
+  font-size: 22px;
+  text-align: center;
+}
+
+.pantalla-centrada input,
+.pantalla-centrada select,
+.pantalla-centrada button {
+  padding: 10px;
+  font-size: 15px;
+  border-radius: 4px;
+  border: 1px solid #333;
+}
+
+.pantalla-centrada input,
+.pantalla-centrada select {
+  background: #1a1a2e;
+  color: #ffffff;
+}
+
+.pantalla-centrada button {
+  background: #d4af37;
+  color: #1a1a2e;
+  font-weight: bold;
+  border: none;
+  cursor: pointer;
+}
+
+.pantalla-centrada button.boton-secundario {
+  background: transparent;
+  color: #d4af37;
+  border: 1px solid #d4af37;
+}
+
+.pantalla-centrada button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.campo-password {
+  position: relative;
+  display: flex;
+}
+
+.campo-password input {
+  width: 100%;
+  box-sizing: border-box;
+  padding-right: 36px;
+}
+
+.pantalla-centrada button.boton-ojo {
+  position: absolute;
+  right: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 4px 8px;
+  background: transparent;
+  border: none;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.pantalla-centrada button.boton-ojo.activo {
+  opacity: 0.5;
+}
+
+.mensaje-error {
+  color: #ff6b6b;
+  margin: 0;
+  font-size: 13px;
+  min-height: 16px;
+}
+
+#app {
+  display: flex;
+  justify-content: center;
+}
