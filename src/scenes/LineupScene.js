@@ -5,6 +5,7 @@
 import Phaser from 'phaser';
 import { RevealCardSprite, CARD_WIDTH, CARD_HEIGHT, claveImagenCarta } from '../objects/RevealCardSprite.js';
 import { FORMATIONS } from '../engine/formations.js';
+import { resolveCardImageUrl } from '../utils/cardImage.js';
 import {
   countByPosition,
   formacionSugeridaPorDefensores,
@@ -98,8 +99,9 @@ export class LineupScene extends Phaser.Scene {
   preload() {
     for (const carta of this.cards) {
       const clave = claveImagenCarta(carta.id);
-      if (carta.photo_url && !this.textures.exists(clave)) {
-        this.load.image(clave, carta.photo_url);
+      const urlImagen = resolveCardImageUrl(carta);
+      if (urlImagen && !this.textures.exists(clave)) {
+        this.load.image(clave, urlImagen);
       }
     }
   }

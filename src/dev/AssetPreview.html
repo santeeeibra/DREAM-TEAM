@@ -57,15 +57,15 @@
   <div id="grid" class="grid"></div>
 
   <script type="module">
-    import { generatePlayerAvatar } from '../utils/avatarGenerator.js';
+    import { generateInitialsAvatarDataURI } from '../utils/initialsAvatar.js';
     import { generateClubBadge } from '../utils/badgeGenerator.js';
 
     const mockPlayers = [
-      { id: 1, name: 'Juan Pérez', club: 'Deportivo Norte' },
-      { id: 2, name: 'Carlos Gómez', club: 'Atlético Sur' },
-      { id: 3, name: 'Lucas Fernández', club: 'Unión Central' },
-      { id: 4, name: 'Martín Álvarez', club: 'Estrella del Este' },
-      { id: 5, name: 'Diego Romero', club: 'Racing Oeste' },
+      { id: 1, name: 'Juan Pérez', club: 'Deportivo Norte', rating: 80 },
+      { id: 2, name: 'Carlos Gómez', club: 'Atlético Sur', rating: 74 },
+      { id: 3, name: 'Lucas Fernández', club: 'Unión Central', rating: 88 },
+      { id: 4, name: 'Martín Álvarez', club: 'Estrella del Este', rating: 69 },
+      { id: 5, name: 'Diego Romero', club: 'Racing Oeste', rating: 77 },
     ];
 
     const grid = document.getElementById('grid');
@@ -74,11 +74,11 @@
       const card = document.createElement('div');
       card.className = 'card';
 
-      const avatarSvg = generatePlayerAvatar(player.id);
+      const avatarDataUri = generateInitialsAvatarDataURI(player.name, player.rating);
       const badgeSvg = generateClubBadge(player.club);
 
       card.innerHTML = `
-        <div class="avatar">${avatarSvg}</div>
+        <div class="avatar"><img src="${avatarDataUri}" alt="${player.name}" /></div>
         <div class="badge">${badgeSvg}</div>
         <div class="name">${player.name}</div>
         <div class="club">${player.club}</div>

@@ -155,7 +155,9 @@ export async function saveLineup(managerId, seasonNumber, formation, slots) {
 export async function getManagerCards(managerId) {
   const { data, error } = await supabase
     .from('user_cards')
-    .select('id, cards (id, name, club, position, overall_rating, rarity, photo_url)')
+    .select(
+      'id, cards (id, name, club, position, overall_rating, rarity, photo_url, fut_id, uses_generated_avatar)'
+    )
     .eq('manager_id', managerId);
 
   if (error) throw error;

@@ -17,6 +17,10 @@ dream-team/.env.*
 # Supabase CLI local state
 supabase/.temp/
 
+# Datos locales de scripts (CSV descargados a mano de Kaggle + JSON de
+# salida de matching): no son fuente de verdad ni deben commitearse.
+scripts/data/
+
 # Logs
 npm-debug.log*
 *.log

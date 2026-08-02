@@ -9,7 +9,7 @@
 import Phaser from 'phaser';
 import { getTier } from '../shared/ratingTiers.js';
 import { colorDeCarta } from '../shared/cardColors.js';
-import { claveAvatarGenerico } from '../utils/avatarGenerator.js';
+import { claveAvatarIniciales } from '../utils/initialsAvatar.js';
 
 // Tamaño fijo de la carta (ancho x alto). Las constantes en mayúsculas indican
 // "esto no cambia", lo dejamos acá arriba para poder ajustarlo fácil en un solo lugar.
@@ -165,28 +165,19 @@ export class CardSprite extends Phaser.GameObjects.Container {
 
   // Retrato del jugador: probamos, en orden, la foto real
   // (cards.photo_url, precargada por CollectionScene.preload con la clave
-  // de claveFotoCarta), después el avatar genérico de Dicebear
-  // (src/utils/avatarGenerator.js, precargado con claveAvatarGenerico), y
-  // solo si ninguna de las dos texturas llegó a cargar, la silueta genérica
-  // (último fallback, no debería verse en el juego real).
+  // de claveFotoCarta) y, si no llegó a cargar, el avatar de iniciales
+  // (src/utils/initialsAvatar.js, precargado con claveAvatarIniciales).
+  // Con iniciales siempre hay algo que mostrar, así que no hace falta un
+  // tercer fallback.
   dibujarIconoAvatar() {
     const claveFoto = claveFotoCarta(this.cardData.id);
-    if (this.cardData.photo_url && this.scene.textures.exists(claveFoto)) {
-      const foto = new Phaser.GameObjects.Image(this.scene, 0, -10, claveFoto);
-      foto.setDisplaySize(60, 60);
-      this.add(foto);
-      return;
-    }
+    const clave = this.scene.textures.exists(claveFoto)
+      ? claveFoto
+      : claveAvatarIniciales(this.cardData.id);
 
-    const claveAvatar = claveAvatarGenerico(this.cardData.id);
-    if (this.scene.textures.exists(claveAvatar)) {
-      const avatar = new Phaser.GameObjects.Image(this.scene, 0, -10, claveAvatar);
-      avatar.setDisplaySize(60, 60);
-      this.add(avatar);
-      return;
-    }
-
-    this.add(dibujarSiluetaGenerica(this.scene, 0, -10, 26));
+    const imagen = new Phaser.GameObjects.Image(this.scene, 0, -10, clave);
+    imagen.setDisplaySize(60, 60);
+    this.add(imagen);
   }
 
   // Nombre del jugador, debajo del ícono/avatar.

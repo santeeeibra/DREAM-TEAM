@@ -4,6 +4,8 @@
 // y al tocar la pantalla ir revelando carta por carta con su foto y rating.
 import Phaser from 'phaser';
 import { RevealCardSprite, CARD_WIDTH, CARD_HEIGHT, claveImagenCarta } from '../objects/RevealCardSprite.js';
+import { claveAvatarIniciales, generateInitialsAvatarDataURI } from '../utils/initialsAvatar.js';
+import { resolveCardImageUrl } from '../utils/cardImage.js';
 
 export class PackOpeningScene extends Phaser.Scene {
   constructor() {
@@ -28,8 +30,20 @@ export class PackOpeningScene extends Phaser.Scene {
   preload() {
     const todasLasCartas = this.packs.flat();
     for (const carta of todasLasCartas) {
-      if (carta.photo_url) {
-        this.load.image(claveImagenCarta(carta.id), carta.photo_url);
+      const urlImagen = resolveCardImageUrl(carta);
+      if (urlImagen) {
+        this.load.image(claveImagenCarta(carta.id), urlImagen);
+      }
+      // El avatar de iniciales se encola SIEMPRE, aunque la carta tenga
+      // foto: si fut.gg tira 404, el loaderror se dispara, la textura de
+      // la foto nunca existe, y RevealCardSprite necesita encontrar las
+      // iniciales ya cargadas en ese momento.
+      const claveIniciales = claveAvatarIniciales(carta.id);
+      if (!this.textures.exists(claveIniciales)) {
+        this.load.image(
+          claveIniciales,
+          generateInitialsAvatarDataURI(carta.name, carta.overall_rating)
+        );
       }
     }
     this.load.on('loaderror', (file) => {

@@ -4,9 +4,10 @@
 // placeholder de silueta), pero en vez de la foto/avatar de Dicebear usa
 // solo la foto real del jugador (`cards.photo_url`) cuando está disponible.
 import Phaser from 'phaser';
-import { CARD_WIDTH, CARD_HEIGHT, dibujarSiluetaGenerica } from './CardSprite.js';
+import { CARD_WIDTH, CARD_HEIGHT } from './CardSprite.js';
 import { getTier } from '../shared/ratingTiers.js';
 import { colorDeCarta } from '../shared/cardColors.js';
+import { claveAvatarIniciales } from '../utils/initialsAvatar.js';
 
 export { CARD_WIDTH, CARD_HEIGHT };
 
@@ -71,17 +72,15 @@ export class RevealCardSprite extends Phaser.GameObjects.Container {
   // Si la textura de la foto llegó a cargarse (ver claveImagenCarta), la
   // dibuja centrada dentro de la carta. Si no, dibuja la misma silueta
   // genérica que usa CardSprite.js (no un círculo sólido de color).
-  dibujarFoto() {
-    const clave = claveImagenCarta(this.cardData.id);
+dibujarFoto() {
+    const claveFoto = claveImagenCarta(this.cardData.id);
+    const clave = this.scene.textures.exists(claveFoto)
+      ? claveFoto
+      : claveAvatarIniciales(this.cardData.id);
 
-    if (this.cardData.photo_url && this.scene.textures.exists(clave)) {
-      const foto = new Phaser.GameObjects.Image(this.scene, 0, -6, clave);
-      foto.setDisplaySize(88, 88);
-      this.add(foto);
-      return;
-    }
-
-    this.add(dibujarSiluetaGenerica(this.scene, 0, -10, 26));
+    const imagen = new Phaser.GameObjects.Image(this.scene, 0, -6, clave);
+    imagen.setDisplaySize(88, 88);
+    this.add(imagen);
   }
 
   dibujarRatingYPosicion() {

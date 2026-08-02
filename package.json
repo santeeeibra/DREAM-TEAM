@@ -9,12 +9,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@dicebear/collection": "^9.4.2",
-    "@dicebear/core": "^9.4.3",
     "@supabase/supabase-js": "^2.49.1",
     "dotenv": "^17.4.2",
+    "fastest-levenshtein": "^1.0.16",
     "flag-icons": "^7.5.0",
     "node-fetch": "^3.3.2",
+    "papaparse": "^5.4.1",
     "phaser": "^3.88.0",
     "sharp": "^0.35.3",
     "smartcrop": "^2.0.5"
