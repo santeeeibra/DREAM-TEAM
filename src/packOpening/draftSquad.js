@@ -3,6 +3,8 @@
 // cartas disponibles y devuelve cuáles le tocaron al jugador. Así se puede
 // leer y probar sin depender de la base de datos ni de la pantalla.
 
+import { getTier } from '../shared/ratingTiers.js';
+
 // Mínimos garantizados por posición. Suman 18 de las 25 cartas totales.
 export const MINIMOS_POR_POSICION = {
   POR: 2,
@@ -26,16 +28,54 @@ function mezclar(array) {
   return copia;
 }
 
-// pool: todas las cartas activas disponibles (mínimo necesitan `id` y
-// `position`). Devuelve un array de 25 cartas sin repetidos.
+// Probabilidad de cada banda de rareza al abrir un sobre: 15% bronze,
+// 15% silver, 45% gold, 25% special. Devuelve la banda en minúscula para
+// compararla con getTier() (que devuelve 'BRONZE'/'SILVER'/'GOLD'/'SPECIAL').
+export function pickWeightedTier() {
+  const r = Math.random();
+  if (r < 0.15) return 'bronze';
+  if (r < 0.3) return 'silver';
+  if (r < 0.75) return 'gold';
+  return 'special';
+}
+
+// Para cada banda pedida, en qué orden probar las demás si esa banda no
+// tiene cartas disponibles. Siempre se prueba primero la más cercana en
+// "calidad" antes de caer a las más lejanas.
+const ORDEN_CERCANIA = {
+  bronze: ['bronze', 'silver', 'gold', 'special'],
+  silver: ['silver', 'bronze', 'gold', 'special'],
+  gold: ['gold', 'special', 'silver', 'bronze'],
+  special: ['special', 'gold', 'silver', 'bronze'],
+};
+
+// Elige una carta al azar de `candidatas` que pertenezca a la banda
+// `bandaPedida`. Si no hay ninguna de esa banda exacta, prueba con las
+// bandas más cercanas (ORDEN_CERCANIA) antes de rendirse. Devuelve null si
+// `candidatas` no tiene ninguna carta de ninguna banda.
+function elegirCartaPorBanda(candidatas, bandaPedida) {
+  for (const banda of ORDEN_CERCANIA[bandaPedida]) {
+    const deEsaBanda = candidatas.filter(
+      (carta) => getTier(carta.overall_rating).toLowerCase() === banda
+    );
+    if (deEsaBanda.length > 0) {
+      return deEsaBanda[Math.floor(Math.random() * deEsaBanda.length)];
+    }
+  }
+  return null;
+}
+
+// pool: todas las cartas activas disponibles (mínimo necesitan `id`,
+// `position` y `overall_rating`). Devuelve un array de 25 cartas sin
+// repetidos.
 //
 // Cómo arma el plantel:
-// 1. Separa el pool en 4 grupos por posición y mezcla cada grupo.
+// 1. Separa el pool en 4 grupos por posición.
 // 2. Toma los mínimos garantizados (2 POR, 6 DEF, 6 MED, 4 DEL = 18 cartas).
-// 3. Las 7 cartas que faltan para llegar a 25 salen 100% al azar de TODO
-//    el resto del pool, sin importar posición ni overall_rating. Por eso el
-//    plantel final puede terminar siendo todo cracks o todo mediocre: la
-//    calidad nunca se balancea a propósito.
+//    Cada carta se elige ponderando por banda de rareza (pickWeightedTier:
+//    15% bronze, 15% silver, 45% gold, 25% special) en vez de uniforme.
+// 3. Las 7 cartas que faltan para llegar a 25 también se eligen ponderadas
+//    por banda, pero de TODO el resto del pool sin importar posición.
 export function draftSquad(pool) {
   const porPosicion = { POR: [], DEF: [], MED: [], DEL: [] };
   for (const carta of pool) {
@@ -46,20 +86,23 @@ export function draftSquad(pool) {
   const idsUsados = new Set();
 
   for (const [posicion, minimo] of Object.entries(MINIMOS_POR_POSICION)) {
-    const disponibles = mezclar(porPosicion[posicion]);
+    let disponibles = porPosicion[posicion];
     if (disponibles.length < minimo) {
       throw new Error(
         `No hay suficientes cartas activas en posición ${posicion}: hay ${disponibles.length}, hacen falta ${minimo}`
       );
     }
     for (let i = 0; i < minimo; i++) {
-      seleccionadas.push(disponibles[i]);
-      idsUsados.add(disponibles[i].id);
+      const banda = pickWeightedTier();
+      const carta = elegirCartaPorBanda(disponibles, banda);
+      seleccionadas.push(carta);
+      idsUsados.add(carta.id);
+      disponibles = disponibles.filter((c) => c.id !== carta.id);
     }
   }
 
   const faltantes = TOTAL_CARTAS - seleccionadas.length;
-  const poolRestante = mezclar(pool.filter((carta) => !idsUsados.has(carta.id)));
+  let poolRestante = pool.filter((carta) => !idsUsados.has(carta.id));
 
   if (poolRestante.length < faltantes) {
     throw new Error(
@@ -68,7 +111,10 @@ export function draftSquad(pool) {
   }
 
   for (let i = 0; i < faltantes; i++) {
-    seleccionadas.push(poolRestante[i]);
+    const banda = pickWeightedTier();
+    const carta = elegirCartaPorBanda(poolRestante, banda);
+    seleccionadas.push(carta);
+    poolRestante = poolRestante.filter((c) => c.id !== carta.id);
   }
 
   // Mezclamos de nuevo el orden final: si no, siempre se abrirían primero

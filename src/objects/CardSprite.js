@@ -8,6 +8,7 @@
 
 import Phaser from 'phaser';
 import { getTier } from '../shared/ratingTiers.js';
+import { colorDeCarta } from '../shared/cardColors.js';
 import { claveAvatarGenerico } from '../utils/avatarGenerator.js';
 
 // Tamaño fijo de la carta (ancho x alto). Las constantes en mayúsculas indican
@@ -24,32 +25,30 @@ export function claveFotoCarta(cardId) {
   return `card-img-${cardId}`;
 }
 
-// Colores de fondo según la BANDA de rating (bronze/silver/gold/special que
-// devuelve getTier() a partir de overall_rating). Ojo: esto es independiente
-// de la columna `cards.rarity` (comun/rara/epica/legendaria), que es un
-// concepto distinto (probabilidad de drop en los sobres) — ver el comentario
-// en migrations/004_open_pack.sql.
-// Los números tipo 0xRRGGBB son la forma en que Phaser espera los colores
-// (es el mismo valor hexadecimal que usarías en CSS como "#A56A45", pero con 0x en vez de #).
-const COLORES_BANDA = {
-  BRONZE: 0xa56a45,
-  SILVER: 0x9fb4c7,
-  GOLD: 0xd4af37,
-  // "special" no es un color único: es un degradado violeta -> negro.
-  // Guardamos los dos extremos del degradado para usarlos con fillGradientStyle.
-  SPECIAL: { desde: 0x6a0dad, hasta: 0x000000 },
-};
+// dibujarSiluetaGenerica: el placeholder que se usa cuando a una carta
+// todavía no le cargó ni la foto real ni (en CollectionScene) el avatar
+// genérico de Dicebear. Antes esto era un círculo sólido de un color por
+// posición (azul, verde...), que se leía como un error visual más que como
+// un placeholder; ahora es un ícono neutro de persona (cabeza + hombros).
+// Las proporciones quedan siempre DENTRO del círculo de fondo a propósito,
+// sin usar una máscara: una máscara fija no se reacomoda sola cuando esta
+// carta vive dentro de un container que después hace scroll (como en
+// LineupScene), así que en vez de recortar dibujamos figuras que ya nacen
+// más chicas que el radio exterior.
+export function dibujarSiluetaGenerica(scene, x = 0, y = -10, radio = 26) {
+  const icono = new Phaser.GameObjects.Graphics(scene);
 
-// Color del ícono placeholder de avatar, según la posición del jugador en la
-// cancha. Coincide con el enum real de la base (position_type en
-// migrations/001_init.sql: POR/DEF/MED/DEL). Es el último fallback si ni la
-// foto real ni el avatar genérico llegaron a cargarse.
-const COLORES_POSICION = {
-  POR: 0xf4d03f, // amarillo, como la camiseta típica de arquero
-  DEF: 0x3498db, // azul
-  MED: 0x2ecc71, // verde
-  DEL: 0xe74c3c, // rojo
-};
+  icono.fillStyle(0x4a5468, 1);
+  icono.fillCircle(x, y, radio);
+  icono.lineStyle(2, 0xffffff, 0.8);
+  icono.strokeCircle(x, y, radio);
+
+  icono.fillStyle(0xaeb8cc, 1);
+  icono.fillCircle(x, y - radio * 0.32, radio * 0.36); // cabeza
+  icono.fillCircle(x, y + radio * 0.45, radio * 0.42); // hombros
+
+  return icono;
+}
 
 export class CardSprite extends Phaser.GameObjects.Container {
   // scene: la escena donde va a vivir la carta
@@ -102,8 +101,11 @@ export class CardSprite extends Phaser.GameObjects.Container {
     // La banda (bronze/silver/gold/special) sale del overall_rating, no de
     // cardData.rarity: esa columna es un concepto de la base totalmente
     // distinto (comun/rara/epica/legendaria, probabilidad de drop).
+    // colorDeCarta ya calcula la banda internamente con getTier(); acá solo
+    // la volvemos a pedir para saber si hay que usar degradado (SPECIAL) o
+    // color sólido.
     const banda = getTier(this.cardData.overall_rating);
-    const colorBanda = COLORES_BANDA[banda];
+    const colorBanda = colorDeCarta(this.cardData);
 
     if (banda === 'SPECIAL') {
       // fillGradientStyle pinta un degradado entre 4 esquinas (arriba-izq, arriba-der,
@@ -165,8 +167,8 @@ export class CardSprite extends Phaser.GameObjects.Container {
   // (cards.photo_url, precargada por CollectionScene.preload con la clave
   // de claveFotoCarta), después el avatar genérico de Dicebear
   // (src/utils/avatarGenerator.js, precargado con claveAvatarGenerico), y
-  // solo si ninguna de las dos texturas llegó a cargar, el círculo de color
-  // por posición (último fallback, no debería verse en el juego real).
+  // solo si ninguna de las dos texturas llegó a cargar, la silueta genérica
+  // (último fallback, no debería verse en el juego real).
   dibujarIconoAvatar() {
     const claveFoto = claveFotoCarta(this.cardData.id);
     if (this.cardData.photo_url && this.scene.textures.exists(claveFoto)) {
@@ -184,14 +186,7 @@ export class CardSprite extends Phaser.GameObjects.Container {
       return;
     }
 
-    const colorPosicion = COLORES_POSICION[this.cardData.position] ?? 0xffffff;
-    const icono = new Phaser.GameObjects.Graphics(this.scene);
-    icono.fillStyle(colorPosicion, 1);
-    icono.fillCircle(0, -10, 26); // círculo centrado en (0, -10), con radio 26
-    icono.lineStyle(2, 0xffffff, 0.8);
-    icono.strokeCircle(0, -10, 26);
-
-    this.add(icono);
+    this.add(dibujarSiluetaGenerica(this.scene, 0, -10, 26));
   }
 
   // Nombre del jugador, debajo del ícono/avatar.

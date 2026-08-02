@@ -4,13 +4,25 @@
 // sugiere una formación y deja guardar el resultado en la tabla `lineups`.
 import Phaser from 'phaser';
 import { RevealCardSprite, CARD_WIDTH, CARD_HEIGHT, claveImagenCarta } from '../objects/RevealCardSprite.js';
-import { FORMATIONS } from '../engine/matchEngine.js';
-import { countByPosition, formationFit, positionCountsForFormation, saveLineup } from '../lineups.js';
+import { FORMATIONS } from '../engine/formations.js';
+import {
+  countByPosition,
+  formacionSugeridaPorDefensores,
+  formationFit,
+  positionCountsForFormation,
+  saveLineup,
+} from '../lineups.js';
+import { calcularRatingDelOnce, ensureSeason } from '../seasons.js';
 
 const COLUMNAS = 4;
 const ESPACIO = 20;
 const MARGEN_SUPERIOR = 16;
 const ALTO_FOOTER = 150; // franja fija de abajo: formación + aviso + botón confirmar
+const ALTO_TABS = 36; // franja de tabs POR/DEF/MED/DEL, debajo del contador
+const INICIO_GRILLA_Y = 70 + ALTO_TABS; // dónde empieza la grilla, debajo de tabs
+
+// Orden fijo de posiciones para las tabs y para el contador de arriba.
+const POSICIONES = ['POR', 'DEF', 'MED', 'DEL'];
 
 // Nombres en español de cada posición, para armar el texto del aviso
 // ("te faltan 2 defensores"). El segundo valor es el plural.
@@ -72,6 +84,12 @@ export class LineupScene extends Phaser.Scene {
     // falta. Arranca en la primera formación de la lista (4-4-2).
     this.formacionElegida = Object.keys(FORMATIONS)[0];
     this.listaFormacionesAbierta = null;
+
+    // Tab de posición activa en la grilla (ver crearTabs/cambiarTab): antes
+    // se mostraban las 25 cartas juntas y había que scrollear mucho para
+    // llegar a los delanteros; ahora la grilla solo muestra una posición a
+    // la vez.
+    this.posicionActiva = 'POR';
   }
 
   // Las fotos de estas cartas casi seguro ya se cargaron en PackOpeningScene
@@ -105,24 +123,106 @@ export class LineupScene extends Phaser.Scene {
     // colores un mismo objeto de texto.
     this.contenedorContador = this.add.container(anchoPantalla / 2, 44);
 
+    this.crearTabs(anchoPantalla);
     this.crearGrilla(anchoPantalla, altoPantalla);
     this.crearFooter(anchoPantalla, altoPantalla);
     this.actualizarUI();
   }
 
   // ---------------------------------------------------------------------
+  // Tabs de posición (POR/DEF/MED/DEL), debajo del contador (que queda
+  // siempre visible arriba, sin moverse). Tocar una tab cambia qué
+  // subconjunto de las 25 cartas se ve en la grilla de abajo, así el
+  // usuario nunca tiene que scrollear las 25 juntas para llegar, por
+  // ejemplo, a los delanteros.
+  // ---------------------------------------------------------------------
+  crearTabs(anchoPantalla) {
+    this.contenedorTabs = this.add.container(0, 0);
+    this.dibujarTabs(anchoPantalla);
+  }
+
+  dibujarTabs(anchoPantalla) {
+    this.contenedorTabs.removeAll(true);
+
+    const anchoTab = anchoPantalla / POSICIONES.length;
+    const y = 70 + ALTO_TABS / 2;
+
+    POSICIONES.forEach((posicion, indice) => {
+      const activa = posicion === this.posicionActiva;
+      const x = anchoTab * indice + anchoTab / 2;
+
+      const fondo = this.add
+        .rectangle(x, y, anchoTab - 6, ALTO_TABS - 8, activa ? 0xd4af37 : 0x1e2a4a, 1)
+        .setStrokeStyle(1, 0x3a4256);
+
+      const texto = this.add
+        .text(x, y, posicion, {
+          fontFamily: 'Arial',
+          fontSize: '13px',
+          fontStyle: 'bold',
+          color: activa ? '#1a1a2e' : '#9aa5b8',
+        })
+        .setOrigin(0.5);
+
+      const zona = this.add.zone(x, y, anchoTab - 6, ALTO_TABS - 8);
+      zona.setInteractive({ useHandCursor: true });
+      zona.on('pointerdown', () => this.cambiarTab(posicion));
+
+      this.contenedorTabs.add([fondo, texto, zona]);
+    });
+  }
+
+  cambiarTab(posicion) {
+    if (posicion === this.posicionActiva) return;
+    this.posicionActiva = posicion;
+    this.dibujarTabs(this.scale.width);
+    this.reconstruirGrillaVisible();
+    this.actualizarUI();
+  }
+
+  // ---------------------------------------------------------------------
   // Grilla de cartas (scrollable, igual que CollectionScene) con una
-  // máscara para que no se dibujen encima del footer de abajo.
+  // máscara para que no se dibujen encima del footer de abajo. Solo
+  // muestra las cartas de this.posicionActiva (ver reconstruirGrillaVisible).
   // ---------------------------------------------------------------------
   crearGrilla(anchoPantalla, altoPantalla) {
+    this.gridContainer = this.add.container(0, INICIO_GRILLA_Y);
+
+    // Máscara: recorta el contenido de gridContainer a la franja
+    // [INICIO_GRILLA_Y, altoVisible] de la pantalla, para que al hacer
+    // scroll las cartas no se sigan viendo por encima del footer fijo de
+    // abajo (ni por encima de las tabs).
     const altoVisible = altoPantalla - ALTO_FOOTER;
+    const formaMascara = this.make.graphics({ add: false });
+    formaMascara.fillRect(0, INICIO_GRILLA_Y, anchoPantalla, altoVisible - INICIO_GRILLA_Y);
+    this.gridContainer.setMask(formaMascara.createGeometryMask());
 
-    this.gridContainer = this.add.container(0, 70);
+    this.reconstruirGrillaVisible();
 
+    this.input.on('wheel', (_pointer, _gameObjects, _deltaX, deltaY) => {
+      const nuevaY = this.gridContainer.y - deltaY;
+      this.gridContainer.y = Phaser.Math.Clamp(nuevaY, this.scrollMinY, this.scrollMaxY);
+    });
+  }
+
+  // Vacía y vuelve a armar el contenido de gridContainer con solo las
+  // cartas de this.posicionActiva. Se llama al entrar a la escena y cada
+  // vez que se toca una tab distinta (cambiarTab). contenedoresPorId
+  // también se reinicia: solo necesita tener las cartas que están
+  // efectivamente dibujadas ahora mismo (actualizarUI() solo pinta lo que
+  // está visible).
+  reconstruirGrillaVisible() {
+    this.gridContainer.removeAll(true);
+    this.contenedoresPorId.clear();
+
+    const anchoPantalla = this.scale.width;
+    const altoPantalla = this.scale.height;
     const anchoGrilla = COLUMNAS * CARD_WIDTH + (COLUMNAS - 1) * ESPACIO;
     const offsetX = (anchoPantalla - anchoGrilla) / 2;
 
-    this.cards.forEach((carta, indice) => {
+    const cartasDeLaTab = this.cards.filter((carta) => carta.position === this.posicionActiva);
+
+    cartasDeLaTab.forEach((carta, indice) => {
       const columna = indice % COLUMNAS;
       const fila = Math.floor(indice / COLUMNAS);
       const x = offsetX + columna * (CARD_WIDTH + ESPACIO) + CARD_WIDTH / 2;
@@ -133,24 +233,13 @@ export class LineupScene extends Phaser.Scene {
       this.contenedoresPorId.set(carta.user_card_id, contenedor);
     });
 
-    // Máscara: recorta el contenido de gridContainer a la franja
-    // [70, altoVisible] de la pantalla, para que al hacer scroll las
-    // cartas no se sigan viendo por encima del footer fijo de abajo.
-    const formaMascara = this.make.graphics({ add: false });
-    formaMascara.fillRect(0, 70, anchoPantalla, altoVisible - 70);
-    this.gridContainer.setMask(formaMascara.createGeometryMask());
-
-    const filasTotales = Math.ceil(this.cards.length / COLUMNAS);
+    const altoVisible = altoPantalla - ALTO_FOOTER;
+    const filasTotales = Math.max(1, Math.ceil(cartasDeLaTab.length / COLUMNAS));
     const altoContenido = MARGEN_SUPERIOR + filasTotales * CARD_HEIGHT + (filasTotales - 1) * ESPACIO + MARGEN_SUPERIOR;
 
-    this.scrollMinY = Math.min(70, altoVisible - altoContenido);
-    this.scrollMaxY = 70;
-    this.gridContainer.y = 70;
-
-    this.input.on('wheel', (_pointer, _gameObjects, _deltaX, deltaY) => {
-      const nuevaY = this.gridContainer.y - deltaY;
-      this.gridContainer.y = Phaser.Math.Clamp(nuevaY, this.scrollMinY, this.scrollMaxY);
-    });
+    this.scrollMinY = Math.min(INICIO_GRILLA_Y, altoVisible - altoContenido);
+    this.scrollMaxY = INICIO_GRILLA_Y;
+    this.gridContainer.y = INICIO_GRILLA_Y; // vuelve arriba del todo al cambiar de tab
   }
 
   // Arma una carta "clickeable": la carta visual (RevealCardSprite) más un
@@ -207,11 +296,26 @@ export class LineupScene extends Phaser.Scene {
       this.seleccionIds.add(id);
     }
 
+    this.autoSeleccionarFormacion();
     this.actualizarUI();
   }
 
   cartasSeleccionadas() {
     return [...this.seleccionIds].map((id) => this.cartasPorId.get(id));
+  }
+
+  // Cada vez que cambia la selección, mira cuántos defensores hay elegidos
+  // y si esa cantidad identifica una única formación estándar (ver
+  // formacionSugeridaPorDefensores en lineups.js), la propone sola —
+  // actualiza this.formacionElegida sin que el usuario tenga que abrir el
+  // dropdown "Cambiar formación". Si la cantidad de defensores es ambigua
+  // (por ejemplo 4, que sirve tanto para 4-4-2 como para 4-3-3) o no
+  // corresponde a ninguna formación, no toca nada: se respeta lo que ya
+  // estaba elegido, manual o no.
+  autoSeleccionarFormacion() {
+    const cantidadDef = countByPosition(this.cartasSeleccionadas()).DEF;
+    const sugerida = formacionSugeridaPorDefensores(cantidadDef);
+    if (sugerida) this.formacionElegida = sugerida;
   }
 
   // posicionCompleta indica si ya elegiste tantos jugadores de esa posición
@@ -434,7 +538,18 @@ export class LineupScene extends Phaser.Scene {
     const slots = { formation: this.formacionElegida, starters, bench };
 
     try {
-      await saveLineup(this.managerId, this.seasonNumber, this.formacionElegida, slots);
+      const lineupGuardado = await saveLineup(this.managerId, this.seasonNumber, this.formacionElegida, slots);
+
+      try {
+        const rating = calcularRatingDelOnce(seleccionadas);
+        await ensureSeason(this.managerId, lineupGuardado.season_number, rating);
+      } catch (errorSeason) {
+        // No bloquea el flujo de éxito: el 11 ya se guardó bien, y el
+        // rating snapshot se puede volver a intentar la próxima vez que
+        // el usuario confirme un 11.
+        console.error('No se pudo guardar el rating de temporada:', errorSeason);
+      }
+
       this.mostrarExito();
     } catch (error) {
       console.error('No se pudo guardar el lineup:', error);
@@ -475,7 +590,7 @@ export class LineupScene extends Phaser.Scene {
     // TODO: conectar con Fase 4 - motor de temporada (en vez de volver a
     // la colección, acá debería arrancar el flujo de jugar la temporada).
     const boton = this.add
-      .text(anchoPantalla / 2, altoPantalla / 2 + 30, 'Volver a mi colección', {
+      .text(anchoPantalla / 2, altoPantalla / 2 + 30, 'Volver a mi Dream Team', {
         fontFamily: 'Arial',
         fontSize: '16px',
         color: '#1a1a2e',

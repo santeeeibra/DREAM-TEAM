@@ -5,7 +5,14 @@
 import { supabase } from '../supabaseClient.js';
 import { openInitialPacks } from '../packOpening/openPacks.js';
 import { getManagerCards } from '../lineups.js';
+import { getManagerById } from '../managers.js';
+import { getTemporadasDeManager } from '../seasons.js';
 import { getDevGame, getDevManagerId } from './devContext.js';
+
+// Misma última temporada que ULTIMA_TEMPORADA en SeasonScene.js: no se
+// exporta desde ahí (esa escena no toca nada de dev), así que la repetimos
+// acá para armar el rango completo de la línea de tiempo.
+const ULTIMA_TEMPORADA = 8;
 
 // Escenas que existen hoy en src/scenes/, con un nombre corto para el botón.
 // El "value" es el mismo string que usa game.scene.add(...) en main.js.
@@ -13,8 +20,9 @@ export const ESCENAS_DISPONIBLES = [
   { value: 'CollectionScene', label: 'Colección' },
   { value: 'PackOpeningScene', label: 'Apertura de sobres' },
   { value: 'LineupScene', label: 'Armar 11' },
-  { value: 'MatchScene', label: 'Partido (equipos de prueba)' },
-  { value: 'TestScene', label: 'Test (motor OK)' },
+  { value: 'SeasonScene', label: 'Jugar temporada' },
+  { value: 'CareerSummaryScene', label: 'Resumen de carrera' },
+  { value: 'CareerTimelineScene', label: 'Línea de tiempo de carrera' },
 ];
 
 function requireGame() {
@@ -93,8 +101,33 @@ export async function irAPantalla(nombreEscena) {
     return;
   }
 
-  // MatchScene y TestScene no necesitan datos: arman todo solas (MatchScene
-  // arma equipos de prueba si no le pasan nada).
+  if (nombreEscena === 'SeasonScene') {
+    const managerId = requireManagerId();
+    iniciarEscenaUnica(game, 'SeasonScene', { managerId });
+    return;
+  }
+
+  if (nombreEscena === 'CareerSummaryScene') {
+    const managerId = requireManagerId();
+    iniciarEscenaUnica(game, 'CareerSummaryScene', { managerId });
+    return;
+  }
+
+  if (nombreEscena === 'CareerTimelineScene') {
+    const managerId = requireManagerId();
+    const [manager, seasons] = await Promise.all([
+      getManagerById(managerId),
+      getTemporadasDeManager(managerId),
+    ]);
+    iniciarEscenaUnica(game, 'CareerTimelineScene', {
+      managerId,
+      seasons,
+      currentSeasonNumber: manager.current_season,
+      totalSeasons: ULTIMA_TEMPORADA,
+    });
+    return;
+  }
+
   iniciarEscenaUnica(game, nombreEscena);
 }
 

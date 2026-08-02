@@ -1,29 +1,14 @@
 // RevealCardSprite.js — la carta que se muestra durante la animación de
-// apertura de sobres. Es parecida a CardSprite.js (mismo tamaño, mismo
-// estilo "escudo"), pero en vez de un ícono de color usa la foto real del
-// jugador (`cards.photo_url`) cuando está disponible, y cae a un círculo
-// de color como respaldo si esa carta todavía no tiene foto cargada.
+// apertura de sobres y en LineupScene. Es parecida a CardSprite.js (mismo
+// tamaño, mismo estilo "escudo", misma paleta de bandas de rating y mismo
+// placeholder de silueta), pero en vez de la foto/avatar de Dicebear usa
+// solo la foto real del jugador (`cards.photo_url`) cuando está disponible.
 import Phaser from 'phaser';
-import { CARD_WIDTH, CARD_HEIGHT } from './CardSprite.js';
+import { CARD_WIDTH, CARD_HEIGHT, dibujarSiluetaGenerica } from './CardSprite.js';
+import { getTier } from '../shared/ratingTiers.js';
+import { colorDeCarta } from '../shared/cardColors.js';
 
 export { CARD_WIDTH, CARD_HEIGHT };
-
-// Colores de fondo según `cards.rarity` (comun/rara/epica/legendaria),
-// que es el campo real de la base — no confundir con las bandas
-// bronze/silver/gold/special que usa CardSprite.js con datos mock.
-const COLORES_RAREZA = {
-  comun: 0x8a8a8a,
-  rara: 0x4a90d9,
-  epica: 0xd4af37,
-  legendaria: { desde: 0x6a0dad, hasta: 0x000000 },
-};
-
-const COLORES_POSICION = {
-  POR: 0xf4d03f,
-  DEF: 0x3498db,
-  MED: 0x2ecc71,
-  DEL: 0xe74c3c,
-};
 
 // Clave de textura que le corresponde a una carta si su foto llegó a
 // cargarse bien (ver PackOpeningScene.preload()).
@@ -62,9 +47,16 @@ export class RevealCardSprite extends Phaser.GameObjects.Container {
     ];
 
     const fondo = new Phaser.GameObjects.Graphics(this.scene);
-    const color = COLORES_RAREZA[this.cardData.rarity] ?? COLORES_RAREZA.comun;
 
-    if (this.cardData.rarity === 'legendaria') {
+    // La banda (Bronce/Plata/Oro/Especial) sale del overall_rating, igual
+    // que en CardSprite.js — no de cards.rarity, que es un concepto de la
+    // base totalmente distinto (probabilidad de drop en los sobres).
+    // colorDeCarta (src/shared/cardColors.js) es la ÚNICA fuente de verdad
+    // para el color de fondo: nunca hay que volver a leer cardData.rarity acá.
+    const banda = getTier(this.cardData.overall_rating);
+    const color = colorDeCarta(this.cardData);
+
+    if (banda === 'SPECIAL') {
       fondo.fillGradientStyle(color.desde, color.desde, color.hasta, color.hasta, 1);
     } else {
       fondo.fillStyle(color, 1);
@@ -77,8 +69,8 @@ export class RevealCardSprite extends Phaser.GameObjects.Container {
   }
 
   // Si la textura de la foto llegó a cargarse (ver claveImagenCarta), la
-  // dibuja centrada dentro de la carta. Si no, dibuja un círculo de color
-  // según la posición, igual que hacía CardSprite.js con datos mock.
+  // dibuja centrada dentro de la carta. Si no, dibuja la misma silueta
+  // genérica que usa CardSprite.js (no un círculo sólido de color).
   dibujarFoto() {
     const clave = claveImagenCarta(this.cardData.id);
 
@@ -89,13 +81,7 @@ export class RevealCardSprite extends Phaser.GameObjects.Container {
       return;
     }
 
-    const colorPosicion = COLORES_POSICION[this.cardData.position] ?? 0xffffff;
-    const icono = new Phaser.GameObjects.Graphics(this.scene);
-    icono.fillStyle(colorPosicion, 1);
-    icono.fillCircle(0, -10, 26);
-    icono.lineStyle(2, 0xffffff, 0.8);
-    icono.strokeCircle(0, -10, 26);
-    this.add(icono);
+    this.add(dibujarSiluetaGenerica(this.scene, 0, -10, 26));
   }
 
   dibujarRatingYPosicion() {

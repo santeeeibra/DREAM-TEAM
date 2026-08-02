@@ -3,7 +3,7 @@
 // motor de partido), sin nada de Phaser ni de pantalla: eso vive en
 // src/scenes/LineupScene.js, que usa estas funciones.
 import { supabase } from './supabaseClient.js';
-import { FORMATIONS } from './engine/matchEngine.js';
+import { FORMATIONS } from './engine/formations.js';
 
 const POSICIONES = ['POR', 'DEF', 'MED', 'DEL'];
 
@@ -11,7 +11,7 @@ const POSICIONES = ['POR', 'DEF', 'MED', 'DEL'];
 // a cuántos jugadores de cada posición tiene esa formación en cancha.
 // Los números salen de parsear la propia clave (4 DEF, 4 MED, 2 DEL) más 1
 // arquero fijo, en vez de escribirlos de nuevo acá: así esta función y
-// matchEngine.js nunca pueden quedar desincronizados sobre qué es un "4-4-2".
+// formations.js nunca pueden quedar desincronizados sobre qué es un "4-4-2".
 export function positionCountsForFormation(formationKey) {
   const [def, med, del] = formationKey.split('-').map(Number);
   return { POR: 1, DEF: def, MED: med, DEL: del };
@@ -53,13 +53,27 @@ export function formationFit(selectedCards, formationKey) {
 }
 
 // detectBestFormation prueba las 4 formaciones de FORMATIONS (importadas de
-// matchEngine.js, para no duplicar esa lista acá) y devuelve la que menos
+// formations.js, para no duplicar esa lista acá) y devuelve la que menos
 // diferencia total tiene contra las cartas seleccionadas. En caso de empate,
 // gana la primera en el orden de FORMATIONS (4-4-2). Si no hay un match
 // exacto, el resultado igual trae `faltan`/`sobran` para esa formación.
 export function detectBestFormation(selectedCards) {
   const opciones = Object.keys(FORMATIONS).map((clave) => formationFit(selectedCards, clave));
   return opciones.reduce((mejor, actual) => (actual.totalDiff < mejor.totalDiff ? actual : mejor));
+}
+
+// formacionSugeridaPorDefensores mira cuántos defensores lleva elegidos el
+// usuario y devuelve la formación de FORMATIONS cuyo requisito de DEF
+// coincide exacto con esa cantidad (ej: 5 defensores -> "5-3-2"). Si esa
+// cantidad no identifica una única formación estándar (0 formaciones piden
+// esa cantidad, o hay más de una que la pide — como 4, que sirve tanto para
+// 4-4-2 como para 4-3-3), devuelve null: en ese caso LineupScene no toca la
+// formación elegida y deja la selección manual como estaba.
+export function formacionSugeridaPorDefensores(cantidadDef) {
+  const coincidencias = Object.keys(FORMATIONS).filter(
+    (clave) => positionCountsForFormation(clave).DEF === cantidadDef
+  );
+  return coincidencias.length === 1 ? coincidencias[0] : null;
 }
 
 // resolveSeasonNumber devuelve seasonNumber tal cual si vino explícito, o
