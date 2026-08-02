@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+dream-team/node_modules/
+
+# Build output
+dist/
+dream-team/dist/
+
+# Env files (contienen SUPABASE_SERVICE_KEY y otras claves — nunca commitear)
+.env
+.env.*
+!.env.example
+dream-team/.env
+dream-team/.env.*
+!dream-team/.env.example
+
+# Supabase CLI local state
+supabase/.temp/
+
+# Logs
+npm-debug.log*
+*.log
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
