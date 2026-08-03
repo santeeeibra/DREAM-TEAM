@@ -420,6 +420,12 @@ export function simularTemporadaCompleta({ ratingPlantel, moralInicial, fatigaIn
     points,
     league_position,
     momentosDestacados,
+    // resultados: el detalle fecha a fecha (ver push más arriba en el loop).
+    // Se expone además de momentosDestacados porque careerState.js
+    // (src/state/careerState.js) lo necesita crudo para derivar el streak
+    // ACTUAL al cierre del tramo (syncStreakFromResultados), algo distinto
+    // de los hitos ya resumidos que arma construirMomentosDestacados.
+    resultados,
     // moralFinal/fatigaFinal: cómo quedaron moral y fatiga después de jugar
     // las 38 fechas (moral/fatiga van cambiando fecha a fecha, ver
     // actualizarMoral/actualizarFatiga). Quien llama a esta función los
