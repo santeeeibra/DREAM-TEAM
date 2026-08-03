@@ -57,11 +57,11 @@ export const RATING_FLOOR = 65;
 export const RATING_CEILING = 92;
 const RATING_RANGE = RATING_CEILING - RATING_FLOOR; // 27
 
-// Bandas de rareza en base al rating final. Viven en src/shared/ratingTiers.js
+// Bandas de rareza en base al rating final. Viven en src/core/ratingTiers.js
 // (sin dependencias de Node) para que el mismo getTier() lo use tanto este
 // script como la UI (CardSprite.js, color de carta). Se reexportan acá para
 // no romper los imports existentes (ej. scripts/recalibrate-ratings.js).
-export { RATING_TIERS, getTier } from "../src/shared/ratingTiers.js";
+export { RATING_TIERS, getTier } from "../src/core/ratingTiers.js";
 
 export function calculateRating(playerStats) {
   const rawScore = Math.min(extractRatingMetric(playerStats), REFERENCE_MAX_POINTS_PER_GAME);

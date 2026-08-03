@@ -11,6 +11,7 @@ import Phaser from 'phaser';
 import { CardSprite, CARD_WIDTH, CARD_HEIGHT, claveFotoCarta } from '../objects/CardSprite.js';
 import { claveAvatarIniciales, generateInitialsAvatarDataURI } from '../utils/initialsAvatar.js';
 import { resolveCardImageUrl } from '../utils/cardImage.js';
+import * as logger from '../core/logger.js';
 
 const COLUMNAS = 4;
 const ESPACIO = 20;
@@ -54,7 +55,7 @@ export class CollectionScene extends Phaser.Scene {
       }
     }
     this.load.on('loaderror', (file) => {
-      console.warn('No se pudo cargar la imagen de la carta:', file.key);
+      logger.warn('No se pudo cargar la imagen de la carta:', file.key);
     });
   }
 

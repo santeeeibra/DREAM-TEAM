@@ -6,7 +6,7 @@
 // dibujito genérica, muestra algo que identifica al jugador y respeta
 // la identidad visual de la carta.
 
-import { getTier } from '../shared/ratingTiers.js';
+import { getTier } from '../core/ratingTiers.js';
 
 // Mismos colores que COLORES_BANDA en CardSprite.js, pero como strings CSS.
 // OJO: no se pueden reutilizar los de allá tal cual — Phaser usa números

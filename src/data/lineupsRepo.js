@@ -1,9 +1,10 @@
-// lineups.js — todo lo relacionado a guardar y armar el 11 titular de un
+// lineupsRepo.js — todo lo relacionado a guardar y armar el 11 titular de un
 // manager. Es lógica de datos (habla con Supabase y con las formaciones del
 // motor de partido), sin nada de Phaser ni de pantalla: eso vive en
 // src/scenes/LineupScene.js, que usa estas funciones.
 import { supabase } from './supabaseClient.js';
-import { FORMATIONS } from './engine/formations.js';
+import { FORMATIONS } from '../engine/formations.js';
+import { DataError } from '../core/errors.js';
 
 const POSICIONES = ['POR', 'DEF', 'MED', 'DEL'];
 
@@ -88,7 +89,7 @@ async function resolveSeasonNumber(managerId, seasonNumber) {
     .select('current_season')
     .eq('id', managerId)
     .single();
-  if (error) throw error;
+  if (error) throw new DataError(error.message, { causa: error });
   return data.current_season;
 }
 
@@ -104,7 +105,7 @@ export async function getLineup(managerId, seasonNumber = null) {
     .eq('manager_id', managerId)
     .eq('season_number', season)
     .maybeSingle();
-  if (error) throw error;
+  if (error) throw new DataError(error.message, { causa: error });
   return data;
 }
 
@@ -133,41 +134,11 @@ export async function saveLineup(managerId, seasonNumber, formation, slots) {
       .eq('id', existente.id)
       .select()
       .single();
-    if (error) throw error;
+    if (error) throw new DataError(error.message, { causa: error });
     return data;
   }
 
   const { data, error } = await supabase.from('lineups').insert(fila).select().single();
-  if (error) throw error;
+  if (error) throw new DataError(error.message, { causa: error });
   return data;
-}
-
-// getManagerCards trae las cartas que efectivamente posee un manager
-// (join entre `user_cards`, la tabla de inventario, y `cards`, el catálogo),
-// en el formato que ya esperan CardSprite/RevealCardSprite (name, club,
-// position, overall_rating, rarity, photo_url, etc).
-//
-// Le agregamos `user_card_id` (el id de la fila en user_cards, o sea "esta
-// copia puntual que tiene el manager") separado de `id` (que queda como el
-// id de la carta en el catálogo `cards`, el mismo que usan las fotos
-// precargadas). Guardamos los lineups con user_card_id para no confundir
-// nunca "qué jugador es" con "cuál de mis copias es".
-export async function getManagerCards(managerId) {
-  const { data, error } = await supabase
-    .from('user_cards')
-    .select(
-      'id, cards (id, name, club, position, overall_rating, rarity, photo_url, fut_id, uses_generated_avatar, club_badge_url, nation_flag_url, league_logo_url)'
-    )
-    .eq('manager_id', managerId);
-
-  if (error) throw error;
-
-  return data
-    .map((fila) => ({
-      ...fila.cards,
-      user_card_id: fila.id,
-    }))
-    // Solo cartas con foto real: los jugadores con photo_url null/undefined
-    // o vacío no se muestran en el juego (evita fallos al cargar texturas).
-    .filter((carta) => carta.photo_url && carta.photo_url.trim() !== '');
 }

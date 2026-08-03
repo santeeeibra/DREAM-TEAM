@@ -1,18 +1,12 @@
 // devActions.js — la lógica de cada botón del panel de dev. Ninguna función
 // acá "inventa" datos ni simula nada por su cuenta: todas usan las mismas
 // funciones que usa el juego real (openInitialPacks, getManagerCards,
-// supabase), solo que sin las validaciones/flujo normal de por medio.
-import { supabase } from '../supabaseClient.js';
-import { openInitialPacks } from '../packOpening/openPacks.js';
-import { getManagerCards } from '../lineups.js';
-import { getManagerById } from '../managers.js';
-import { getTemporadasDeManager } from '../seasons.js';
+// borrarManager), solo que sin las validaciones/flujo normal de por medio.
+import { openInitialPacks, getManagerCards, borrarCartasDeManager } from '../data/cardsRepo.js';
+import { getManagerById, borrarManager } from '../data/managersRepo.js';
+import { getTemporadasDeManager } from '../data/seasonsRepo.js';
 import { getDevGame, getDevManagerId } from './devContext.js';
-
-// Misma última temporada que ULTIMA_TEMPORADA en SeasonScene.js: no se
-// exporta desde ahí (esa escena no toca nada de dev), así que la repetimos
-// acá para armar el rango completo de la línea de tiempo.
-const ULTIMA_TEMPORADA = 8;
+import { ULTIMA_TEMPORADA } from '../core/constants.js';
 
 // Escenas que existen hoy en src/scenes/, con un nombre corto para el botón.
 // El "value" es el mismo string que usa game.scene.add(...) en main.js.
@@ -136,8 +130,7 @@ export async function irAPantalla(nombreEscena) {
 // apertura de sobres sin tener que resetear la cuenta entera.
 export async function vaciarPlantel() {
   const managerId = requireManagerId();
-  const { error } = await supabase.from('user_cards').delete().eq('manager_id', managerId);
-  if (error) throw error;
+  await borrarCartasDeManager(managerId);
 }
 
 // Botón 4: borra el manager actual. Las tablas user_cards, lineups,
@@ -147,6 +140,5 @@ export async function vaciarPlantel() {
 // migrations/ + el schema real en Supabase para confirmar esas FKs.
 export async function resetearCuenta() {
   const managerId = requireManagerId();
-  const { error } = await supabase.from('managers').delete().eq('id', managerId);
-  if (error) throw error;
+  await borrarManager(managerId);
 }

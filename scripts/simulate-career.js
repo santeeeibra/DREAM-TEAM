@@ -11,7 +11,7 @@
 // DECISIONES DE DISEÑO Y HALLAZGOS (leer antes de tocar este archivo)
 // -----------------------------------------------------------------------
 //
-// 1) careerState.js importa src/supabaseClient.js, que llama a
+// 1) careerState.js importa src/data/supabaseClient.js, que llama a
 //    createClient() con import.meta.env.VITE_SUPABASE_URL — una variable que
 //    solo existe bajo Vite, no en Node puro. Importar careerState.js con un
 //    `node` normal explota apenas se evalúa ese import (import.meta.env es
@@ -114,7 +114,7 @@ globalThis.Math.random = crearMulberry32(args.seed);
 // -----------------------------------------------------------------------
 const HOOK_CODE = `
 export async function resolve(specifier, context, nextResolve) {
-  if (specifier.endsWith('supabaseClient.js')) {
+  if (specifier.endsWith('data/supabaseClient.js')) {
     return {
       url: 'data:text/javascript,export const supabase = {};',
       shortCircuit: true,

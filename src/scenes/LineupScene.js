@@ -12,10 +12,11 @@ import {
   formationFit,
   positionCountsForFormation,
   saveLineup,
-} from '../lineups.js';
-import { calcularRatingDelOnce, ensureSeason } from '../seasons.js';
+} from '../data/lineupsRepo.js';
+import { calcularRatingDelOnce, ensureSeason } from '../data/seasonsRepo.js';
 import { COLORS, FONTS } from '../theme/tokens.js';
-import { getTier } from '../shared/ratingTiers.js';
+import { getTier } from '../core/ratingTiers.js';
+import * as logger from '../core/logger.js';
 
 const COLUMNAS = 4;
 const ESPACIO = 14;
@@ -132,7 +133,7 @@ export class LineupScene extends Phaser.Scene {
     for (const carta of this.cards) {
       const clave = claveImagenCarta(carta.id);
       const urlImagen = resolveCardImageUrl(carta);
-      console.log('[DEBUG]', carta.name, { fut_id: carta.fut_id, photo_url: carta.photo_url, urlImagen });
+      logger.log('[DEBUG]', carta.name, { fut_id: carta.fut_id, photo_url: carta.photo_url, urlImagen });
       if (urlImagen && !this.textures.exists(clave)) {
         this.load.image(clave, urlImagen);
       }
@@ -151,7 +152,7 @@ export class LineupScene extends Phaser.Scene {
     // el loader sigue con el resto y RevealCardSprite ya chequea
     // this.scene.textures.exists() antes de dibujar cada ícono.
     this.load.on('loaderror', (file) => {
-      console.warn('[DEBUG loaderror]', file.key, file.src);
+      logger.warn('[DEBUG loaderror]', file.key, file.src);
     });
   }
 
@@ -772,12 +773,12 @@ export class LineupScene extends Phaser.Scene {
         // No bloquea el flujo de éxito: el 11 ya se guardó bien, y el
         // rating snapshot se puede volver a intentar la próxima vez que
         // el usuario confirme un 11.
-        console.error('No se pudo guardar el rating de temporada:', errorSeason);
+        logger.error('No se pudo guardar el rating de temporada:', errorSeason);
       }
 
       this.mostrarExito();
     } catch (error) {
-      console.error('No se pudo guardar el lineup:', error);
+      logger.error('No se pudo guardar el lineup:', error);
       this.botonConfirmar.setText('CONFIRMAR 11');
       this.actualizarBotonConfirmar(); // vuelve a habilitarlo (la selección sigue siendo válida)
       this.mostrarError(error);

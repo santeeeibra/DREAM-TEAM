@@ -6,10 +6,9 @@
 //      25 cartas apenas se crea el DT.
 import './style.css';
 import Phaser from 'phaser';
-import { signIn, signUp, signInAnonymously, getCurrentUser, traducirErrorAuth } from './auth.js';
-import { getManagerForUser, createManager } from './managers.js';
-import { openInitialPacks } from './packOpening/openPacks.js';
-import { getManagerCards } from './lineups.js';
+import { signIn, signUp, signInAnonymously, getCurrentUser, traducirErrorAuth } from './data/authRepo.js';
+import { getManagerForUser, createManager } from './data/managersRepo.js';
+import { openInitialPacks, getManagerCards } from './data/cardsRepo.js';
 import { countries } from './data/countries.js';
 import { leagues } from './data/leagues.js';
 import { CustomSelect } from './ui/CustomSelect.js';

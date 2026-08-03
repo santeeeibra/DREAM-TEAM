@@ -6,6 +6,7 @@ import Phaser from 'phaser';
 import { RevealCardSprite, CARD_WIDTH, CARD_HEIGHT, claveImagenCarta } from '../objects/RevealCardSprite.js';
 import { claveAvatarIniciales, generateInitialsAvatarDataURI } from '../utils/initialsAvatar.js';
 import { resolveCardImageUrl } from '../utils/cardImage.js';
+import * as logger from '../core/logger.js';
 
 export class PackOpeningScene extends Phaser.Scene {
   constructor() {
@@ -47,7 +48,7 @@ export class PackOpeningScene extends Phaser.Scene {
       }
     }
     this.load.on('loaderror', (file) => {
-      console.warn('No se pudo cargar la foto:', file.key);
+      logger.warn('No se pudo cargar la foto:', file.key);
     });
   }
 
@@ -183,7 +184,7 @@ export class PackOpeningScene extends Phaser.Scene {
       return acc;
     }, {});
 
-    console.log('Plantel completo (25 cartas):', plantel);
+    logger.log('Plantel completo (25 cartas):', plantel);
 
     this.titulo.setText('¡Tu plantel de 25 jugadores está listo!');
     this.instruccion.setText('');

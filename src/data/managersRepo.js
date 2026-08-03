@@ -3,6 +3,7 @@
 // `auth.uid() = user_id`, así que solo se puede crear/leer el manager
 // del usuario que está logueado en ese momento.
 import { supabase } from './supabaseClient.js';
+import { DataError } from '../core/errors.js';
 
 // Busca si el usuario logueado ya tiene un DT creado. Devuelve el manager
 // (fila completa) o null si todavía no creó ninguno.
@@ -13,7 +14,7 @@ export async function getManagerForUser(userId) {
     .eq('user_id', userId)
     .maybeSingle();
 
-  if (error) throw error;
+  if (error) throw new DataError(error.message, { causa: error });
   return data;
 }
 
@@ -33,7 +34,7 @@ export async function createManager({ userId, name, country, league, club }) {
     .select()
     .single();
 
-  if (error) throw error;
+  if (error) throw new DataError(error.message, { causa: error });
   return data;
 }
 
@@ -42,7 +43,7 @@ export async function createManager({ userId, name, country, league, club }) {
 // parámetro de escena y no necesariamente tiene al usuario logueado a mano.
 export async function getManagerById(managerId) {
   const { data, error } = await supabase.from('managers').select('*').eq('id', managerId).single();
-  if (error) throw error;
+  if (error) throw new DataError(error.message, { causa: error });
   return data;
 }
 
@@ -53,5 +54,5 @@ export async function getManagerById(managerId) {
 // CareerSummaryScene), no para el panel de dev.
 export async function borrarManager(managerId) {
   const { error } = await supabase.from('managers').delete().eq('id', managerId);
-  if (error) throw error;
+  if (error) throw new DataError(error.message, { causa: error });
 }

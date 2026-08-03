@@ -7,7 +7,7 @@
 // Ojo: esto es independiente de la columna `cards.rarity`
 // (comun/rara/epica/legendaria), que es un concepto totalmente distinto
 // (probabilidad de drop en los sobres) — ver migrations/004_open_pack.sql.
-import { getTier } from './ratingTiers.js';
+import { getTier } from '../core/ratingTiers.js';
 import { COLORS } from '../theme/tokens.js';
 
 // Los números tipo 0xRRGGBB son la forma en que Phaser espera los colores

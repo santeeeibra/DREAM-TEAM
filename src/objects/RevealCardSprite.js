@@ -5,7 +5,7 @@
 // solo la foto real del jugador (`cards.photo_url`) cuando está disponible.
 import Phaser from 'phaser';
 import { CARD_WIDTH, CARD_HEIGHT } from './CardSprite.js';
-import { getTier } from '../shared/ratingTiers.js';
+import { getTier } from '../core/ratingTiers.js';
 import { colorDeCarta } from '../shared/cardColors.js';
 import { claveAvatarIniciales } from '../utils/initialsAvatar.js';
 import { FONTS } from '../theme/tokens.js';

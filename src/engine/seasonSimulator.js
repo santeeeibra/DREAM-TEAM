@@ -35,9 +35,9 @@
 // lambda tan absurdo que le garantice una goleada todas las veces. Eso es lo
 // que permite que haya upsets ocasionales sin que sean el pan de cada día.
 
-export const TOTAL_MATCHDAYS = 38;
+import { TOTAL_MATCHDAYS, CANTIDAD_RIVALES } from '../core/constants.js';
 
-const CANTIDAD_RIVALES = 19; // 19 rivales x ida y vuelta = 38 fechas
+export { TOTAL_MATCHDAYS };
 
 // --- Escala de rating (mismo 0-99 que usa el resto del juego) ---
 const RATING_MIN = 40;

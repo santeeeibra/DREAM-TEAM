@@ -1,16 +1,17 @@
-// seasons.js — todo lo que tiene que ver con jugar una temporada: la tabla
-// `seasons` (una fila por manager+temporada, con el resultado de la liga y
-// moral/fatiga del plantel), `season_events` (qué opción eligió el jugador
-// en cada evento de la temporada) y `events_catalog` (el catálogo de
-// eventos disponibles). Es lógica de datos (habla con Supabase), sin nada
-// de Phaser: eso vive en src/scenes/SeasonScene.js, que usa estas funciones
-// igual que LineupScene.js usa lineups.js.
+// seasonsRepo.js — todo lo que tiene que ver con jugar una temporada: la
+// tabla `seasons` (una fila por manager+temporada, con el resultado de la
+// liga y moral/fatiga del plantel), `season_events` (qué opción eligió el
+// jugador en cada evento de la temporada) y `events_catalog` (el catálogo
+// de eventos disponibles). Es lógica de datos (habla con Supabase), sin
+// nada de Phaser: eso vive en src/scenes/SeasonScene.js, que usa estas
+// funciones igual que LineupScene.js usa lineupsRepo.js.
 import { supabase } from './supabaseClient.js';
-import { getLineup } from './lineups.js';
+import { getLineup } from './lineupsRepo.js';
 import {
   MORAL_INICIAL_POR_DEFECTO as MORAL_INICIAL,
   FATIGA_INICIAL_POR_DEFECTO as FATIGA_INICIAL,
-} from './engine/seasonSimulator.js';
+} from '../engine/seasonSimulator.js';
+import { DataError } from '../core/errors.js';
 
 // getManagerParaTemporada trae los datos del manager que necesita
 // SeasonScene antes de arrancar: `current_season` (para resolver la
@@ -21,7 +22,7 @@ export async function getManagerParaTemporada(managerId) {
     .select('id, money, current_season')
     .eq('id', managerId)
     .single();
-  if (error) throw error;
+  if (error) throw new DataError(error.message, { causa: error });
   return data;
 }
 
@@ -44,7 +45,7 @@ export function calcularRatingDelOnce(starterCards) {
 export async function ratingDelOnceTitular(managerId, seasonNumber) {
   const lineup = await getLineup(managerId, seasonNumber);
   if (!lineup || !lineup.slots?.starters?.length) {
-    throw new Error('Este manager todavía no tiene un 11 titular guardado para esta temporada.');
+    throw new DataError('Este manager todavía no tiene un 11 titular guardado para esta temporada.');
   }
 
   const userCardIds = lineup.slots.starters.map((titular) => titular.card_id);
@@ -52,7 +53,7 @@ export async function ratingDelOnceTitular(managerId, seasonNumber) {
     .from('user_cards')
     .select('id, cards (overall_rating)')
     .in('id', userCardIds);
-  if (error) throw error;
+  if (error) throw new DataError(error.message, { causa: error });
 
   return calcularRatingDelOnce(data.map((fila) => fila.cards));
 }
@@ -72,7 +73,7 @@ export async function ensureSeason(managerId, seasonNumber, rating) {
     .eq('manager_id', managerId)
     .eq('season_number', seasonNumber)
     .maybeSingle();
-  if (errorBusqueda) throw errorBusqueda;
+  if (errorBusqueda) throw new DataError(errorBusqueda.message, { causa: errorBusqueda });
 
   if (existente) {
     const { data, error } = await supabase
@@ -81,7 +82,7 @@ export async function ensureSeason(managerId, seasonNumber, rating) {
       .eq('id', existente.id)
       .select()
       .single();
-    if (error) throw error;
+    if (error) throw new DataError(error.message, { causa: error });
     return data;
   }
 
@@ -96,7 +97,7 @@ export async function ensureSeason(managerId, seasonNumber, rating) {
     })
     .select()
     .single();
-  if (error) throw error;
+  if (error) throw new DataError(error.message, { causa: error });
   return data;
 }
 
@@ -125,7 +126,7 @@ export async function getOrCreateSeasonRow(
     .eq('manager_id', managerId)
     .eq('season_number', seasonNumber)
     .maybeSingle();
-  if (errorBusqueda) throw errorBusqueda;
+  if (errorBusqueda) throw new DataError(errorBusqueda.message, { causa: errorBusqueda });
   if (existente) return existente;
 
   const filaNueva = {
@@ -142,7 +143,7 @@ export async function getOrCreateSeasonRow(
     .insert(filaNueva)
     .select()
     .single();
-  if (errorCreacion) throw errorCreacion;
+  if (errorCreacion) throw new DataError(errorCreacion.message, { causa: errorCreacion });
   return creada;
 }
 
@@ -150,8 +151,11 @@ export async function getOrCreateSeasonRow(
 // que es lo que necesita elegirEventosDeTemporada() (src/engine/eventSlots.js)
 // para armar el calendario de eventos de la temporada.
 export async function getEventosActivos() {
-  const { data, error } = await supabase.from('events_catalog').select('*').eq('active', true);
-  if (error) throw error;
+  const { data, error } = await supabase
+    .from('events_catalog')
+    .select('id:code, titulo:title, descripcion:description, options, weight, min_matchday')
+    .eq('active', true);
+  if (error) throw new DataError(error.message, { causa: error });
   return data;
 }
 
@@ -168,7 +172,7 @@ export async function guardarEventoResuelto(seasonId, eventCode, matchday, chose
     effects_applied: effectsApplied,
     resolved: true,
   });
-  if (error) throw error;
+  if (error) throw new DataError(error.message, { causa: error });
 }
 
 // cerrarTemporada actualiza la fila de `seasons` con el resultado final de
@@ -192,7 +196,7 @@ export async function cerrarTemporada(seasonId, resumen, moralFinal, fatigaFinal
     .eq('id', seasonId)
     .select()
     .single();
-  if (error) throw error;
+  if (error) throw new DataError(error.message, { causa: error });
   return data;
 }
 
@@ -202,7 +206,7 @@ export async function cerrarTemporada(seasonId, resumen, moralFinal, fatigaFinal
 // cerrarTemporada.
 export async function actualizarMoneyManager(managerId, nuevoMonto) {
   const { error } = await supabase.from('managers').update({ money: nuevoMonto }).eq('id', managerId);
-  if (error) throw error;
+  if (error) throw new DataError(error.message, { causa: error });
 }
 
 // getTemporadasDeManager trae TODAS las filas de `seasons` de un manager
@@ -214,7 +218,7 @@ export async function getTemporadasDeManager(managerId) {
     .select('*')
     .eq('manager_id', managerId)
     .order('season_number', { ascending: true });
-  if (error) throw error;
+  if (error) throw new DataError(error.message, { causa: error });
   return data;
 }
 
@@ -237,7 +241,7 @@ export async function crearSiguienteTemporada(
     .from('managers')
     .update({ current_season: siguienteNumero })
     .eq('id', managerId);
-  if (error) throw error;
+  if (error) throw new DataError(error.message, { causa: error });
 
   return getOrCreateSeasonRow(
     managerId,

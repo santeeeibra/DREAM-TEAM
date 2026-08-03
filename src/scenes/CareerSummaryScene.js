@@ -1,6 +1,6 @@
 // CareerSummaryScene.js — pantalla de resumen de carrera: se llega acá
 // cuando el manager termina la última temporada (ver ULTIMA_TEMPORADA en
-// SeasonScene.js). Trae TODAS las filas de `seasons` de ese manager y
+// src/core/constants.js). Trae TODAS las filas de `seasons` de ese manager y
 // muestra, temporada por temporada, cómo le fue, más un resumen agregado
 // de toda la carrera.
 //
@@ -9,9 +9,10 @@
 // resetearCuenta() del panel de dev, ver src/dev/devActions.js) para
 // empezar de cero.
 import Phaser from 'phaser';
-import { getManagerById, borrarManager } from '../managers.js';
-import { getTemporadasDeManager } from '../seasons.js';
-import { getManagerCards } from '../lineups.js';
+import { getManagerById, borrarManager } from '../data/managersRepo.js';
+import { getTemporadasDeManager } from '../data/seasonsRepo.js';
+import { getManagerCards } from '../data/cardsRepo.js';
+import * as logger from '../core/logger.js';
 
 // Franja fija de arriba (nombre del DT + club/liga), no se mueve con el
 // scroll. Mismo criterio que CollectionScene: solo el contenido de abajo
@@ -75,7 +76,7 @@ export class CareerSummaryScene extends Phaser.Scene {
   }
 
   mostrarError(error) {
-    console.error('[CareerSummaryScene] Error cargando el resumen de carrera:', error);
+    logger.error('[CareerSummaryScene] Error cargando el resumen de carrera:', error);
     this.limpiarPantalla();
     const anchoPantalla = this.scale.width;
     const altoPantalla = this.scale.height;

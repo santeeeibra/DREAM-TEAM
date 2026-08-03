@@ -24,7 +24,8 @@ import { TOTAL_MATCHDAYS, construirMomentosDestacados } from '../engine/seasonSi
 import { simularHastaProximoEvento, aplicarDecisionYContinuar } from '../engine/seasonOrchestrator.js';
 import { calcularTablaFinal } from '../engine/leagueTable.js';
 import * as careerState from '../state/careerState.js';
-import { getLineup, getManagerCards } from '../lineups.js';
+import { getLineup } from '../data/lineupsRepo.js';
+import { getManagerCards } from '../data/cardsRepo.js';
 import {
   cerrarTemporada,
   crearSiguienteTemporada,
@@ -32,16 +33,14 @@ import {
   getManagerParaTemporada,
   getOrCreateSeasonRow,
   ratingDelOnceTitular,
-} from '../seasons.js';
+} from '../data/seasonsRepo.js';
+import { ULTIMA_TEMPORADA, CANTIDAD_RIVALES, RIVALES_SPREAD, RIVALES_MIN, RIVALES_MAX } from '../core/constants.js';
+import * as logger from '../core/logger.js';
 
 // Clave de sessionStorage donde se guarda el `estado` de la temporada en
 // curso después de cada tramo simulado. Permite retomarla si el jugador
 // recarga la página a mitad de camino (ver init/create y avanzarSimulacion).
 const CLAVE_ESTADO_TEMPORADA = 'dreamteam_season_estado';
-
-// Misma última temporada que ULTIMA_TEMPORADA en src/dev/devActions.js: no
-// se sincroniza automáticamente, si se cambia una hay que cambiar la otra.
-const ULTIMA_TEMPORADA = 8;
 
 // --- Generación de la liga de rivales de la temporada ---
 //
@@ -54,10 +53,6 @@ const ULTIMA_TEMPORADA = 8;
 // orquestador no conoce pero que le hace `{...estado}` en cada tramo (ver
 // avanzar() en seasonOrchestrator.js), así que sobrevive intacto de tramo en
 // tramo y también al serializarse en sessionStorage.
-const CANTIDAD_RIVALES = 19;
-const RIVALES_SPREAD = 14;
-const RIVALES_MIN = 40;
-const RIVALES_MAX = 99;
 
 function generarRivalesFuerza(ratingBase) {
   const rivales = [];
@@ -113,7 +108,7 @@ export class SeasonScene extends Phaser.Scene {
   }
 
   mostrarError(error) {
-    console.error('[SeasonScene] Error preparando la temporada:', error);
+    logger.error('[SeasonScene] Error preparando la temporada:', error);
     this.limpiarPantalla();
     const anchoPantalla = this.scale.width;
     const altoPantalla = this.scale.height;
@@ -161,7 +156,7 @@ export class SeasonScene extends Phaser.Scene {
         const cards = await getManagerCards(this.managerId);
         this.scene.start('CollectionScene', { managerId: this.managerId, cards });
       } catch (errorCards) {
-        console.error('[SeasonScene] No se pudieron cargar las cartas para la colección:', errorCards);
+        logger.error('[SeasonScene] No se pudieron cargar las cartas para la colección:', errorCards);
       }
     });
 
@@ -214,7 +209,7 @@ export class SeasonScene extends Phaser.Scene {
           seasonNumber: this.seasonNumber,
         });
       } catch (error) {
-        console.error('[SeasonScene] No se pudieron cargar las cartas para armar el 11:', error);
+        logger.error('[SeasonScene] No se pudieron cargar las cartas para armar el 11:', error);
         this.mostrarError(error);
       }
     });
@@ -250,55 +245,7 @@ export class SeasonScene extends Phaser.Scene {
 
       const ratingBase = await ratingDelOnceTitular(this.managerId, this.seasonNumber);
 
-      console.log('[DEBUG] Eventos activos cargados:', eventosActivos);
-
-      // Fallback mock: si la DB no tiene eventos cargados todavía, usamos
-      // una lista temporal para que el orquestador encuentre eventos durante
-      // la temporada y podamos probar el flujo narrativo.
-      //
-      // OJO con la estructura: eventSlots.js espera `min_matchday` (no
-      // jornada_min) y `weight` (no probabilidad) para el sorteo ponderado.
-      // El resto (id/titulo/descripcion/options) es lo que consume EventScene.
-      if (!eventosActivos || eventosActivos.length === 0) {
-        console.warn('[DEBUG] No hay eventos en la DB, usando fallback mock');
-        this.eventosActivos = [
-          {
-            id: 'evento_prensa_1',
-            titulo: 'Conferencia de Prensa picante',
-            descripcion: 'Los periodistas cuestionan tu planteo táctico antes del clásico.',
-            min_matchday: 1,
-            weight: 10,
-            options: [
-              { id: 'opt_1', label: 'Responder con confianza', effects: { morale: 5 } },
-              { id: 'opt_2', label: 'Evitar polémica', effects: { pressure: -5 } },
-            ],
-          },
-          {
-            id: 'evento_lesion_1',
-            titulo: 'Lesión en entrenamiento',
-            descripcion: 'Un titular se resintió en la práctica y es duda para la próxima fecha.',
-            min_matchday: 5,
-            weight: 5,
-            options: [
-              { id: 'opt_1', label: 'Darle descanso', effects: { morale: -3, fatigue: -10 } },
-              { id: 'opt_2', label: 'Apretar los dientes', effects: { morale: 3, fatigue: 10 } },
-            ],
-          },
-          {
-            id: 'evento_derbi_1',
-            titulo: 'Semana del derbi',
-            descripcion: 'La ciudad entera habla del partido contra el rival histórico.',
-            min_matchday: 25,
-            weight: 10,
-            options: [
-              { id: 'opt_1', label: 'Motivar al equipo', effects: { morale: 8 } },
-              { id: 'opt_2', label: 'Mantener la calma', effects: { pressure: -8 } },
-            ],
-          },
-        ];
-      } else {
-        this.eventosActivos = eventosActivos;
-      }
+      this.eventosActivos = eventosActivos;
 
       this.seasonRow = seasonRow;
 

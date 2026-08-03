@@ -15,6 +15,7 @@
 // 200) — así nunca hay opciones activas sobre un texto a medio cargar.
 import Phaser from 'phaser';
 import * as careerState from '../state/careerState.js';
+import * as logger from '../core/logger.js';
 
 const NARRAR_EVENTO_ENDPOINT = '/api/narrar-evento';
 const NARRAR_EVENTO_TIMEOUT_MS = 4000;
@@ -122,7 +123,7 @@ export class EventScene extends Phaser.Scene {
         }
       }
     } catch (error) {
-      console.error('EventScene: fallo al pedir narración, usando descripción base:', error.message);
+      logger.error('EventScene: fallo al pedir narración, usando descripción base:', error.message);
     } finally {
       clearTimeout(timeoutId);
     }

@@ -3,7 +3,7 @@
 // cartas disponibles y devuelve cuáles le tocaron al jugador. Así se puede
 // leer y probar sin depender de la base de datos ni de la pantalla.
 
-import { getTier } from '../shared/ratingTiers.js';
+import { getTier } from '../core/ratingTiers.js';
 
 // Mínimos garantizados por posición. Suman 18 de las 25 cartas totales.
 export const MINIMOS_POR_POSICION = {

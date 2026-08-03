@@ -35,7 +35,7 @@
 // El progreso a largo plazo del plantel NO vive acá: vive en el ratingBase que
 // administra el orquestador, que es inmutable dentro de una temporada y solo
 // cambia entre temporadas por una decisión explícita fuera de este sistema.
-import { supabase } from '../supabaseClient.js';
+import { supabase } from '../data/supabaseClient.js';
 
 // --- Clamps de las 5 variables que administra este archivo ---
 const MORALE_MIN = 0;
