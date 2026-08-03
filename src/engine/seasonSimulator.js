@@ -67,6 +67,35 @@ const FATIGA_MAX = 100;
 const FATIGA_INCREMENTO_POR_PARTIDO = 6; // desgaste de jugar la fecha
 const FATIGA_RECUPERACION_RATE = 0.12; // % de la fatiga acumulada que se recupera entre fecha y fecha
 
+// --- Reversión a la media de moral (mitiga el "pozo gravitacional": con la
+// actualización fecha a fecha sin reversión, ~53% de las carreras terminaban
+// con moral final <30 y sin recuperación posterior a cruzar ese umbral). k es
+// la fracción de la distancia a MORAL_REVERSION_MEDIA que se revierte cada
+// fecha, aplicada DESPUÉS del delta del resultado y ANTES de clampear a
+// [MORAL_MIN, MORAL_MAX] (ver actualizarMoral). k=0 reproduce exactamente el
+// comportamiento viejo (sin reversión).
+//
+// k=0.15 quedó fijado como default de producción tras comparar 0.05/0.10/0.15
+// con el harness (scripts/simulate-career.js). Se resuelve en
+// resolverKReversion(), que prioriza (1) el parámetro explícito que le llegue
+// a simularTramo / simularTemporadaCompleta y, si no vino, (2) la env var
+// MORAL_REVERSION_K — pensada para poder correr scripts/simulate-career.js con
+// otros valores de k sin tocar código entre corridas
+// (`MORAL_REVERSION_K=0.1 node ...`) — y por último (3)
+// K_REVERSION_MEDIA_DEFAULT.
+const MORAL_REVERSION_MEDIA = 50;
+const K_REVERSION_MEDIA_DEFAULT = 0.15;
+
+function resolverKReversion(kExplicito) {
+  if (kExplicito !== undefined) return kExplicito;
+  // typeof process !== 'undefined': este archivo también se bundlea para el
+  // browser (Vite), donde no existe `process` salvo que algo lo polyfillee.
+  if (typeof process !== 'undefined' && process.env && process.env.MORAL_REVERSION_K !== undefined) {
+    return parseFloat(process.env.MORAL_REVERSION_K);
+  }
+  return K_REVERSION_MEDIA_DEFAULT;
+}
+
 // Punto de partida de moral/fatiga cuando se arranca un tramo sin estado
 // previo. Mismos valores que las columnas seasons.morale / seasons.fatigue
 // en la base para la temporada 1 de un manager recién creado (src/seasons.js
@@ -178,11 +207,15 @@ function generarRivalesAlrededorDe(ratingPlantel) {
 // -----------------------------------------------------------------------
 
 // actualizarMoral sube o baja la moral según el resultado de la fecha que se
-// acaba de jugar, siempre acotada entre MORAL_MIN y MORAL_MAX.
-function actualizarMoral(moralActual, resultado) {
+// acaba de jugar y después revierte una fracción k de esa moral hacia
+// MORAL_REVERSION_MEDIA (ver comentario de la constante), siempre acotada
+// entre MORAL_MIN y MORAL_MAX al final.
+function actualizarMoral(moralActual, resultado, k) {
   const delta =
     resultado === 'win' ? MORAL_GANANDO : resultado === 'draw' ? MORAL_EMPATANDO : MORAL_PERDIENDO;
-  return clamp(moralActual + delta, MORAL_MIN, MORAL_MAX);
+  const moralCruda = moralActual + delta;
+  const moralConReversion = moralCruda + (MORAL_REVERSION_MEDIA - moralCruda) * k;
+  return clamp(moralConReversion, MORAL_MIN, MORAL_MAX);
 }
 
 // actualizarFatiga suma el desgaste de jugar la fecha y después recupera un
@@ -400,6 +433,9 @@ function crearEstadoInicial(estado = {}) {
 //     ratingPlantel y el punto de partida de moral/fatiga/contadores. En el
 //     primer tramo alcanza con pasar { ratingPlantel } (y, si se quiere,
 //     moral/fatiga distintos de los defaults).
+//   - k (opcional): fracción de reversión a la media para actualizarMoral
+//     (ver comentario de MORAL_REVERSION_MEDIA). Si no se pasa, se resuelve
+//     con resolverKReversion (env var MORAL_REVERSION_K o el default).
 //
 // INDEXADO DE rivalesFuerza: la jornada es 1-based y el array 0-based, así
 // que la jornada N enfrenta a rivalesFuerza[(N - 1) % 19]. Es decir:
@@ -407,8 +443,9 @@ function crearEstadoInicial(estado = {}) {
 // jornada 20 vuelve a rivalesFuerza[0] (la revancha de la fecha 1). La
 // primera rueda (fechas 1-19) se juega de local y la segunda (20-38) de
 // visitante, así cada rival aparece exactamente dos veces.
-export function simularTramo({ desdeJornada, hastaJornada, rivalesFuerza, estado }) {
+export function simularTramo({ desdeJornada, hastaJornada, rivalesFuerza, estado, k }) {
   const nuevoEstado = crearEstadoInicial(estado);
+  const kReversion = resolverKReversion(k);
 
   // Tramo vacío (típicamente la pretemporada, antes de la fecha 1): copia sin
   // tocar nada. Ojo que esto se chequea ANTES de resolver rivales, para no
@@ -472,7 +509,7 @@ export function simularTramo({ desdeJornada, hastaJornada, rivalesFuerza, estado
       resultado,
     });
 
-    nuevoEstado.moral = actualizarMoral(nuevoEstado.moral, resultado);
+    nuevoEstado.moral = actualizarMoral(nuevoEstado.moral, resultado, kReversion);
     nuevoEstado.fatiga = actualizarFatiga(nuevoEstado.fatiga);
   }
 
@@ -499,10 +536,12 @@ export function simularTramo({ desdeJornada, hastaJornada, rivalesFuerza, estado
 //     se genera una lista nueva distribuida alrededor de ratingPlantel (ver
 //     generarRivalesAlrededorDe). Pasarla explícitamente es lo que permite
 //     testear la función con una liga fija y determinística.
+//   - k (opcional): fracción de reversión a la media que usa actualizarMoral
+//     dentro del tramo (ver resolverKReversion / MORAL_REVERSION_MEDIA).
 //
 // No decide trofeos (campeón, descenso, etc): eso es la Tarea 3. Acá solo
 // dejamos el resultado numérico de la temporada y los hitos para el relato.
-export function simularTemporadaCompleta({ ratingPlantel, moralInicial, fatigaInicial, rivalesFuerza }) {
+export function simularTemporadaCompleta({ ratingPlantel, moralInicial, fatigaInicial, rivalesFuerza, k }) {
   // Los rivales se resuelven acá (y no adentro de simularTramo) porque
   // calcularPosicionFinal necesita la MISMA lista contra la que se jugó.
   const rivales = resolverRivales(rivalesFuerza, ratingPlantel);
@@ -512,6 +551,7 @@ export function simularTemporadaCompleta({ ratingPlantel, moralInicial, fatigaIn
     hastaJornada: TOTAL_MATCHDAYS,
     rivalesFuerza: rivales,
     estado: { ratingPlantel, moral: moralInicial, fatiga: fatigaInicial },
+    k,
   });
 
   const { resultados } = estadoFinal;
