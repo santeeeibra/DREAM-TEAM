@@ -12,6 +12,8 @@ import { openInitialPacks } from './packOpening/openPacks.js';
 import { getManagerCards } from './lineups.js';
 import { countries } from './data/countries.js';
 import { leagues } from './data/leagues.js';
+import { CustomSelect } from './ui/CustomSelect.js';
+import { getCountryFlagUrl, getLeagueLogoUrl, getClubBadgeUrl } from './utils/badgeResolver.js';
 import { PackOpeningScene } from './scenes/PackOpeningScene.js';
 import { LineupScene } from './scenes/LineupScene.js';
 import { CollectionScene } from './scenes/CollectionScene.js';
@@ -34,48 +36,61 @@ const btnGuest = document.getElementById('btn-guest');
 const btnTogglePassword = document.getElementById('btn-toggle-password');
 
 const managerName = document.getElementById('manager-name');
-const managerCountry = document.getElementById('manager-country');
-const managerLeague = document.getElementById('manager-league');
-const managerClub = document.getElementById('manager-club');
 const managerError = document.getElementById('manager-error');
 const btnCreateManager = document.getElementById('btn-create-manager');
 
-// Llena el select de país con las ~195 opciones de countries.js, mostrando
-// bandera + nombre en cada <option> (ej: "🇦🇷 Argentina").
-for (const pais of countries) {
-  const option = document.createElement('option');
-  option.value = pais.name;
-  option.textContent = `${pais.flag} ${pais.name}`;
-  managerCountry.appendChild(option);
-}
-
-// Llena el select de liga con las ligas de leagues.js. El select de club
-// arranca vacío y deshabilitado: se completa recién cuando el usuario
-// elige una liga (ver el listener más abajo).
-for (const { league } of leagues) {
-  const option = document.createElement('option');
-  option.value = league;
-  option.textContent = league;
-  managerLeague.appendChild(option);
-}
-
-// Cada vez que cambia la liga elegida, reconstruimos el select de club con
-// los clubes de esa liga (buscados en leagues.js) y lo habilitamos.
-managerLeague.addEventListener('change', () => {
-  const ligaElegida = leagues.find((l) => l.league === managerLeague.value);
-
-  managerClub.innerHTML = '<option value="" disabled selected>Elegí el club</option>';
-  managerClub.disabled = !ligaElegida;
-
-  if (!ligaElegida) return;
-
-  for (const club of ligaElegida.clubs) {
-    const option = document.createElement('option');
-    option.value = club;
-    option.textContent = club;
-    managerClub.appendChild(option);
-  }
+// Dropdown de club: sus opciones dependen de la liga elegida (ver más
+// abajo), así que arranca vacío y deshabilitado.
+const managerClub = new CustomSelect(document.getElementById('manager-club'), {
+  placeholder: 'Elegí el club',
+  emptyMessage: 'Esta liga no tiene clubes cargados',
+  imgShape: 'badge',
 });
+
+// Dropdown de liga: sus opciones dependen del país elegido (ver el
+// onChange de managerCountry). Al cambiar de liga, reconstruimos el
+// dropdown de club con los clubes de esa liga (buscados en leagues.js).
+const managerLeague = new CustomSelect(document.getElementById('manager-league'), {
+  placeholder: 'Elegí la liga',
+  emptyMessage: 'Este país no tiene ligas disponibles',
+  imgShape: 'badge',
+  onChange: (leagueName) => {
+    const ligaElegida = leagues.find((l) => l.league === leagueName);
+    managerClub.setItems(
+      (ligaElegida?.clubs ?? []).map((club) => ({
+        value: club,
+        label: club,
+        resolveImg: () => getClubBadgeUrl(club),
+      })),
+    );
+  },
+});
+
+// Dropdown de país: se llena de entrada con las ~195 opciones de
+// countries.js, mostrando bandera (FlagCDN) + nombre en cada ítem. Al
+// elegir un país, filtramos las ligas de leagues.js por su campo `country`
+// y repoblamos el dropdown de liga (que a su vez vacía el de club).
+const managerCountry = new CustomSelect(document.getElementById('manager-country'), {
+  placeholder: 'Elegí tu país',
+  imgShape: 'flag',
+  onChange: (countryName) => {
+    const ligasDelPais = leagues.filter((l) => l.country === countryName);
+    managerLeague.setItems(
+      ligasDelPais.map((l) => ({
+        value: l.league,
+        label: l.league,
+        resolveImg: () => getLeagueLogoUrl(l.league),
+      })),
+    );
+  },
+});
+managerCountry.setItems(
+  countries.map((pais) => ({
+    value: pais.name,
+    label: pais.name,
+    resolveImg: () => getCountryFlagUrl(pais.code),
+  })),
+);
 
 function mostrarSoloAuth() {
   authContainer.style.display = 'flex';
@@ -240,9 +255,9 @@ btnCreateManager.addEventListener('click', async () => {
   managerError.textContent = '';
 
   const nombre = managerName.value.trim();
-  const pais = managerCountry.value;
-  const liga = managerLeague.value;
-  const club = managerClub.value;
+  const pais = managerCountry.getValue();
+  const liga = managerLeague.getValue();
+  const club = managerClub.getValue();
 
   if (!nombre || !pais || !liga || !club) {
     managerError.textContent = 'Completá nombre, país, liga y club.';

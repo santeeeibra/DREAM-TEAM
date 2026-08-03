@@ -125,7 +125,10 @@ export class EventScene extends Phaser.Scene {
         .setInteractive({ useHandCursor: true });
 
       boton.on('pointerdown', () => {
-        this.onResolve(option.id);
+        // Pasamos la opción COMPLETA (no solo el id): aplicarDecisionYContinuar
+        // en seasonOrchestrator.js lee decisionElegida.effects para aplicar los
+        // deltas del evento.
+        this.onResolve(option);
         this.scene.stop();
       });
     });

@@ -154,8 +154,57 @@ export class SeasonScene extends Phaser.Scene {
         getEventosActivos(),
       ]);
 
+      console.log('[DEBUG] Eventos activos cargados:', eventosActivos);
+
+      // Fallback mock: si la DB no tiene eventos cargados todavía, usamos
+      // una lista temporal para que el orquestador encuentre eventos durante
+      // la temporada y podamos probar el flujo narrativo.
+      //
+      // OJO con la estructura: eventSlots.js espera `min_matchday` (no
+      // jornada_min) y `weight` (no probabilidad) para el sorteo ponderado.
+      // El resto (id/titulo/descripcion/options) es lo que consume EventScene.
+      if (!eventosActivos || eventosActivos.length === 0) {
+        console.warn('[DEBUG] No hay eventos en la DB, usando fallback mock');
+        this.eventosActivos = [
+          {
+            id: 'evento_prensa_1',
+            titulo: 'Conferencia de Prensa picante',
+            descripcion: 'Los periodistas cuestionan tu planteo táctico antes del clásico.',
+            min_matchday: 1,
+            weight: 10,
+            options: [
+              { id: 'opt_1', label: 'Responder con confianza', effects: { morale: 5 } },
+              { id: 'opt_2', label: 'Evitar polémica', effects: { pressure: -5 } },
+            ],
+          },
+          {
+            id: 'evento_lesion_1',
+            titulo: 'Lesión en entrenamiento',
+            descripcion: 'Un titular se resintió en la práctica y es duda para la próxima fecha.',
+            min_matchday: 5,
+            weight: 5,
+            options: [
+              { id: 'opt_1', label: 'Darle descanso', effects: { morale: -3, fatigue: -10 } },
+              { id: 'opt_2', label: 'Apretar los dientes', effects: { morale: 3, fatigue: 10 } },
+            ],
+          },
+          {
+            id: 'evento_derbi_1',
+            titulo: 'Semana del derbi',
+            descripcion: 'La ciudad entera habla del partido contra el rival histórico.',
+            min_matchday: 25,
+            weight: 10,
+            options: [
+              { id: 'opt_1', label: 'Motivar al equipo', effects: { morale: 8 } },
+              { id: 'opt_2', label: 'Mantener la calma', effects: { pressure: -8 } },
+            ],
+          },
+        ];
+      } else {
+        this.eventosActivos = eventosActivos;
+      }
+
       this.seasonRow = seasonRow;
-      this.eventosActivos = eventosActivos;
 
       const paqueteGuardado = sessionStorage.getItem(CLAVE_ESTADO_TEMPORADA);
       let careerStateSnapshot = null;
@@ -333,8 +382,15 @@ export class SeasonScene extends Phaser.Scene {
         sessionStorage.setItem(CLAVE_ESTADO_TEMPORADA, JSON.stringify(paquete));
 
         if (resultado.status === 'EVENT_TRIGGERED') {
+          // resultado.eventDetails es la parada que arma eventSlots.js:
+          // { slot, matchday, evento }. EventScene espera el evento real del
+          // catálogo (titulo/descripcion/options), así que le pasamos
+          // .evento, no la parada completa.
           const nuevaDecision = await new Promise((resolve) => {
-            this.scene.launch('EventScene', { eventDetails: resultado.eventDetails, onResolve: resolve });
+            this.scene.launch('EventScene', {
+              eventDetails: resultado.eventDetails.evento,
+              onResolve: resolve,
+            });
           });
           decisionPendiente = nuevaDecision;
           continue;

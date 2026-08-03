@@ -2,6 +2,11 @@
 // de creación de DT. Cada país tiene su código ISO 3166-1 alpha-2, la
 // bandera en emoji y el nombre en español. Ordenado alfabéticamente por
 // nombre para que sea fácil de encontrar en el select.
+// Excepción: "Inglaterra" usa el código de subdivisión 'gb-eng' (no ISO
+// 3166-1) en lugar de "Reino Unido" porque en fútbol compite como
+// selección propia; FlagCDN soporta 'gb-eng' y devuelve la cruz de San
+// Jorge en vez de la Union Jack. Este código coincide con leagues.js,
+// donde la Premier League tiene country: 'Inglaterra'.
 export const countries = [
   { code: 'AF', flag: '🇦🇫', name: 'Afganistán' },
   { code: 'AL', flag: '🇦🇱', name: 'Albania' },
@@ -86,6 +91,7 @@ export const countries = [
   { code: 'HU', flag: '🇭🇺', name: 'Hungría' },
   { code: 'IN', flag: '🇮🇳', name: 'India' },
   { code: 'ID', flag: '🇮🇩', name: 'Indonesia' },
+  { code: 'gb-eng', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', name: 'Inglaterra' },
   { code: 'IQ', flag: '🇮🇶', name: 'Irak' },
   { code: 'IR', flag: '🇮🇷', name: 'Irán' },
   { code: 'IE', flag: '🇮🇪', name: 'Irlanda' },
@@ -146,7 +152,6 @@ export const countries = [
   { code: 'PE', flag: '🇵🇪', name: 'Perú' },
   { code: 'PL', flag: '🇵🇱', name: 'Polonia' },
   { code: 'PT', flag: '🇵🇹', name: 'Portugal' },
-  { code: 'GB', flag: '🇬🇧', name: 'Reino Unido' },
   { code: 'CF', flag: '🇨🇫', name: 'República Centroafricana' },
   { code: 'CZ', flag: '🇨🇿', name: 'República Checa' },
   { code: 'CG', flag: '🇨🇬', name: 'República del Congo' },

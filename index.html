@@ -30,22 +30,14 @@
     <div id="manager-form-container" class="pantalla-centrada" style="display: none">
       <h1>Creá tu DT</h1>
       <input id="manager-name" type="text" placeholder="Nombre del DT" />
-      <!-- Select de país: las <option> se generan en main.js a partir de
-           src/data/countries.js, no están hardcodeadas acá. -->
-      <select id="manager-country">
-        <option value="" disabled selected>Elegí tu país</option>
-      </select>
-      <!-- Select de liga: las <option> también se generan en main.js a
-           partir de src/data/leagues.js. -->
-      <select id="manager-league">
-        <option value="" disabled selected>Elegí la liga</option>
-      </select>
-      <!-- Select de club: arranca deshabilitado porque depende de la liga
-           elegida; main.js lo llena y lo habilita cuando cambia el select
-           de liga. -->
-      <select id="manager-club" disabled>
-        <option value="" disabled selected>Elegí el club</option>
-      </select>
+      <!-- Dropdowns personalizados (CustomSelect, ver src/ui/CustomSelect.js):
+           reemplazan a los <select> nativos para poder mostrar bandera/escudo
+           junto a cada opción. Las opciones se generan e insertan en main.js
+           a partir de src/data/countries.js y src/data/leagues.js; los tres
+           arrancan vacíos y deshabilitados hasta que main.js los llena. -->
+      <div id="manager-country"></div>
+      <div id="manager-league"></div>
+      <div id="manager-club"></div>
       <button id="btn-create-manager">Crear DT y abrir sobres</button>
       <p id="manager-error" class="mensaje-error"></p>
     </div>

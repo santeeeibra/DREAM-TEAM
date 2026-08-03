@@ -1,15 +1,4 @@
-Revisar el evento del botón verde en CollectionScene.js:
-Busca dónde se registra el evento pointerdown o click de ese botón superior derecho (Alinear Equipo). Actualmente debe estar haciendo algo como:
-
-JavaScript
-// Código actual erróneo (te manda a armar el 11)
-this.scene.start('LineupScene', { managerId, cards });
-Redirigirlo a la simulación:
-Ese botón debería verificar que el once esté completo o directamente iniciar la escena de partidos/simulación de la temporada:
-
-JavaScript
-// Código correcto deseado
-this.scene.start('SimulationScene', { managerId }); // o el nombre de tu escena de te// CollectionScene.js — escena "MI DREAM TEAM": muestra la colección real de
+// CollectionScene.js — escena "MI DREAM TEAM": muestra la colección real de
 // cartas del manager logueado en una grilla de 4 columnas (getManagerCards,
 // join user_cards + cards en Supabase), con scroll vertical (rueda del
 // mouse) por si hay más cartas de las que entran en pantalla.
