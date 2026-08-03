@@ -53,19 +53,31 @@ const RATING_DELTA_MAX = 8;
 
 // --- Constantes de getEffectiveRating (mismo estilo que las MAYÚSCULAS de
 // seasonSimulator.js) ---
-const MOMENTUM_STREAK_ALTA = 3; // streak >= 3 (buena racha ganadora)
-const MOMENTUM_STREAK_ALTA_BONUS = 3;
-const MOMENTUM_STREAK_BAJA = 1; // streak >= 1
-const MOMENTUM_STREAK_BAJA_BONUS = 1;
-const MOMENTUM_STREAK_ALTA_NEG = -3; // streak <= -3 (mala racha perdedora)
-const MOMENTUM_STREAK_ALTA_NEG_PENALTY = -3;
-const MOMENTUM_STREAK_BAJA_NEG = -1; // streak <= -1
-const MOMENTUM_STREAK_BAJA_NEG_PENALTY = -1;
+// Curva de momentum en joroba: el bonus crece con la racha hasta un pico
+// (3-5 partidos) y después decae. Así una racha larga (9+) no sigue
+// realimentándose sin freno como pasaba con el escalón fijo de antes.
+const MOMENTUM_PICO_MIN = 3; // |streak| 3-5: pico
+const MOMENTUM_PICO_MAX = 5;
+const MOMENTUM_PICO_BONUS = 3;
+const MOMENTUM_DECAY1_MIN = 6; // |streak| 6-8: primer decaimiento
+const MOMENTUM_DECAY1_MAX = 8;
+const MOMENTUM_DECAY1_BONUS = 2;
+const MOMENTUM_DECAY2_MIN = 9; // |streak| 9+: segundo decaimiento
+const MOMENTUM_DECAY2_BONUS = 1;
+const MOMENTUM_BAJA_MIN = 1; // |streak| 1-2
+const MOMENTUM_BAJA_BONUS = 1;
 
 const PRESION_ALTA = 90;
 const PRESION_ALTA_PENALTY = 4;
 const PRESION_MEDIA = 70;
 const PRESION_MEDIA_PENALTY = 2;
+
+// Clamp global del ajuste combinado de getEffectiveRating (bonus de racha +
+// penalización de presión + ratingDelta), ANTES de sumarse al baseRating.
+// Mismo rango que RATING_DELTA_MIN/MAX pero es un concepto distinto (acá se
+// clampea la suma de las tres variables, no ratingDelta solo).
+const EFFECTIVE_ADJUSTMENT_MIN = -8;
+const EFFECTIVE_ADJUSTMENT_MAX = 8;
 
 // clamp limita un número para que no se pase de un mínimo y un máximo (mismo
 // helper que usa seasonSimulator.js, repetido acá porque ese archivo no
@@ -152,6 +164,39 @@ export function resetRatingDeltaTemporada() {
   state.ratingDelta = 0;
 }
 
+// calcularResetParcialTemporada calcula (SIN mutar `state`) los valores
+// iniciales de pressure/morale/fatigue/streak para la PRÓXIMA temporada, a
+// partir de cómo terminó la que se está cerrando. Es pura a propósito: la
+// llama el orquestador, que decide cuándo y cómo escribir el resultado de
+// vuelta en `state` — esta función no se auto-aplica para no pisarle el
+// turno a quien orquesta el cierre de temporada.
+//
+// - pressureInicial y moraleInicial son un promedio entre lo que arrastra el
+//   manager y un piso de "temporada nueva" (50 y 60 respectivamente): ni se
+//   resetean del todo (una racha de presión alta no se borra de un plumazo
+//   solo porque cambió el calendario) ni cruzan intactas (un cierre de
+//   temporada es, en la ficción del juego, un respiro real).
+// - fatigueInicial siempre arranca en 0: la fatiga es un estado físico del
+//   tramo que se está jugando, no tiene sentido que un plantel arranque
+//   cansado de partidos que todavía no jugó.
+// - streakInicial siempre arranca en 0: una racha es una métrica de la
+//   temporada en curso (ver syncStreakFromResultados), no hay racha que
+//   "seguir" cuando el fixture arranca de cero.
+// - money (vive en `managers`) y ratingDelta (dueño: resetRatingDeltaTemporada)
+//   no aparecen acá a propósito: no son responsabilidad de esta función.
+export function calcularResetParcialTemporada() {
+  if (state === null) {
+    throw new Error('calcularResetParcialTemporada: no hay ninguna carrera cargada en memoria (llamá a initCareerState primero)');
+  }
+
+  return {
+    pressureInicial: Math.round((state.pressure + 50) / 2),
+    moraleInicial: Math.round((state.morale + 60) / 2),
+    fatigueInicial: 0,
+    streakInicial: 0,
+  };
+}
+
 // syncStreakFromResultados deriva el streak actual a partir del array
 // "resultados" que ahora devuelve simularTemporadaCompleta (ver
 // src/engine/seasonSimulator.js). Cuenta partidos consecutivos desde el
@@ -194,18 +239,26 @@ export function syncStreakFromResultados(resultados) {
 // Nunca se guarda este valor en ningún lado: se recalcula cada vez que se
 // pide, a partir del streak/pressure/ratingDelta vigentes en memoria.
 export function getEffectiveRating(baseRating) {
-  return baseRating
-    + momentumPorStreak(state.streak)
-    - penalizacionPorPresion(state.pressure)
-    + state.ratingDelta;
+  const ajusteCombinado = clamp(
+    momentumPorStreak(state.streak) - penalizacionPorPresion(state.pressure) + state.ratingDelta,
+    EFFECTIVE_ADJUSTMENT_MIN,
+    EFFECTIVE_ADJUSTMENT_MAX
+  );
+  return baseRating + ajusteCombinado;
 }
 
 function momentumPorStreak(streak) {
-  if (streak >= MOMENTUM_STREAK_ALTA) return MOMENTUM_STREAK_ALTA_BONUS;
-  if (streak >= MOMENTUM_STREAK_BAJA) return MOMENTUM_STREAK_BAJA_BONUS;
-  if (streak <= MOMENTUM_STREAK_ALTA_NEG) return MOMENTUM_STREAK_ALTA_NEG_PENALTY;
-  if (streak <= MOMENTUM_STREAK_BAJA_NEG) return MOMENTUM_STREAK_BAJA_NEG_PENALTY;
-  return 0;
+  const magnitud = Math.abs(streak);
+  const signo = Math.sign(streak);
+
+  let bonus;
+  if (magnitud >= MOMENTUM_DECAY2_MIN) bonus = MOMENTUM_DECAY2_BONUS;
+  else if (magnitud >= MOMENTUM_DECAY1_MIN && magnitud <= MOMENTUM_DECAY1_MAX) bonus = MOMENTUM_DECAY1_BONUS;
+  else if (magnitud >= MOMENTUM_PICO_MIN && magnitud <= MOMENTUM_PICO_MAX) bonus = MOMENTUM_PICO_BONUS;
+  else if (magnitud >= MOMENTUM_BAJA_MIN) bonus = MOMENTUM_BAJA_BONUS;
+  else bonus = 0;
+
+  return signo * bonus;
 }
 
 function penalizacionPorPresion(pressure) {

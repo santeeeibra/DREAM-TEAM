@@ -8,17 +8,19 @@
 // (comun/rara/epica/legendaria), que es un concepto totalmente distinto
 // (probabilidad de drop en los sobres) — ver migrations/004_open_pack.sql.
 import { getTier } from './ratingTiers.js';
+import { COLORS } from '../theme/tokens.js';
 
 // Los números tipo 0xRRGGBB son la forma en que Phaser espera los colores
 // (el mismo valor hexadecimal que usarías en CSS como "#A56A45", pero con
-// 0x en vez de #).
+// 0x en vez de #). Los valores en sí salen de COLORS.tier en tokens.js,
+// que es la fuente única de verdad de la paleta del juego.
 export const COLORES_BANDA = {
-  BRONZE: 0xa56a45,
-  SILVER: 0x9fb4c7,
-  GOLD: 0xd4af37,
+  BRONZE: COLORS.tier.bronze,
+  SILVER: COLORS.tier.silver,
+  GOLD: COLORS.tier.gold,
   // "special" no es un color único: es un degradado violeta -> negro.
   // Guardamos los dos extremos del degradado para usarlos con fillGradientStyle.
-  SPECIAL: { desde: 0x6a0dad, hasta: 0x000000 },
+  SPECIAL: { desde: COLORS.tier.special.from, hasta: COLORS.tier.special.to },
 };
 
 // colorDeCarta: dado el objeto jugador (mismo formato que la tabla `cards`),

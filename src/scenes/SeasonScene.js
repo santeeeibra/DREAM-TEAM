@@ -25,6 +25,8 @@ import { simularHastaProximoEvento, aplicarDecisionYContinuar } from '../engine/
 import { calcularTablaFinal } from '../engine/leagueTable.js';
 import * as careerState from '../state/careerState.js';
 import {
+  cerrarTemporada,
+  crearSiguienteTemporada,
   getEventosActivos,
   getManagerParaTemporada,
   getOrCreateSeasonRow,
@@ -35,6 +37,10 @@ import {
 // curso después de cada tramo simulado. Permite retomarla si el jugador
 // recarga la página a mitad de camino (ver init/create y avanzarSimulacion).
 const CLAVE_ESTADO_TEMPORADA = 'dreamteam_season_estado';
+
+// Misma última temporada que ULTIMA_TEMPORADA en src/dev/devActions.js: no
+// se sincroniza automáticamente, si se cambia una hay que cambiar la otra.
+const ULTIMA_TEMPORADA = 8;
 
 // --- Generación de la liga de rivales de la temporada ---
 //
@@ -405,11 +411,39 @@ export class SeasonScene extends Phaser.Scene {
           });
           const momentosDestacados = construirMomentosDestacados(this.estado.resultados);
 
+          const resumen = {
+            wins: this.estado.wins,
+            draws: this.estado.draws,
+            losses: this.estado.losses,
+            goals_for: this.estado.goalsFor,
+            goals_against: this.estado.goalsAgainst,
+            points: this.estado.points,
+            league_position: posicionJugador,
+          };
+          const { morale: moralFinal, fatigue: fatigaFinal } = careerState.getState();
+          await cerrarTemporada(this.seasonRow.id, resumen, moralFinal, fatigaFinal);
+
+          const esUltimaTemporada = this.seasonNumber === ULTIMA_TEMPORADA;
+          if (!esUltimaTemporada) {
+            const { pressureInicial, moraleInicial, fatigueInicial, streakInicial } =
+              careerState.calcularResetParcialTemporada();
+            await crearSiguienteTemporada(
+              this.managerId,
+              this.seasonNumber,
+              moraleInicial,
+              fatigueInicial,
+              pressureInicial,
+              streakInicial
+            );
+          }
+
           this.scene.start('CareerSummaryScene', {
             managerId: this.managerId,
             league_position: posicionJugador,
             tablaCompleta: tabla,
             momentosDestacados,
+            seasonNumber: this.seasonNumber,
+            esUltimaTemporada,
           });
           break;
         }

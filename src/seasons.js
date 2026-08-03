@@ -105,11 +105,19 @@ export async function ensureSeason(managerId, seasonNumber, rating) {
 // que este manager entra a SeasonScene para su temporada 1). Al crearla se
 // le puede pasar moral/fatiga heredadas del cierre de la temporada
 // anterior; si no se pasan, arranca con los defaults de la columna.
+// También acepta pressure/streak iniciales explícitos: cuando el valor real
+// viene de un reset parcial calculado en careerState.calcularResetParcialTemporada,
+// hay que insertarlo tal cual en vez de dejar que caiga en el default de
+// columna (pressure=50, streak=0). Si se pasan null (caso de hoy: crear la
+// temporada 1), no se incluyen esas claves en el insert y siguen cayendo en
+// los defaults de columna como pasa actualmente.
 export async function getOrCreateSeasonRow(
   managerId,
   seasonNumber,
   moralHeredada = MORAL_INICIAL,
-  fatigaHeredada = FATIGA_INICIAL
+  fatigaHeredada = FATIGA_INICIAL,
+  pressureInicial = null,
+  streakInicial = null
 ) {
   const { data: existente, error: errorBusqueda } = await supabase
     .from('seasons')
@@ -120,14 +128,18 @@ export async function getOrCreateSeasonRow(
   if (errorBusqueda) throw errorBusqueda;
   if (existente) return existente;
 
+  const filaNueva = {
+    manager_id: managerId,
+    season_number: seasonNumber,
+    morale: moralHeredada,
+    fatigue: fatigaHeredada,
+  };
+  if (pressureInicial !== null) filaNueva.pressure = pressureInicial;
+  if (streakInicial !== null) filaNueva.streak = streakInicial;
+
   const { data: creada, error: errorCreacion } = await supabase
     .from('seasons')
-    .insert({
-      manager_id: managerId,
-      season_number: seasonNumber,
-      morale: moralHeredada,
-      fatigue: fatigaHeredada,
-    })
+    .insert(filaNueva)
     .select()
     .single();
   if (errorCreacion) throw errorCreacion;
@@ -208,8 +220,17 @@ export async function getTemporadasDeManager(managerId) {
 
 // crearSiguienteTemporada sube manager.current_season y crea la fila de
 // `seasons` para la temporada que sigue, heredando la moral/fatiga con las
-// que terminó la anterior.
-export async function crearSiguienteTemporada(managerId, seasonNumberActual, moralHeredada, fatigaHeredada) {
+// que terminó la anterior. También puede heredar pressure/streak iniciales
+// explícitos (ver getOrCreateSeasonRow) cuando vienen de un reset parcial
+// calculado en careerState.calcularResetParcialTemporada.
+export async function crearSiguienteTemporada(
+  managerId,
+  seasonNumberActual,
+  moralHeredada,
+  fatigaHeredada,
+  pressureInicial = null,
+  streakInicial = null
+) {
   const siguienteNumero = seasonNumberActual + 1;
 
   const { error } = await supabase
@@ -218,5 +239,12 @@ export async function crearSiguienteTemporada(managerId, seasonNumberActual, mor
     .eq('id', managerId);
   if (error) throw error;
 
-  return getOrCreateSeasonRow(managerId, siguienteNumero, moralHeredada, fatigaHeredada);
+  return getOrCreateSeasonRow(
+    managerId,
+    siguienteNumero,
+    moralHeredada,
+    fatigaHeredada,
+    pressureInicial,
+    streakInicial
+  );
 }
