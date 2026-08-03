@@ -67,6 +67,13 @@ const FATIGA_MAX = 100;
 const FATIGA_INCREMENTO_POR_PARTIDO = 6; // desgaste de jugar la fecha
 const FATIGA_RECUPERACION_RATE = 0.12; // % de la fatiga acumulada que se recupera entre fecha y fecha
 
+// Punto de partida de moral/fatiga cuando se arranca un tramo sin estado
+// previo. Mismos valores que las columnas seasons.morale / seasons.fatigue
+// en la base para la temporada 1 de un manager recién creado (src/seasons.js
+// los importa de acá en vez de duplicarlos).
+export const MORAL_INICIAL_POR_DEFECTO = 70;
+export const FATIGA_INICIAL_POR_DEFECTO = 0;
+
 // --- Estimación de posición final en la tabla ---
 const PUNTOS_POR_VICTORIA = 3;
 const PUNTOS_POR_EMPATE = 1;
@@ -331,11 +338,132 @@ function construirMomentosDestacados(resultados) {
 }
 
 // -----------------------------------------------------------------------
+// SIMULACIÓN POR TRAMOS
+// -----------------------------------------------------------------------
+
+// resolverRivales devuelve la lista de 19 fuerzas de rival a usar. Si el que
+// llama pasó una lista válida se respeta tal cual (es lo que permite testear
+// con una liga fija y determinística, y lo que permite que varios tramos de
+// la MISMA temporada compartan los mismos rivales); si no, se genera una
+// nueva alrededor del rating del plantel.
+function resolverRivales(rivalesFuerza, ratingPlantel) {
+  return Array.isArray(rivalesFuerza) && rivalesFuerza.length === CANTIDAD_RIVALES
+    ? rivalesFuerza
+    : generarRivalesAlrededorDe(ratingPlantel);
+}
+
+// crearEstadoInicial normaliza el `estado` que recibe simularTramo: completa
+// con contadores en 0, resultados en [] y los defaults de moral/fatiga todo
+// lo que no venga del tramo anterior. Devuelve SIEMPRE un objeto nuevo, así
+// simularTramo nunca escribe sobre el estado que le pasaron.
+function crearEstadoInicial(estado = {}) {
+  return {
+    ratingPlantel: estado.ratingPlantel,
+    moral: estado.moral ?? MORAL_INICIAL_POR_DEFECTO,
+    fatiga: estado.fatiga ?? FATIGA_INICIAL_POR_DEFECTO,
+    wins: estado.wins ?? 0,
+    draws: estado.draws ?? 0,
+    losses: estado.losses ?? 0,
+    goalsFor: estado.goalsFor ?? 0,
+    goalsAgainst: estado.goalsAgainst ?? 0,
+    points: estado.points ?? 0,
+    // Copia: los resultados del tramo anterior se arrastran, pero los del
+    // tramo nuevo se pushean acá y no en el array del que llama.
+    resultados: [...(estado.resultados ?? [])],
+  };
+}
+
+// simularTramo juega SOLO las fechas [desdeJornada, hastaJornada] (ambas
+// inclusive) de la temporada y devuelve un estado nuevo con los contadores
+// acumulados y moral/fatiga al corte del tramo. La matemática de cada fecha
+// es exactamente la misma que la de una temporada completa: lo único que
+// cambia es dónde arranca y dónde termina el loop.
+//
+// Parámetros:
+//   - desdeJornada / hastaJornada: rango de fechas a jugar, 1-based e
+//     INCLUSIVO en los dos extremos. Si hastaJornada < desdeJornada no se
+//     simula nada y se devuelve una copia del estado (caso pretemporada).
+//   - rivalesFuerza (opcional): lista de 19 fuerzas de rival. Pasarla es lo
+//     que garantiza que todos los tramos de una misma temporada jueguen
+//     contra la misma liga; si se omite, cada tramo generaría rivales nuevos.
+//   - estado (opcional): lo que devolvió el tramo anterior. De acá sale
+//     ratingPlantel y el punto de partida de moral/fatiga/contadores. En el
+//     primer tramo alcanza con pasar { ratingPlantel } (y, si se quiere,
+//     moral/fatiga distintos de los defaults).
+//
+// INDEXADO DE rivalesFuerza: la jornada es 1-based y el array 0-based, así
+// que la jornada N enfrenta a rivalesFuerza[(N - 1) % 19]. Es decir:
+// jornada 1 => rivalesFuerza[0], jornada 19 => rivalesFuerza[18], y la
+// jornada 20 vuelve a rivalesFuerza[0] (la revancha de la fecha 1). La
+// primera rueda (fechas 1-19) se juega de local y la segunda (20-38) de
+// visitante, así cada rival aparece exactamente dos veces.
+export function simularTramo({ desdeJornada, hastaJornada, rivalesFuerza, estado }) {
+  const nuevoEstado = crearEstadoInicial(estado);
+
+  // Tramo vacío (típicamente la pretemporada, antes de la fecha 1): copia sin
+  // tocar nada. Ojo que esto se chequea ANTES de resolver rivales, para no
+  // quemar azar generando una liga que no se va a usar.
+  if (hastaJornada < desdeJornada) return nuevoEstado;
+
+  const rivales = resolverRivales(rivalesFuerza, nuevoEstado.ratingPlantel);
+
+  for (let jornada = desdeJornada; jornada <= hastaJornada; jornada++) {
+    // Ver "INDEXADO DE rivalesFuerza" arriba: jornada 1 => rivales[0].
+    const indiceRival = (jornada - 1) % CANTIDAD_RIVALES;
+    const fuerzaRival = rivales[indiceRival];
+    const esLocal = jornada <= CANTIDAD_RIVALES;
+
+    const fuerzaPlantel = nuevoEstado.ratingPlantel + nuevoEstado.moral / 10 - nuevoEstado.fatiga / 10;
+
+    const { golesLocal, golesVisitante } = esLocal
+      ? simularJornada(fuerzaPlantel, fuerzaRival)
+      : simularJornada(fuerzaRival, fuerzaPlantel);
+
+    const golesPlantel = esLocal ? golesLocal : golesVisitante;
+    const golesRival = esLocal ? golesVisitante : golesLocal;
+
+    let resultado;
+    if (golesPlantel > golesRival) {
+      resultado = 'win';
+      nuevoEstado.wins++;
+      nuevoEstado.points += PUNTOS_POR_VICTORIA;
+    } else if (golesPlantel === golesRival) {
+      resultado = 'draw';
+      nuevoEstado.draws++;
+      nuevoEstado.points += PUNTOS_POR_EMPATE;
+    } else {
+      resultado = 'loss';
+      nuevoEstado.losses++;
+    }
+
+    nuevoEstado.goalsFor += golesPlantel;
+    nuevoEstado.goalsAgainst += golesRival;
+
+    nuevoEstado.resultados.push({
+      jornada,
+      esLocal,
+      rivalFuerza: fuerzaRival,
+      golesPlantel,
+      golesRival,
+      resultado,
+    });
+
+    nuevoEstado.moral = actualizarMoral(nuevoEstado.moral, resultado);
+    nuevoEstado.fatiga = actualizarFatiga(nuevoEstado.fatiga);
+  }
+
+  return nuevoEstado;
+}
+
+// -----------------------------------------------------------------------
 // FUNCIÓN PRINCIPAL: simularTemporadaCompleta
 // -----------------------------------------------------------------------
 
 // simularTemporadaCompleta juega las 38 fechas de una liga contra 19
 // rivales (ida y vuelta) y devuelve el resumen de cómo le fue al plantel.
+// Por dentro es un único tramo que va de la fecha 1 a la 38: la posición
+// final y los momentos destacados se calculan recién sobre el estado final,
+// porque solo tienen sentido con la temporada entera jugada.
 //
 // Parámetros:
 //   - ratingPlantel: nivel "de papel" del plantel (rating_del_11).
@@ -351,76 +479,32 @@ function construirMomentosDestacados(resultados) {
 // No decide trofeos (campeón, descenso, etc): eso es la Tarea 3. Acá solo
 // dejamos el resultado numérico de la temporada y los hitos para el relato.
 export function simularTemporadaCompleta({ ratingPlantel, moralInicial, fatigaInicial, rivalesFuerza }) {
-  const rivales =
-    Array.isArray(rivalesFuerza) && rivalesFuerza.length === CANTIDAD_RIVALES
-      ? rivalesFuerza
-      : generarRivalesAlrededorDe(ratingPlantel);
+  // Los rivales se resuelven acá (y no adentro de simularTramo) porque
+  // calcularPosicionFinal necesita la MISMA lista contra la que se jugó.
+  const rivales = resolverRivales(rivalesFuerza, ratingPlantel);
 
-  let moral = moralInicial;
-  let fatiga = fatigaInicial;
+  const estadoFinal = simularTramo({
+    desdeJornada: 1,
+    hastaJornada: TOTAL_MATCHDAYS,
+    rivalesFuerza: rivales,
+    estado: { ratingPlantel, moral: moralInicial, fatiga: fatigaInicial },
+  });
 
-  let wins = 0;
-  let draws = 0;
-  let losses = 0;
-  let goals_for = 0;
-  let goals_against = 0;
-  let points = 0;
+  const { resultados } = estadoFinal;
 
-  const resultados = [];
-
-  for (let jornada = 1; jornada <= TOTAL_MATCHDAYS; jornada++) {
-    // Primera rueda (fechas 1-19): el plantel es local contra cada rival una
-    // vez. Segunda rueda (fechas 20-38): se repiten los mismos cruces de
-    // visitante ("vuelta"). Así cada rival se enfrenta exactamente dos veces.
-    const indiceRival = (jornada - 1) % CANTIDAD_RIVALES;
-    const fuerzaRival = rivales[indiceRival];
-    const esLocal = jornada <= CANTIDAD_RIVALES;
-
-    const fuerzaPlantel = ratingPlantel + moral / 10 - fatiga / 10;
-
-    const { golesLocal, golesVisitante } = esLocal
-      ? simularJornada(fuerzaPlantel, fuerzaRival)
-      : simularJornada(fuerzaRival, fuerzaPlantel);
-
-    const golesPlantel = esLocal ? golesLocal : golesVisitante;
-    const golesRival = esLocal ? golesVisitante : golesLocal;
-
-    let resultado;
-    if (golesPlantel > golesRival) {
-      resultado = 'win';
-      wins++;
-      points += PUNTOS_POR_VICTORIA;
-    } else if (golesPlantel === golesRival) {
-      resultado = 'draw';
-      draws++;
-      points += PUNTOS_POR_EMPATE;
-    } else {
-      resultado = 'loss';
-      losses++;
-    }
-
-    goals_for += golesPlantel;
-    goals_against += golesRival;
-
-    resultados.push({ jornada, esLocal, rivalFuerza: fuerzaRival, golesPlantel, golesRival, resultado });
-
-    moral = actualizarMoral(moral, resultado);
-    fatiga = actualizarFatiga(fatiga);
-  }
-
-  const league_position = calcularPosicionFinal(points, rivales, ratingPlantel);
+  const league_position = calcularPosicionFinal(estadoFinal.points, rivales, ratingPlantel);
   const momentosDestacados = construirMomentosDestacados(resultados);
 
   return {
-    wins,
-    draws,
-    losses,
-    goals_for,
-    goals_against,
-    points,
+    wins: estadoFinal.wins,
+    draws: estadoFinal.draws,
+    losses: estadoFinal.losses,
+    goals_for: estadoFinal.goalsFor,
+    goals_against: estadoFinal.goalsAgainst,
+    points: estadoFinal.points,
     league_position,
     momentosDestacados,
-    // resultados: el detalle fecha a fecha (ver push más arriba en el loop).
+    // resultados: el detalle fecha a fecha (lo arma simularTramo).
     // Se expone además de momentosDestacados porque careerState.js
     // (src/state/careerState.js) lo necesita crudo para derivar el streak
     // ACTUAL al cierre del tramo (syncStreakFromResultados), algo distinto
@@ -431,7 +515,7 @@ export function simularTemporadaCompleta({ ratingPlantel, moralInicial, fatigaIn
     // actualizarMoral/actualizarFatiga). Quien llama a esta función los
     // necesita para cerrar la fila de `seasons` y para heredarlos como punto
     // de partida de la temporada siguiente.
-    moralFinal: moral,
-    fatigaFinal: fatiga,
+    moralFinal: estadoFinal.moral,
+    fatigaFinal: estadoFinal.fatiga,
   };
 }

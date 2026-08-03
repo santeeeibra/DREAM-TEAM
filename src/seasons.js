@@ -7,12 +7,10 @@
 // igual que LineupScene.js usa lineups.js.
 import { supabase } from './supabaseClient.js';
 import { getLineup } from './lineups.js';
-
-// Mismos defaults que las columnas seasons.morale / seasons.fatigue en la
-// base, para la temporada 1 de un manager recién creado (todavía sin
-// ninguna temporada anterior de la que heredar).
-const MORAL_INICIAL = 70;
-const FATIGA_INICIAL = 0;
+import {
+  MORAL_INICIAL_POR_DEFECTO as MORAL_INICIAL,
+  FATIGA_INICIAL_POR_DEFECTO as FATIGA_INICIAL,
+} from './engine/seasonSimulator.js';
 
 // getManagerParaTemporada trae los datos del manager que necesita
 // SeasonScene antes de arrancar: `current_season` (para resolver la
