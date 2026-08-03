@@ -1,39 +1,22 @@
-// cardImage.js — resuelve qué imagen mostrar en la carta de un jugador,
-// con la prioridad correcta:
+// cardImage.js — resuelve qué imagen mostrar en la carta de un jugador.
 //
-//   1. fut_id: si el jugador tiene un fut_id asignado, usamos su imagen
-//      oficial de EA/fut.gg desde el CDN (https://cdn.fut.gg/cards/26/p{id}.png).
-//   2. photo_url: si no tiene fut_id pero tiene photo_url y
-//      uses_generated_avatar es false, usamos la foto vieja.
-//   3. Fallback: null (las escenas caen al avatar de iniciales).
+// La migración ya dejó todas las cartas con su foto real en `photo_url`
+// (imágenes alojadas en nuestro bucket) y `uses_generated_avatar = false`,
+// así que esta función es lo más tonta y directa posible:
 //
-// Esta función es la ÚNICA fuente de verdad para decidir qué imagen
-// precargar en cada escena (CollectionScene, PackOpeningScene, LineupScene).
+//   1. photo_url: si la carta tiene una foto, la usamos tal cual.
+//   2. Fallback: si por alguna razón la carta llegó sin photo_url (ej. los
+//      que quedaron como "sin resultado" en el scraper), devolvemos el
+//      avatar de iniciales que ya usa el proyecto.
+//
+// No hay más peticiones a dominios externos en tiempo de ejecución: toda
+// la lógica vieja de fut_id / CDN de fut.gg / IDs de Sofifa se eliminó.
 
-// URL base del CDN de fut.gg para las cartas de FC 26 (temporada 26).
-const CDN_FUT_GG_BASE = 'https://cdn.fut.gg/cards/26/p';
+import { generateInitialsAvatarDataURI } from './initialsAvatar.js';
 
-// Devuelve la URL de la imagen oficial de fut.gg para un fut_id, o null
-// si el jugador no tiene fut_id asignado.
-export function futGgImageUrl(futId) {
-  if (futId == null || futId === '') return null;
-  return `${CDN_FUT_GG_BASE}${futId}.png`;
-}
-
-// Devuelve la URL de imagen que debe usarse para la carta, siguiendo la
-// prioridad documentada arriba. Devuelve null si no hay ninguna imagen
-// real que mostrar (en ese caso la escena usa el avatar de iniciales).
+// Devuelve la URL de imagen que debe usarse para la carta. Nunca devuelve
+// null: si no hay photo_url, cae al avatar de iniciales del jugador.
 export function resolveCardImageUrl(card) {
-  // Prioridad 1: fut_id → imagen oficial de EA/fut.gg.
-  const futUrl = futGgImageUrl(card.fut_id);
-  if (futUrl) return futUrl;
-
-  // Prioridad 2: photo_url viejo, solo si no se pidió explícitamente usar
-  // el avatar generado.
-  if (card.photo_url && card.uses_generated_avatar !== true) {
-    return card.photo_url;
-  }
-
-  // Fallback: sin foto real → null (avatar de iniciales).
-  return null;
+  if (card.photo_url) return card.photo_url;
+  return generateInitialsAvatarDataURI(card.name, card.overall_rating);
 }

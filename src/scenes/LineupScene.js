@@ -100,10 +100,15 @@ export class LineupScene extends Phaser.Scene {
     for (const carta of this.cards) {
       const clave = claveImagenCarta(carta.id);
       const urlImagen = resolveCardImageUrl(carta);
+      console.log('[DEBUG]', carta.name, { fut_id: carta.fut_id, photo_url: carta.photo_url, urlImagen });
       if (urlImagen && !this.textures.exists(clave)) {
         this.load.image(clave, urlImagen);
       }
     }
+
+    this.load.on('loaderror', (file) => {
+      console.warn('[DEBUG loaderror]', file.key, file.src);
+    });
   }
 
   create() {
