@@ -263,7 +263,7 @@ function encontrarRachaMasLarga(resultados, entraEnLaRacha) {
 // construirMomentosDestacados arma los 4-6 hitos de la temporada que se usan
 // para escribir el resumen largo: mejor victoria, peor derrota, racha
 // ganadora más larga, racha invicta más larga y peor racha sin ganar.
-function construirMomentosDestacados(resultados) {
+export function construirMomentosDestacados(resultados) {
   const momentos = [];
 
   const victorias = resultados.filter((r) => r.resultado === 'win');

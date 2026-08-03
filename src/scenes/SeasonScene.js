@@ -20,8 +20,9 @@
 //      queda pendiente mostrarlo (ver TODO en avanzarSimulacion). Si la
 //      temporada termina (SEASON_COMPLETE), se navega a CareerSummaryScene.
 import Phaser from 'phaser';
-import { TOTAL_MATCHDAYS } from '../engine/seasonSimulator.js';
+import { TOTAL_MATCHDAYS, construirMomentosDestacados } from '../engine/seasonSimulator.js';
 import { simularHastaProximoEvento, aplicarDecisionYContinuar } from '../engine/seasonOrchestrator.js';
+import { calcularTablaFinal } from '../engine/leagueTable.js';
 import * as careerState from '../state/careerState.js';
 import {
   getEventosActivos,
@@ -341,7 +342,19 @@ export class SeasonScene extends Phaser.Scene {
 
         if (resultado.status === 'SEASON_COMPLETE') {
           sessionStorage.removeItem(CLAVE_ESTADO_TEMPORADA);
-          this.scene.start('CareerSummaryScene', { managerId: this.managerId });
+
+          const { tabla, posicionJugador } = calcularTablaFinal({
+            rivalesFuerza: this.estado.rivalesFuerza,
+            resultadosJugador: this.estado.resultados,
+          });
+          const momentosDestacados = construirMomentosDestacados(this.estado.resultados);
+
+          this.scene.start('CareerSummaryScene', {
+            managerId: this.managerId,
+            league_position: posicionJugador,
+            tablaCompleta: tabla,
+            momentosDestacados,
+          });
           break;
         }
       }

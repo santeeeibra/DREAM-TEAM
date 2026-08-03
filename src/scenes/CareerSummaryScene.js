@@ -26,6 +26,13 @@ export class CareerSummaryScene extends Phaser.Scene {
 
   init(data) {
     this.managerId = data.managerId;
+    // Datos de la temporada recién completada, mandados por SeasonScene al
+    // navegar acá (ver avanzarSimulacion/SEASON_COMPLETE en SeasonScene.js).
+    // Pueden venir undefined si la escena se abre en un flujo viejo de
+    // testing que todavía no los manda: cada consumo de abajo cae a "—".
+    this.leaguePosition = data.league_position;
+    this.tablaCompleta = data.tablaCompleta;
+    this.momentosDestacados = data.momentosDestacados;
   }
 
   create() {
@@ -194,6 +201,8 @@ export class CareerSummaryScene extends Phaser.Scene {
     y += 10;
     y = this.dibujarResumenAgregado(y, anchoPantalla);
     y += 30;
+    y = this.dibujarUltimaTemporada(y, anchoPantalla);
+    y += 30;
     this.dibujarBotonNuevaCarrera(y, anchoPantalla);
 
     const altoContenido = y + 70;
@@ -295,6 +304,71 @@ export class CareerSummaryScene extends Phaser.Scene {
 
     this.contenidoContainer.add([titulo, textoLineas]);
     return y + 110;
+  }
+
+  // Muestra en texto simple (sin pulido visual todavía) los datos de la
+  // temporada recién completada que manda SeasonScene: posición final,
+  // tabla completa y momentos destacados. Si la escena se abrió sin estos
+  // datos (flujo viejo de testing), cada uno cae a un placeholder "—" en
+  // vez de romper.
+  dibujarUltimaTemporada(y, anchoPantalla) {
+    const titulo = this.add
+      .text(24, y, 'ÚLTIMA TEMPORADA', {
+        fontFamily: 'Arial',
+        fontSize: '13px',
+        fontStyle: 'bold',
+        color: '#9aa5b8',
+      })
+      .setOrigin(0, 0);
+    this.contenidoContainer.add(titulo);
+    y += 24;
+
+    const textoPosicion = this.leaguePosition != null ? `Posición final: ${this.leaguePosition}°` : 'Posición final: —';
+    const lineaPosicion = this.add
+      .text(24, y, textoPosicion, {
+        fontFamily: 'Arial',
+        fontSize: '13px',
+        color: '#ffffff',
+      })
+      .setOrigin(0, 0);
+    this.contenidoContainer.add(lineaPosicion);
+    y += 22;
+
+    const lineasTabla =
+      Array.isArray(this.tablaCompleta) && this.tablaCompleta.length > 0
+        ? this.tablaCompleta.map(
+            (fila, indice) =>
+              `${indice + 1}. ${fila.equipo} — PJ ${fila.pj} PG ${fila.pg} PE ${fila.pe} PP ${fila.pp} GF ${fila.gf} GC ${fila.gc} DG ${fila.dg} Pts ${fila.puntos}`
+          )
+        : ['—'];
+    const textoTabla = this.add
+      .text(24, y, ['Tabla final:', ...lineasTabla].join('\n'), {
+        fontFamily: 'Arial',
+        fontSize: '11px',
+        color: '#cccccc',
+        lineSpacing: 4,
+      })
+      .setOrigin(0, 0);
+    this.contenidoContainer.add(textoTabla);
+    y += textoTabla.height + 10;
+
+    const lineasMomentos =
+      Array.isArray(this.momentosDestacados) && this.momentosDestacados.length > 0
+        ? this.momentosDestacados.map((momento) => `• ${momento.descripcion}`)
+        : ['—'];
+    const textoMomentos = this.add
+      .text(24, y, ['Momentos destacados:', ...lineasMomentos].join('\n'), {
+        fontFamily: 'Arial',
+        fontSize: '12px',
+        color: '#ffffff',
+        wordWrap: { width: anchoPantalla - 48 },
+        lineSpacing: 6,
+      })
+      .setOrigin(0, 0);
+    this.contenidoContainer.add(textoMomentos);
+    y += textoMomentos.height + 10;
+
+    return y;
   }
 
   dibujarBotonNuevaCarrera(y, anchoPantalla) {
