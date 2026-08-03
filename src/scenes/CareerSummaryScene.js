@@ -11,6 +11,7 @@
 import Phaser from 'phaser';
 import { getManagerById, borrarManager } from '../managers.js';
 import { getTemporadasDeManager } from '../seasons.js';
+import { getManagerCards } from '../lineups.js';
 
 // Franja fija de arriba (nombre del DT + club/liga), no se mueve con el
 // scroll. Mismo criterio que CollectionScene: solo el contenido de abajo
@@ -33,6 +34,13 @@ export class CareerSummaryScene extends Phaser.Scene {
     this.leaguePosition = data.league_position;
     this.tablaCompleta = data.tablaCompleta;
     this.momentosDestacados = data.momentosDestacados;
+    // Datos de modo, mandados por SeasonScene para distinguir fin de
+    // temporada (hay más temporadas por jugar) de fin de carrera. Default
+    // a true a propósito: el panel de dev abre esta escena sin mandar estos
+    // dos campos, y debe seguir viendo el resumen de carrera completo de
+    // siempre.
+    this.seasonNumber = data.seasonNumber ?? null;
+    this.esUltimaTemporada = data.esUltimaTemporada ?? true;
   }
 
   create() {
@@ -155,10 +163,22 @@ export class CareerSummaryScene extends Phaser.Scene {
   }
 
   // ---------------------------------------------------------------------
+  // Dispatcher: fin de carrera (última temporada) vs. fin de temporada
+  // (quedan más temporadas por jugar). Ver esUltimaTemporada en init().
+  // ---------------------------------------------------------------------
+  mostrarResumen() {
+    if (this.esUltimaTemporada) {
+      this.mostrarResumenCarrera();
+    } else {
+      this.mostrarResumenTemporada();
+    }
+  }
+
+  // ---------------------------------------------------------------------
   // Contenido scrolleable: una fila por temporada + el resumen agregado +
   // el botón de "Nueva carrera".
   // ---------------------------------------------------------------------
-  mostrarResumen() {
+  mostrarResumenCarrera() {
     this.limpiarPantalla();
     const anchoPantalla = this.scale.width;
     const altoPantalla = this.scale.height;
@@ -210,6 +230,74 @@ export class CareerSummaryScene extends Phaser.Scene {
     this.scrollMinY = Math.min(0, altoDisponible - altoContenido);
     this.scrollMaxY = 0;
     this.habilitarScroll();
+  }
+
+  // ---------------------------------------------------------------------
+  // Contenido scrolleable para fin de temporada (no es la última de la
+  // carrera): solo el resultado de esa temporada + botón para volver a la
+  // plantilla y seguir jugando.
+  // ---------------------------------------------------------------------
+  mostrarResumenTemporada() {
+    this.limpiarPantalla();
+    const anchoPantalla = this.scale.width;
+    const altoPantalla = this.scale.height;
+
+    this.crearHeader(anchoPantalla);
+
+    this.contenidoContainer = this.add.container(0, ALTO_HEADER);
+    this.contenedorDinamico.add(this.contenidoContainer);
+
+    let y = MARGEN_SUPERIOR;
+
+    const titulo = this.add
+      .text(anchoPantalla / 2, y, `Temporada ${this.seasonNumber} completada`, {
+        fontFamily: 'Arial',
+        fontSize: '13px',
+        fontStyle: 'bold',
+        color: '#d4af37',
+      })
+      .setOrigin(0.5, 0);
+    this.contenidoContainer.add(titulo);
+    y += 30;
+
+    y = this.dibujarUltimaTemporada(y, anchoPantalla);
+    y += 30;
+    this.dibujarBotonContinuarPlantilla(y, anchoPantalla);
+
+    const altoContenido = y + 70;
+    const altoDisponible = altoPantalla - ALTO_HEADER;
+    this.scrollMinY = Math.min(0, altoDisponible - altoContenido);
+    this.scrollMaxY = 0;
+    this.habilitarScroll();
+  }
+
+  dibujarBotonContinuarPlantilla(y, anchoPantalla) {
+    const boton = this.add
+      .text(anchoPantalla / 2, y, 'Continuar a mi plantilla', {
+        fontFamily: 'Arial',
+        fontSize: '16px',
+        fontStyle: 'bold',
+        color: '#1a1a2e',
+        backgroundColor: '#d4af37',
+        padding: { x: 20, y: 12 },
+      })
+      .setOrigin(0.5, 0)
+      .setInteractive({ useHandCursor: true });
+
+    boton.on('pointerdown', () => this.continuarAPlantilla(boton));
+    this.contenidoContainer.add(boton);
+  }
+
+  async continuarAPlantilla(boton) {
+    boton.disableInteractive();
+    boton.setText('Cargando...');
+
+    try {
+      const cards = await getManagerCards(this.managerId);
+      this.scene.start('CollectionScene', { managerId: this.managerId, cards });
+    } catch (error) {
+      this.mostrarError(error);
+    }
   }
 
   // Dibuja la fila de una temporada y devuelve el Y donde debería arrancar

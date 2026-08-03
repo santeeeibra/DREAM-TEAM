@@ -148,9 +148,15 @@ export function applyEffects({ moneyDelta = 0, moraleDelta = 0, fatigueDelta = 0
 // aplique el delta de un evento. Sin este paso, ese delta se sumaría sobre un
 // valor de careerState potencialmente viejo (el del corte anterior) y
 // pisaría en silencio la tendencia real que vino de los partidos.
+//
+// Acá es donde redondeamos a entero a propósito: moral/fatiga llegan con
+// decimales (fórmula de reversión a la media en seasonSimulator.js, que sí
+// trabaja en punto flotante), pero careerState y las columnas `smallint` de
+// Supabase esperan enteros. Este es el borde entre esas dos matemáticas, así
+// que el redondeo pasa acá y en ningún otro lado.
 export function syncMoraleFatigaDesdeTramo({ moral, fatiga }) {
-  state.morale = clamp(moral, MORALE_MIN, MORALE_MAX);
-  state.fatigue = clamp(fatiga, FATIGUE_MIN, FATIGUE_MAX);
+  state.morale = clamp(Math.round(moral), MORALE_MIN, MORALE_MAX);
+  state.fatigue = clamp(Math.round(fatiga), FATIGUE_MIN, FATIGUE_MAX);
 }
 
 // resetRatingDeltaTemporada borra el estado de gracia/crisis acumulado y deja

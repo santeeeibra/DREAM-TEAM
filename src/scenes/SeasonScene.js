@@ -24,6 +24,7 @@ import { TOTAL_MATCHDAYS, construirMomentosDestacados } from '../engine/seasonSi
 import { simularHastaProximoEvento, aplicarDecisionYContinuar } from '../engine/seasonOrchestrator.js';
 import { calcularTablaFinal } from '../engine/leagueTable.js';
 import * as careerState from '../state/careerState.js';
+import { getLineup, getManagerCards } from '../lineups.js';
 import {
   cerrarTemporada,
   crearSiguienteTemporada,
@@ -118,7 +119,7 @@ export class SeasonScene extends Phaser.Scene {
     const altoPantalla = this.scale.height;
 
     const texto = this.add
-      .text(anchoPantalla / 2, altoPantalla / 2 - 20, 'No se pudo cargar la temporada:\n' + error.message, {
+      .text(anchoPantalla / 2, altoPantalla / 2 - 40, 'No se pudo cargar la temporada:\n' + error.message, {
         fontFamily: 'Arial',
         fontSize: '14px',
         color: '#e74c3c',
@@ -127,8 +128,11 @@ export class SeasonScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    const boton = this.add
-      .text(anchoPantalla / 2, altoPantalla / 2 + 60, 'Reintentar', {
+    // "Reintentar" + "Volver a la colección": el error de carga nunca debe
+    // dejar al jugador en un loop sin salida (el Reintentar de antes repetía
+    // exactamente el mismo fallo y daba la sensación de pantalla congelada).
+    const botonReintentar = this.add
+      .text(anchoPantalla / 2 - 90, altoPantalla / 2 + 50, 'Reintentar', {
         fontFamily: 'Arial',
         fontSize: '15px',
         color: '#1a1a2e',
@@ -137,12 +141,85 @@ export class SeasonScene extends Phaser.Scene {
       })
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true });
-    boton.on('pointerdown', () => {
+    botonReintentar.on('pointerdown', () => {
       this.mostrarCargando();
       this.cargarDatosYArrancar();
     });
 
-    this.contenedorDinamico.add([texto, boton]);
+    const botonColeccion = this.add
+      .text(anchoPantalla / 2 + 90, altoPantalla / 2 + 50, 'Volver a la colección', {
+        fontFamily: 'Arial',
+        fontSize: '15px',
+        color: '#ffffff',
+        backgroundColor: '#3a4256',
+        padding: { x: 16, y: 10 },
+      })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true });
+    botonColeccion.on('pointerdown', async () => {
+      try {
+        const cards = await getManagerCards(this.managerId);
+        this.scene.start('CollectionScene', { managerId: this.managerId, cards });
+      } catch (errorCards) {
+        console.error('[SeasonScene] No se pudieron cargar las cartas para la colección:', errorCards);
+      }
+    });
+
+    this.contenedorDinamico.add([texto, botonReintentar, botonColeccion]);
+  }
+
+  // ---------------------------------------------------------------------
+  // Caso "todavía no hay 11 titular": en vez de fallar con un error (y dar
+  // la sensación de pantalla congelada cuando el Reintentar repite el mismo
+  // fallo), mostramos una pantalla con un botón que lleva directo a armar
+  // el 11 (LineupScene). Cubre también los accesos directos a SeasonScene
+  // (botón "Alinear Equipo" de la colección, dev action "Jugar temporada").
+  // ---------------------------------------------------------------------
+  mostrarSinLineup() {
+    this.limpiarPantalla();
+    const anchoPantalla = this.scale.width;
+    const altoPantalla = this.scale.height;
+
+    const texto = this.add
+      .text(
+        anchoPantalla / 2,
+        altoPantalla / 2 - 40,
+        'Todavía no tenés un 11 titular guardado\npara esta temporada.',
+        {
+          fontFamily: 'Arial',
+          fontSize: '15px',
+          color: '#ffffff',
+          align: 'center',
+          wordWrap: { width: anchoPantalla - 80 },
+        }
+      )
+      .setOrigin(0.5);
+
+    const botonArmar = this.add
+      .text(anchoPantalla / 2, altoPantalla / 2 + 30, 'Armar mi 11 ▶', {
+        fontFamily: 'Arial',
+        fontSize: '16px',
+        color: '#1a1a2e',
+        backgroundColor: '#2ecc71',
+        padding: { x: 18, y: 10 },
+      })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true });
+    botonArmar.on('pointerdown', async () => {
+      try {
+        const cards = await getManagerCards(this.managerId);
+        this.scene.start('LineupScene', {
+          managerId: this.managerId,
+          cards,
+          seasonNumber: this.seasonNumber,
+        });
+      } catch (error) {
+        console.error('[SeasonScene] No se pudieron cargar las cartas para armar el 11:', error);
+        this.mostrarError(error);
+      }
+    });
+
+    this.contenedorDinamico.add([texto, botonArmar]);
   }
 
   // ---------------------------------------------------------------------
@@ -154,11 +231,24 @@ export class SeasonScene extends Phaser.Scene {
       const manager = await getManagerParaTemporada(this.managerId);
       this.seasonNumber = this.seasonNumberSolicitado ?? manager.current_season;
 
-      const [seasonRow, ratingBase, eventosActivos] = await Promise.all([
+      // El rating del 11 titular depende del lineup guardado: si el manager
+      // todavía no confirmó un 11 para esta temporada, ratingDelOnceTitular
+      // lanza (seasons.js). Para no dejar la pantalla congelada en ese caso,
+      // leemos el lineup ANTES y, si no existe, derivamos al jugador a armar
+      // el 11 (mostrarSinLineup) en lugar de tirar el error.
+      const [seasonRow, lineup, eventosActivos] = await Promise.all([
         getOrCreateSeasonRow(this.managerId, this.seasonNumber),
-        ratingDelOnceTitular(this.managerId, this.seasonNumber),
+        getLineup(this.managerId, this.seasonNumber),
         getEventosActivos(),
       ]);
+
+      if (!lineup || !lineup.slots?.starters?.length) {
+        this.seasonRow = seasonRow;
+        this.mostrarSinLineup();
+        return;
+      }
+
+      const ratingBase = await ratingDelOnceTitular(this.managerId, this.seasonNumber);
 
       console.log('[DEBUG] Eventos activos cargados:', eventosActivos);
 

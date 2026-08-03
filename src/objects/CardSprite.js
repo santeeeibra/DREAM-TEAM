@@ -10,13 +10,14 @@ import Phaser from 'phaser';
 import { getTier } from '../shared/ratingTiers.js';
 import { colorDeCarta } from '../shared/cardColors.js';
 import { claveAvatarIniciales } from '../utils/initialsAvatar.js';
+import { FONTS } from '../theme/tokens.js';
 
 // Tamaño fijo de la carta (ancho x alto). Las constantes en mayúsculas indican
 // "esto no cambia", lo dejamos acá arriba para poder ajustarlo fácil en un solo lugar.
 // Las exportamos porque CollectionScene.js las necesita para calcular la grilla
 // (separación entre cartas, alto total de la lista, etc).
-export const CARD_WIDTH = 140;
-export const CARD_HEIGHT = 200;
+export const CARD_WIDTH = 120;
+export const CARD_HEIGHT = 170;
 
 // Clave de textura de la foto real de la carta (misma convención que
 // claveImagenCarta en RevealCardSprite.js: se preloadea en CollectionScene
@@ -141,7 +142,7 @@ export class CardSprite extends Phaser.GameObjects.Container {
       -hh + 10,
       String(this.cardData.overall_rating),
       {
-        fontFamily: 'Arial',
+        fontFamily: FONTS.display,
         fontSize: '26px',
         fontStyle: 'bold',
         color: '#ffffff',
@@ -155,7 +156,7 @@ export class CardSprite extends Phaser.GameObjects.Container {
       -hh + 38,
       this.cardData.position,
       {
-        fontFamily: 'Arial',
+        fontFamily: FONTS.data,
         fontSize: '14px',
         color: '#ffffff',
       }
@@ -183,7 +184,7 @@ export class CardSprite extends Phaser.GameObjects.Container {
   // Nombre del jugador, debajo del ícono/avatar.
   dibujarNombre() {
     const texto = new Phaser.GameObjects.Text(this.scene, 0, 26, this.cardData.name, {
-      fontFamily: 'Arial',
+      fontFamily: FONTS.body,
       fontSize: '13px',
       fontStyle: 'bold',
       color: '#ffffff',
@@ -198,7 +199,7 @@ export class CardSprite extends Phaser.GameObjects.Container {
     const hh = CARD_HEIGHT / 2;
 
     const textoClub = new Phaser.GameObjects.Text(this.scene, 0, hh - 36, this.cardData.club, {
-      fontFamily: 'Arial',
+      fontFamily: FONTS.body,
       fontSize: '11px',
       color: '#ffffff',
       align: 'center',
@@ -212,7 +213,7 @@ export class CardSprite extends Phaser.GameObjects.Container {
       hh - 22,
       this.cardData.nationality,
       {
-        fontFamily: 'Arial',
+        fontFamily: FONTS.body,
         fontSize: '11px',
         color: '#dddddd',
         align: 'center',
@@ -238,8 +239,9 @@ export class CardSprite extends Phaser.GameObjects.Container {
     circulo.strokeCircle(cx, cy, 14);
     this.add(circulo);
 
+    // TODO revisar fuente
     const texto = new Phaser.GameObjects.Text(this.scene, cx, cy, 'DT', {
-      fontFamily: 'Arial',
+      fontFamily: FONTS.body,
       fontSize: '11px',
       fontStyle: 'bold',
       color: '#ffffff',

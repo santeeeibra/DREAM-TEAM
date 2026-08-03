@@ -61,13 +61,44 @@ export class EventScene extends Phaser.Scene {
     this.cargarNarracion();
   }
 
+  // generarNarracionLocal arma un mock string de narración a partir del
+  // evento y del careerState en memoria, para los casos donde no hay un
+  // runtime que sirva /api/narrar-evento (ver cargarNarracion). No reemplaza
+  // la narración real de Gemini: es un respaldo local para no depender del
+  // (inexistente) endpoint en desarrollo.
+  generarNarracionLocal() {
+    const { pressure, streak } = careerState.getState();
+    const contexto = [];
+
+    if (pressure >= 70) contexto.push('la presión está alta');
+    if (streak >= 3) contexto.push(`llevan ${streak} victorias al hilo`);
+    else if (streak <= -2) contexto.push(`vienen de ${Math.abs(streak)} derrotas seguidas`);
+
+    const contextoTexto = contexto.length ? ` El equipo llega con ${contexto.join(' y ')}.` : '';
+
+    return `${this.eventDetails.titulo}: ${this.eventDetails.descripcion}${contextoTexto}`;
+  }
+
   // cargarNarracion le pide a api/narrar-evento.js una versión narrada de la
   // descripción del evento. Si el fetch falla o tarda más que
   // NARRAR_EVENTO_TIMEOUT_MS (el endpoint ya se autolimita a ~2.5s del lado
   // de Gemini, este timeout es una red de seguridad extra por si la propia
   // request de red se cuelga), usamos la descripción original del catálogo:
   // el juego nunca debe quedarse trabado esperando a la IA.
+  //
+  // OJO con el entorno: /api/narrar-evento solo existe como función serverless
+  // en el deploy de Vercel. En desarrollo (Vite) el dev server no ejecuta
+  // ese runtime y responde 404, que ensucia la consola y hace una request
+  // inútil. Por eso en DEV (o sin Vite) nos saltamos el fetch entero y
+  // generamos la narración localmente; en producción (Vite build, donde
+  // import.meta.env.DEV es false) el endpoint sí existe y se usa normal.
   async cargarNarracion() {
+    const esDesarrollo = import.meta.env?.DEV !== false;
+    if (esDesarrollo) {
+      this.mostrarOpciones(this.generarNarracionLocal());
+      return;
+    }
+
     let narracion = this.eventDetails.descripcion;
 
     const controller = new AbortController();

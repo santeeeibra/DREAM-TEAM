@@ -20,6 +20,7 @@ import { CollectionScene } from './scenes/CollectionScene.js';
 import { SeasonScene } from './scenes/SeasonScene.js';
 import { CareerSummaryScene } from './scenes/CareerSummaryScene.js';
 import { CareerTimelineScene } from './scenes/CareerTimelineScene.js';
+import { EventScene } from './scenes/EventScene.js';
 import { initDevPanel } from './dev/DevPanel.js';
 import { setDevGame, setDevManagerId } from './dev/devContext.js';
 
@@ -104,9 +105,10 @@ function mostrarSoloFormularioManager() {
   appContainer.style.display = 'none';
 }
 
-// Crea el juego Phaser (vacío de escenas activas) y registra las 3 escenas
+// Crea el juego Phaser (vacío de escenas activas) y registra las escenas
 // que puede necesitar: PackOpeningScene (solo la primera vez, al crear el
-// DT), y LineupScene/CollectionScene (siempre). Las registramos con
+// DT), y LineupScene/CollectionScene/SeasonScene/CareerSummaryScene/
+// CareerTimelineScene/EventScene (según avance la carrera). Las registramos con
 // game.scene.add sin arrancarlas para poder elegir con cuál empezar según
 // el caso (ver mostrarAperturaDeSobres y mostrarArmadoDe11 más abajo).
 async function crearJuego() {
@@ -136,6 +138,7 @@ async function crearJuego() {
   game.scene.add('SeasonScene', SeasonScene);
   game.scene.add('CareerSummaryScene', CareerSummaryScene);
   game.scene.add('CareerTimelineScene', CareerTimelineScene);
+  game.scene.add('EventScene', EventScene);
 
   setDevGame(game); // el panel de dev necesita esta referencia para poder cambiar de escena
   return game;

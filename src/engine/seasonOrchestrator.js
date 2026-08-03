@@ -43,6 +43,12 @@
 // después nosotros copiamos morale/fatigue de vuelta al estado de la
 // temporada. Por eso aplicarDecisionYContinuar sincroniza en ese orden y no al
 // revés.
+//
+// Y al final de CUALQUIER corte (con evento o SEASON_COMPLETE), avanzar()
+// vuelve a copiar moral/fatiga hacia careerState (ver BUG 3 FIX más abajo):
+// es lo que le permite a SeasonScene confiar en careerState.getState() al
+// cerrar la temporada, en vez de tener que acordarse de leer estado.moral a
+// mano.
 import { simularTramo, TOTAL_MATCHDAYS } from './seasonSimulator.js';
 import { elegirEventosDeTemporada } from './eventSlots.js';
 import * as careerState from '../state/careerState.js';
@@ -197,6 +203,21 @@ function avanzar({ estado, rivalesFuerza, eventosDisponibles }) {
   // del tramo— porque syncStreakFromResultados ya recorre desde el final hacia
   // atrás y corta en el primer empate: le da lo mismo ver de más atrás.
   careerState.syncStreakFromResultados(estadoActualizado.resultados);
+
+  // BUG 3 FIX: sin esto, careerState.morale/fatigue solo se ponía al día
+  // dentro de aplicarDecisionYContinuar (paso 1, ANTES de jugar el tramo que
+  // sigue a la decisión). Cuando el evento resuelto no caía justo en la
+  // última fecha (SLOTS de eventSlots.js sortea entre 3 y 5 de los 5 slots
+  // posibles, así que el de CIERRE/fecha 38 queda afuera ~1 de cada 5
+  // temporadas), el tramo final se jugaba igual pero careerState nunca se
+  // enteraba: quedaba con el valor de ANTES de esas fechas. SeasonScene lee
+  // moral/fatiga de careerState.getState() para cerrarTemporada() y para
+  // calcularResetParcialTemporada() (el heredado de la próxima temporada), así
+  // que ese desfasaje se colaba silenciosamente a la base y a la temporada
+  // siguiente. Sincronizando acá, en el único punto donde se cierra CUALQUIER
+  // tramo (con o sin evento), careerState queda siempre al día con lo que
+  // acaba de devolver seasonSimulator.
+  careerState.syncMoraleFatigaDesdeTramo({ moral: estadoActualizado.moral, fatiga: estadoActualizado.fatiga });
 
   if (!proximaParada) {
     // Fin de temporada: el estado de gracia/crisis acumulado por los eventos
