@@ -109,11 +109,18 @@ function mostrarSoloFormularioManager() {
 // DT), y LineupScene/CollectionScene (siempre). Las registramos con
 // game.scene.add sin arrancarlas para poder elegir con cuál empezar según
 // el caso (ver mostrarAperturaDeSobres y mostrarArmadoDe11 más abajo).
-function crearJuego() {
+async function crearJuego() {
   authContainer.style.display = 'none';
   managerFormContainer.style.display = 'none';
   appContainer.style.display = 'flex';
   appContainer.textContent = ''; // por si había quedado texto de una pantalla anterior
+
+  // Phaser dibuja el texto como imagen dentro del canvas en el momento
+  // exacto en que se crea el objeto Text: si el juego arranca antes de que
+  // la fuente termine de descargarse, ese texto queda dibujado para siempre
+  // con la fuente de respaldo (fallback), aunque la fuente correcta cargue
+  // un segundo después. Esperar document.fonts.ready evita ese problema.
+  await document.fonts.ready;
 
   const game = new Phaser.Game({
     type: Phaser.AUTO,
@@ -136,8 +143,8 @@ function crearJuego() {
 
 // Arranca Phaser con los 5 sobres ya armados (solo se llama una vez, justo
 // después de crear el DT).
-function mostrarAperturaDeSobres(packs, managerId) {
-  const game = crearJuego();
+async function mostrarAperturaDeSobres(packs, managerId) {
+  const game = await crearJuego();
 
   // onFinish: se lo pasamos a PackOpeningScene para que, cuando el jugador
   // toque "Armar mi 11" en el resumen final, busquemos sus 25 cartas recién
@@ -165,7 +172,7 @@ function mostrarAperturaDeSobres(packs, managerId) {
 // el plantel): va directo a LineupScene, que se encarga de pedir esas
 // cartas reales con getManagerCards.
 async function mostrarArmadoDe11(managerId) {
-  const game = crearJuego();
+  const game = await crearJuego();
   try {
     const cards = await getManagerCards(managerId);
     game.scene.start('LineupScene', { managerId, cards });

@@ -30,9 +30,9 @@ export const COLORS = {
   },
 };
 
-// Estas 3 fuentes deben cargarse (Google Fonts, @font-face, o el
-// WebFontLoader de Phaser) antes de usarse. Ese paso no es parte de
-// esta tarea.
+// Estas 3 fuentes se cargan vía <link> a Google Fonts en index.html, y
+// main.js espera a document.fonts.ready antes de crear el juego Phaser
+// para garantizar que ya estén disponibles.
 export const FONTS = {
   display: 'Rajdhani', // nombres de jugador, ratings grandes, títulos de escena
   body: 'Manrope', // texto general, botones, labels
