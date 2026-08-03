@@ -127,6 +127,20 @@ export function applyEffects({ moneyDelta = 0, moraleDelta = 0, fatigueDelta = 0
   state.ratingDelta = clamp(state.ratingDelta + ratingDelta, RATING_DELTA_MIN, RATING_DELTA_MAX);
 }
 
+// syncMoraleFatigaDesdeTramo pone morale/fatigue de careerState en línea con
+// el snapshot más reciente que trae `estado` en el orquestador (los valores
+// que fue moviendo seasonSimulator.js tramo a tramo). A diferencia de
+// applyEffects, que SUMA un delta a lo que ya había, esta función REEMPLAZA
+// el valor: existe para el único caso en que careerState necesita ponerse al
+// día con una fuente de verdad externa, justo antes de que applyEffects
+// aplique el delta de un evento. Sin este paso, ese delta se sumaría sobre un
+// valor de careerState potencialmente viejo (el del corte anterior) y
+// pisaría en silencio la tendencia real que vino de los partidos.
+export function syncMoraleFatigaDesdeTramo({ moral, fatiga }) {
+  state.morale = clamp(moral, MORALE_MIN, MORALE_MAX);
+  state.fatigue = clamp(fatiga, FATIGUE_MIN, FATIGUE_MAX);
+}
+
 // resetRatingDeltaTemporada borra el estado de gracia/crisis acumulado y deja
 // la próxima temporada arrancando desde el rating real del plantel. NO toca
 // money, pressure, streak, morale ni fatiga: esas cuatro cruzan de una

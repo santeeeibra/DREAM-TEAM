@@ -190,6 +190,14 @@ function avanzar({ estado, rivalesFuerza, eventosDisponibles }) {
 
   const tramoStats = calcularTramoStats(estadoBase, estadoActualizado, desdeJornada, hastaJornada);
 
+  // BUG 2 FIX: el streak se deriva acá, en el único punto donde se cierra un
+  // tramo, para que quede al día en careerState ANTES de que getEffectiveRating
+  // vuelva a usarse (en el próximo avanzar(), para el tramo siguiente, o en el
+  // cierre de temporada). Pasamos el array completo de resultados —no solo los
+  // del tramo— porque syncStreakFromResultados ya recorre desde el final hacia
+  // atrás y corta en el primer empate: le da lo mismo ver de más atrás.
+  careerState.syncStreakFromResultados(estadoActualizado.resultados);
+
   if (!proximaParada) {
     // Fin de temporada: el estado de gracia/crisis acumulado por los eventos
     // muere acá, así la próxima arranca desde el rating real del plantel. Es el
@@ -259,12 +267,22 @@ export function simularHastaProximoEvento({ estado, rivalesFuerza, eventosDispon
 //
 // Devuelve exactamente lo mismo que simularHastaProximoEvento.
 export function aplicarDecisionYContinuar({ estado, decisionElegida, rivalesFuerza, eventosDisponibles }) {
-  // 1. Los deltas del evento van SIEMPRE por applyEffects: es el único camino
+  // 1. BUG 1 FIX — sincronizar careerState con el snapshot más reciente de
+  //    moral/fatiga ANTES de aplicar el efecto. `estado` es el que vino
+  //    actualizándose tramo a tramo con los resultados de los partidos, así
+  //    que puede estar más al día que careerState.morale/fatigue (que solo se
+  //    tocan acá, en los cortes). Si aplicáramos el delta del evento sin este
+  //    paso, se sumaría sobre un valor de careerState potencialmente viejo y
+  //    pisaría en silencio la tendencia real que vino de los partidos.
+  careerState.syncMoraleFatigaDesdeTramo({ moral: estado.moral, fatiga: estado.fatiga });
+
+  // 2. Los deltas del evento van SIEMPRE por applyEffects: es el único camino
   //    autorizado para tocar money/morale/fatigue/pressure (regla de
-  //    careerState.js). Acá no se clampea ni se suma nada a mano.
+  //    careerState.js). Acá no se clampea ni se suma nada a mano. Ahora sí
+  //    parte del valor ya sincronizado en el paso 1.
   careerState.applyEffects(traducirEffects(decisionElegida?.effects));
 
-  // 2. Sincronización de vuelta: en el corte, careerState es la fuente de
+  // 3. Sincronización de vuelta: en el corte, careerState es la fuente de
   //    verdad de moral y fatiga (acaba de aplicarles el evento y de
   //    clampearlas), así que las copiamos al estado de la temporada antes de
   //    seguir. De la fecha siguiente en adelante vuelve a mandar
@@ -274,6 +292,6 @@ export function aplicarDecisionYContinuar({ estado, decisionElegida, rivalesFuer
   const { morale, fatigue } = careerState.getState();
   const estadoSincronizado = { ...estado, moral: morale, fatiga: fatigue };
 
-  // 3. Y a partir de acá es exactamente el mismo avance de siempre.
+  // 4. Y a partir de acá es exactamente el mismo avance de siempre.
   return avanzar({ estado: estadoSincronizado, rivalesFuerza, eventosDisponibles });
 }
