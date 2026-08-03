@@ -8,6 +8,7 @@ import { CARD_WIDTH, CARD_HEIGHT } from './CardSprite.js';
 import { getTier } from '../shared/ratingTiers.js';
 import { colorDeCarta } from '../shared/cardColors.js';
 import { claveAvatarIniciales } from '../utils/initialsAvatar.js';
+import { FONTS } from '../theme/tokens.js';
 
 export { CARD_WIDTH, CARD_HEIGHT };
 
@@ -17,6 +18,14 @@ export function claveImagenCarta(cardId) {
   return `card-img-${cardId}`;
 }
 
+// Clave de textura para un ícono de escudo/bandera/liga. Se indexa por la
+// URL misma (no por eaId, que no llega hasta acá): como el mismo club/país/
+// liga se repite en muchas cartas, distintas cartas con la misma URL piden
+// la misma clave y Phaser solo la carga una vez (ver LineupScene.preload()).
+export function claveBadge(url) {
+  return `badge-${url}`;
+}
+
 export class RevealCardSprite extends Phaser.GameObjects.Container {
   constructor(scene, x, y, cardData) {
     super(scene, x, y);
@@ -24,7 +33,9 @@ export class RevealCardSprite extends Phaser.GameObjects.Container {
 
     this.dibujarFondoEscudo();
     this.dibujarFoto();
+    this.dibujarGradienteInferior();
     this.dibujarRatingYPosicion();
+    this.dibujarInsignias();
     this.dibujarNombreYClub();
 
     scene.add.existing(this);
@@ -83,6 +94,21 @@ dibujarFoto() {
     this.add(imagen);
   }
 
+  // Franja oscura (transparente arriba → negro abajo) en el tercio inferior
+  // de la carta, detrás de nombre y club (ver dibujarNombreYClub): sin esto
+  // el texto blanco se pierde contra fotos claras.
+  dibujarGradienteInferior() {
+    const hw = CARD_WIDTH / 2;
+    const hh = CARD_HEIGHT / 2;
+    const alto = CARD_HEIGHT / 3;
+    const y = hh - alto;
+
+    const gradiente = new Phaser.GameObjects.Graphics(this.scene);
+    gradiente.fillGradientStyle(0x000000, 0x000000, 0x000000, 0x000000, 0, 0, 0.85, 0.85);
+    gradiente.fillRect(-hw, y, CARD_WIDTH, alto);
+    this.add(gradiente);
+  }
+
   dibujarRatingYPosicion() {
     const hw = CARD_WIDTH / 2;
     const hh = CARD_HEIGHT / 2;
@@ -92,7 +118,7 @@ dibujarFoto() {
       -hw + 12,
       -hh + 10,
       String(this.cardData.overall_rating),
-      { fontFamily: 'Arial', fontSize: '26px', fontStyle: 'bold', color: '#ffffff' }
+      { fontFamily: FONTS.display, fontSize: '26px', fontStyle: 'bold', color: '#ffffff' }
     );
     this.add(textoRating);
 
@@ -101,32 +127,60 @@ dibujarFoto() {
       -hw + 12,
       -hh + 38,
       this.cardData.position,
-      { fontFamily: 'Arial', fontSize: '14px', color: '#ffffff' }
+      { fontFamily: FONTS.data, fontSize: '14px', color: '#ffffff' }
     );
     this.add(textoPosicion);
+  }
+
+  // Columna vertical chica debajo del rating/posición (esquina superior
+  // izquierda, estilo carta EA FC): bandera de país → logo de liga → escudo
+  // de club, en ese orden. Cada uno es una fila fija; si a la carta le falta
+  // ese dato (Fase 1 no corrió, o la carta no tiene fut_id) o la textura
+  // todavía no cargó, esa fila se salta sin romper el resto del layout.
+  dibujarInsignias() {
+    const hw = CARD_WIDTH / 2;
+    const hh = CARD_HEIGHT / 2;
+    const tamaño = 16;
+    const espacio = 4;
+    const x = -hw + 20;
+    let y = -hh + 58;
+
+    const urls = [this.cardData.nation_flag_url, this.cardData.league_logo_url, this.cardData.club_badge_url];
+    for (const url of urls) {
+      const clave = url ? claveBadge(url) : null;
+      if (clave && this.scene.textures.exists(clave)) {
+        const icono = new Phaser.GameObjects.Image(this.scene, x, y, clave);
+        icono.setDisplaySize(tamaño, tamaño);
+        this.add(icono);
+      }
+      y += tamaño + espacio;
+    }
   }
 
   dibujarNombreYClub() {
     const hh = CARD_HEIGHT / 2;
 
-    const nombre = new Phaser.GameObjects.Text(this.scene, 0, 26, this.cardData.name, {
-      fontFamily: 'Arial',
+    // Anclados por el borde inferior (origin y = 1): el club queda pegado
+    // abajo y el nombre crece hacia arriba si hace wordWrap a dos líneas,
+    // así nunca se amontonan entre sí aunque el nombre sea largo.
+    const club = new Phaser.GameObjects.Text(this.scene, 0, hh - 14, this.cardData.club ?? '', {
+      fontFamily: FONTS.body,
+      fontSize: '11px',
+      color: '#dddddd',
+      align: 'center',
+    });
+    club.setOrigin(0.5, 1);
+    this.add(club);
+
+    const nombre = new Phaser.GameObjects.Text(this.scene, 0, hh - 30, this.cardData.name, {
+      fontFamily: FONTS.body,
       fontSize: '13px',
       fontStyle: 'bold',
       color: '#ffffff',
       align: 'center',
       wordWrap: { width: CARD_WIDTH - 16 },
     });
-    nombre.setOrigin(0.5, 0);
+    nombre.setOrigin(0.5, 1);
     this.add(nombre);
-
-    const club = new Phaser.GameObjects.Text(this.scene, 0, hh - 26, this.cardData.club ?? '', {
-      fontFamily: 'Arial',
-      fontSize: '11px',
-      color: '#dddddd',
-      align: 'center',
-    });
-    club.setOrigin(0.5, 0);
-    this.add(club);
   }
 }

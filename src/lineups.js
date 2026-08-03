@@ -156,7 +156,7 @@ export async function getManagerCards(managerId) {
   const { data, error } = await supabase
     .from('user_cards')
     .select(
-      'id, cards (id, name, club, position, overall_rating, rarity, photo_url, fut_id, uses_generated_avatar)'
+      'id, cards (id, name, club, position, overall_rating, rarity, photo_url, fut_id, uses_generated_avatar, club_badge_url, nation_flag_url, league_logo_url)'
     )
     .eq('manager_id', managerId);
 

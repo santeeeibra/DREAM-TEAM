@@ -7,7 +7,8 @@ import { draftSquad, splitIntoPacks, MINIMOS_POR_POSICION } from './draftSquad.j
 
 // Columnas que necesita el draft (id, position) + las que necesita la
 // pantalla de apertura para mostrar cada carta (nombre, foto, rating, etc).
-const COLUMNAS_CARTA = 'id, name, club, position, overall_rating, rarity, photo_url, fut_id, uses_generated_avatar';
+const COLUMNAS_CARTA =
+  'id, name, club, position, overall_rating, rarity, photo_url, fut_id, uses_generated_avatar, club_badge_url, nation_flag_url, league_logo_url';
 
 async function fetchCardPool() {
   const { data, error } = await supabase.from('cards').select(COLUMNAS_CARTA).eq('is_active', true);

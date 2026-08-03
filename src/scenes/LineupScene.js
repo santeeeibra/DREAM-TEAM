@@ -3,7 +3,7 @@
 // CollectionScene/PackOpeningScene), deja tocar hasta 11 para seleccionarlas,
 // sugiere una formación y deja guardar el resultado en la tabla `lineups`.
 import Phaser from 'phaser';
-import { RevealCardSprite, CARD_WIDTH, CARD_HEIGHT, claveImagenCarta } from '../objects/RevealCardSprite.js';
+import { RevealCardSprite, CARD_WIDTH, CARD_HEIGHT, claveImagenCarta, claveBadge } from '../objects/RevealCardSprite.js';
 import { FORMATIONS } from '../engine/formations.js';
 import { resolveCardImageUrl } from '../utils/cardImage.js';
 import {
@@ -14,13 +14,33 @@ import {
   saveLineup,
 } from '../lineups.js';
 import { calcularRatingDelOnce, ensureSeason } from '../seasons.js';
+import { COLORS, FONTS } from '../theme/tokens.js';
+import { getTier } from '../shared/ratingTiers.js';
 
 const COLUMNAS = 4;
-const ESPACIO = 20;
-const MARGEN_SUPERIOR = 16;
-const ALTO_FOOTER = 150; // franja fija de abajo: formación + aviso + botón confirmar
-const ALTO_TABS = 36; // franja de tabs POR/DEF/MED/DEL, debajo del contador
-const INICIO_GRILLA_Y = 70 + ALTO_TABS; // dónde empieza la grilla, debajo de tabs
+const ESPACIO = 14;
+const MARGEN_SUPERIOR = 10;
+const ALTO_FOOTER = 140; // franja fija de abajo: formación + aviso + botón confirmar
+const ALTO_TABS = 32; // franja de tabs POR/DEF/MED/DEL, debajo del contador
+const INICIO_GRILLA_Y = 56 + ALTO_TABS; // dónde empieza la grilla, debajo de tabs
+// Alto fijo de la zona visible de la grilla: exactamente 2 filas completas
+// de cartas. Si una posición tiene más filas, el scroll queda confinado
+// dentro de este alto (máscara de Phaser), nunca scrollea la página entera.
+const ALTO_GRILLA_VISIBLE = MARGEN_SUPERIOR + 2 * CARD_HEIGHT + ESPACIO;
+
+// Ámbar apagado para la barra de "formación incompleta": un tono cercano a
+// COLORS.tier.gold pero desaturado, para no confundirse con el color real
+// de una card Gold.
+const AMBAR_AVISO = 0x8a7048;
+const AMBAR_AVISO_TEXTO = '#c9ad82';
+
+// tokens.js guarda bg/accent/text como strings CSS ('#RRGGBB') porque esos
+// también alimentan pantallas HTML (login/crear DT). Los Graphics/Rectangle
+// de Phaser necesitan el mismo valor como número (0xRRGGBB), así que hace
+// falta este paso de conversión en cada lugar donde se dibuja con ellos.
+function hexToNumber(hexString) {
+  return parseInt(hexString.replace('#', ''), 16);
+}
 
 // Orden fijo de posiciones para las tabs y para el contador de arriba.
 const POSICIONES = ['POR', 'DEF', 'MED', 'DEL'];
@@ -102,6 +122,13 @@ export class LineupScene extends Phaser.Scene {
   // (son las mismas 25 cartas, con la misma clave de textura por id de
   // catálogo), así que evitamos re-pedirlas si ya están en caché.
   preload() {
+    // Dedup en memoria dentro de esta misma corrida de preload: el mismo
+    // club/país/liga se repite en muchas de las 25 cartas, y queremos
+    // encolar como mucho una carga por URL (this.textures.exists() solo ve
+    // texturas de una escena anterior ya cargada, no lo que se está por
+    // encolar en este preload).
+    const badgesEnCola = new Set();
+
     for (const carta of this.cards) {
       const clave = claveImagenCarta(carta.id);
       const urlImagen = resolveCardImageUrl(carta);
@@ -109,8 +136,20 @@ export class LineupScene extends Phaser.Scene {
       if (urlImagen && !this.textures.exists(clave)) {
         this.load.image(clave, urlImagen);
       }
+
+      for (const urlBadge of [carta.nation_flag_url, carta.league_logo_url, carta.club_badge_url]) {
+        if (!urlBadge) continue; // Fase 1 no corrió para esta carta, o no tiene fut_id: sin drama, RevealCardSprite se lo salta
+        const claveIcono = claveBadge(urlBadge);
+        if (!this.textures.exists(claveIcono) && !badgesEnCola.has(claveIcono)) {
+          badgesEnCola.add(claveIcono);
+          this.load.image(claveIcono, urlBadge);
+        }
+      }
     }
 
+    // Si un ícono puntual falla (404, red caída), solo avisa por consola:
+    // el loader sigue con el resto y RevealCardSprite ya chequea
+    // this.scene.textures.exists() antes de dibujar cada ícono.
     this.load.on('loaderror', (file) => {
       console.warn('[DEBUG loaderror]', file.key, file.src);
     });
@@ -120,8 +159,13 @@ export class LineupScene extends Phaser.Scene {
     const anchoPantalla = this.scale.width;
     const altoPantalla = this.scale.height;
 
+    // Fondo general de la escena. El panel detrás de la grilla y el del
+    // footer usan COLORS.bg.elevated (ver crearGrilla/crearFooter): dos
+    // superficies distintas, no un solo color plano.
+    this.add.rectangle(anchoPantalla / 2, altoPantalla / 2, anchoPantalla, altoPantalla, hexToNumber(COLORS.bg.base));
+
     this.add
-      .text(anchoPantalla / 2, 20, 'Elegí tu 11 titular', {
+      .text(anchoPantalla / 2, 14, 'Elegí tu 11 titular', {
         fontFamily: 'Arial',
         fontSize: '20px',
         color: '#ffffff',
@@ -133,7 +177,7 @@ export class LineupScene extends Phaser.Scene {
     // actualizarContadorPosiciones() porque necesitan un color distinto por
     // segmento (verde/gris/rojo), y Phaser no permite pintar de varios
     // colores un mismo objeto de texto.
-    this.contenedorContador = this.add.container(anchoPantalla / 2, 44);
+    this.contenedorContador = this.add.container(anchoPantalla / 2, 36);
 
     this.crearTabs(anchoPantalla);
     this.crearGrilla(anchoPantalla, altoPantalla);
@@ -153,41 +197,84 @@ export class LineupScene extends Phaser.Scene {
     this.dibujarTabs(anchoPantalla);
   }
 
+  // Segmented control tipo píldora: inactiva es texto gris sobre fondo
+  // transparente con hover sutil; activa tiene fondo sólido turquesa,
+  // sombra chica offset por detrás (ver nota en crearFooter/dibujarPanelFormacion
+  // de por qué no se usa postFX.addShadow) y un badge con el contador de esa
+  // posición para la formación elegida (ej. "1/4").
   dibujarTabs(anchoPantalla) {
     this.contenedorTabs.removeAll(true);
 
+    const requeridos = positionCountsForFormation(this.formacionElegida);
+    const seleccionados = countByPosition(this.cartasSeleccionadas());
+
     const anchoTab = anchoPantalla / POSICIONES.length;
-    const y = 70 + ALTO_TABS / 2;
+    const y = 56 + ALTO_TABS / 2;
+    const anchoPildora = anchoTab - 10;
+    const altoPildora = ALTO_TABS - 6;
+    const radio = altoPildora / 2;
 
     POSICIONES.forEach((posicion, indice) => {
       const activa = posicion === this.posicionActiva;
       const x = anchoTab * indice + anchoTab / 2;
 
-      const fondo = this.add
-        .rectangle(x, y, anchoTab - 6, ALTO_TABS - 8, activa ? 0xd4af37 : 0x1e2a4a, 1)
-        .setStrokeStyle(1, 0x3a4256);
+      if (activa) {
+        const sombra = this.add.graphics();
+        sombra.fillStyle(0x000000, 0.3);
+        sombra.fillRoundedRect(x - anchoPildora / 2, y - altoPildora / 2 + 2, anchoPildora, altoPildora, radio);
+        this.contenedorTabs.add(sombra);
+
+        const fondo = this.add.graphics();
+        fondo.fillStyle(hexToNumber(COLORS.accent), 1);
+        fondo.fillRoundedRect(x - anchoPildora / 2, y - altoPildora / 2, anchoPildora, altoPildora, radio);
+        this.contenedorTabs.add(fondo);
+      }
 
       const texto = this.add
         .text(x, y, posicion, {
-          fontFamily: 'Arial',
+          fontFamily: FONTS.body,
           fontSize: '13px',
-          fontStyle: 'bold',
-          color: activa ? '#1a1a2e' : '#9aa5b8',
+          fontStyle: activa ? 'bold' : 'normal',
+          color: activa ? COLORS.bg.base : COLORS.text.secondary,
+          letterSpacing: 1,
         })
         .setOrigin(0.5);
+      this.contenedorTabs.add(texto);
 
-      const zona = this.add.zone(x, y, anchoTab - 6, ALTO_TABS - 8);
+      if (activa) {
+        const contador = `${seleccionados[posicion]}/${requeridos[posicion]}`;
+        const badge = this.add
+          .text(x + texto.width / 2 + 12, y, contador, {
+            fontFamily: FONTS.data,
+            fontSize: '9px',
+            color: COLORS.text.primary,
+            backgroundColor: '#00000055',
+            padding: { x: 4, y: 2 },
+          })
+          .setOrigin(0, 0.5);
+        this.contenedorTabs.add(badge);
+      }
+
+      const zona = this.add.zone(x, y, anchoTab, ALTO_TABS);
       zona.setInteractive({ useHandCursor: true });
+      // Hover sutil: solo afecta a tabs inactivas (la activa ya tiene fondo sólido).
+      zona.on('pointerover', () => {
+        if (!activa) texto.setColor(COLORS.text.primary);
+      });
+      zona.on('pointerout', () => {
+        if (!activa) texto.setColor(COLORS.text.secondary);
+      });
       zona.on('pointerdown', () => this.cambiarTab(posicion));
-
-      this.contenedorTabs.add([fondo, texto, zona]);
+      this.contenedorTabs.add(zona);
     });
   }
 
   cambiarTab(posicion) {
     if (posicion === this.posicionActiva) return;
     this.posicionActiva = posicion;
-    this.dibujarTabs(this.scale.width);
+    // reconstruirGrillaVisible arma las cartas de la tab nueva;
+    // actualizarUI ya redibuja las tabs (badge de contador) como parte de
+    // su refresco normal, así que no hace falta duplicarlo acá.
     this.reconstruirGrillaVisible();
     this.actualizarUI();
   }
@@ -198,15 +285,31 @@ export class LineupScene extends Phaser.Scene {
   // muestra las cartas de this.posicionActiva (ver reconstruirGrillaVisible).
   // ---------------------------------------------------------------------
   crearGrilla(anchoPantalla, altoPantalla) {
+    // Alto fijo del grid: 2 filas completas de cartas (ver constante
+    // ALTO_GRILLA_VISIBLE). El header, las tabs, el panel de formación y el
+    // botón Confirmar quedan siempre visibles; si una posición tiene más de
+    // 2 filas, el scroll es SOLO dentro de esta zona.
+    const altoVisible = ALTO_GRILLA_VISIBLE;
+
+    // Panel de fondo detrás de la grilla: superficie "elevated", distinta
+    // del fondo general "base" de la escena (ver create()).
+    this.add.rectangle(
+      anchoPantalla / 2,
+      INICIO_GRILLA_Y + altoVisible / 2,
+      anchoPantalla,
+      altoVisible,
+      hexToNumber(COLORS.bg.elevated)
+    );
+
     this.gridContainer = this.add.container(0, INICIO_GRILLA_Y);
 
-    // Máscara: recorta el contenido de gridContainer a la franja
-    // [INICIO_GRILLA_Y, altoVisible] de la pantalla, para que al hacer
-    // scroll las cartas no se sigan viendo por encima del footer fijo de
-    // abajo (ni por encima de las tabs).
-    const altoVisible = altoPantalla - ALTO_FOOTER;
+    // Máscara: recorta el contenido de gridContainer a la franja fija
+    // [INICIO_GRILLA_Y, INICIO_GRILLA_Y + ALTO_GRILLA_VISIBLE] de la
+    // pantalla, para que al hacer scroll las cartas no se sigan viendo por
+    // encima del footer fijo de abajo (ni por encima de las tabs), y nunca
+    // quede una fila cortada a la mitad.
     const formaMascara = this.make.graphics({ add: false });
-    formaMascara.fillRect(0, INICIO_GRILLA_Y, anchoPantalla, altoVisible - INICIO_GRILLA_Y);
+    formaMascara.fillRect(0, INICIO_GRILLA_Y, anchoPantalla, altoVisible);
     this.gridContainer.setMask(formaMascara.createGeometryMask());
 
     this.reconstruirGrillaVisible();
@@ -228,7 +331,6 @@ export class LineupScene extends Phaser.Scene {
     this.contenedoresPorId.clear();
 
     const anchoPantalla = this.scale.width;
-    const altoPantalla = this.scale.height;
     const anchoGrilla = COLUMNAS * CARD_WIDTH + (COLUMNAS - 1) * ESPACIO;
     const offsetX = (anchoPantalla - anchoGrilla) / 2;
 
@@ -243,13 +345,29 @@ export class LineupScene extends Phaser.Scene {
       const contenedor = this.crearCartaSeleccionable(carta, x, y);
       this.gridContainer.add(contenedor);
       this.contenedoresPorId.set(carta.user_card_id, contenedor);
+
+      // Entrada con escala + fade en vez de aparecer instantáneamente, con
+      // un stagger chico por índice para que la grilla entre en cascada.
+      contenedor.setScale(0.85);
+      contenedor.setAlpha(0);
+      this.tweens.add({
+        targets: contenedor,
+        scale: 1,
+        alpha: 1,
+        duration: 220,
+        delay: Math.min(indice, COLUMNAS * 2) * 20,
+        ease: 'Cubic.easeOut',
+      });
     });
 
-    const altoVisible = altoPantalla - ALTO_FOOTER;
+    const altoVisible = ALTO_GRILLA_VISIBLE;
     const filasTotales = Math.max(1, Math.ceil(cartasDeLaTab.length / COLUMNAS));
     const altoContenido = MARGEN_SUPERIOR + filasTotales * CARD_HEIGHT + (filasTotales - 1) * ESPACIO + MARGEN_SUPERIOR;
 
-    this.scrollMinY = Math.min(INICIO_GRILLA_Y, altoVisible - altoContenido);
+    // El scroll queda confinado al alto fijo del grid: si el contenido
+    // entra en 2 filas no hay scroll; si hay más, scrollea solo acá adentro
+    // (la máscara de crearGrilla recorta el resto).
+    this.scrollMinY = Math.min(INICIO_GRILLA_Y, INICIO_GRILLA_Y + altoVisible - altoContenido);
     this.scrollMaxY = INICIO_GRILLA_Y;
     this.gridContainer.y = INICIO_GRILLA_Y; // vuelve arriba del todo al cambiar de tab
   }
@@ -306,10 +424,43 @@ export class LineupScene extends Phaser.Scene {
       this.seleccionIds.delete(id);
     } else {
       this.seleccionIds.add(id);
+      this.dispararShineSiEsSpecial(id, carta);
     }
 
     this.autoSeleccionarFormacion();
     this.actualizarUI();
+  }
+
+  // Shine sweep: cuando una card cuya banda es SPECIAL pasa a estar
+  // seleccionada (no al deseleccionarla, ni al reconstruir la grilla en un
+  // cambio de tab), un brillo diagonal la cruza una sola vez. Gold/Silver/
+  // Bronze no llevan este efecto.
+  dispararShineSiEsSpecial(id, carta) {
+    if (getTier(carta.overall_rating) !== 'SPECIAL') return;
+    const contenedor = this.contenedoresPorId.get(id);
+    if (!contenedor) return; // la carta seleccionada no está en la tab visible ahora mismo
+
+    const bounds = contenedor.getBounds();
+    const formaMascara = this.make.graphics({ add: false });
+    formaMascara.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
+    const mascara = formaMascara.createGeometryMask();
+
+    const franja = this.add.rectangle(-CARD_WIDTH, 0, 46, CARD_HEIGHT * 1.6, 0xffffff, 0.35);
+    franja.setAngle(22);
+    franja.setBlendMode(Phaser.BlendModes.ADD);
+    franja.setMask(mascara);
+    contenedor.add(franja);
+
+    this.tweens.add({
+      targets: franja,
+      x: CARD_WIDTH,
+      duration: 450,
+      ease: 'Cubic.easeOut',
+      onComplete: () => {
+        mascara.destroy();
+        franja.destroy();
+      },
+    });
   }
 
   cartasSeleccionadas() {
@@ -347,24 +498,27 @@ export class LineupScene extends Phaser.Scene {
     const yFooter = altoPantalla - ALTO_FOOTER;
     this.yFooter = yFooter;
 
-    this.add.rectangle(anchoPantalla / 2, yFooter + ALTO_FOOTER / 2, anchoPantalla, ALTO_FOOTER, 0x0f1626, 0.97);
-    this.add.rectangle(anchoPantalla / 2, yFooter, anchoPantalla, 2, 0xd4af37, 0.6);
+    // Superficie "elevated" del footer (misma que detrás de la grilla, ver
+    // crearGrilla) y un hairline separador arriba, en vez del divisor dorado
+    // de antes: el turquesa queda como único acento de acción de la pantalla.
+    this.add.rectangle(anchoPantalla / 2, yFooter + ALTO_FOOTER / 2, anchoPantalla, ALTO_FOOTER, hexToNumber(COLORS.bg.elevated));
+    this.add.rectangle(anchoPantalla / 2, yFooter, anchoPantalla, 1, hexToNumber(COLORS.text.secondary), 0.3);
 
     // Formación + botón "Cambiar" + aviso de lo que falta: se redibuja
     // entero cada vez que cambia algo (dibujarPanelFormacion), porque el
     // texto de la formación y el aviso cambian de contenido.
     this.panelFormacion = this.add.container(0, 0);
 
-    // El botón "Confirmar 11" se crea UNA sola vez acá (a diferencia del
+    // El botón "CONFIRMAR 11" se crea UNA sola vez acá (a diferencia del
     // panel de arriba) porque solo necesitamos prender/apagar su estado
-    // habilitado, no recrearlo.
+    // habilitado, no recrearlo. Los colores de cada estado los pone
+    // actualizarBotonConfirmar().
     this.botonConfirmar = this.add
-      .text(anchoPantalla / 2, yFooter + ALTO_FOOTER - 26, 'Confirmar 11', {
-        fontFamily: 'Arial',
+      .text(anchoPantalla / 2, yFooter + ALTO_FOOTER - 26, 'CONFIRMAR 11', {
+        fontFamily: FONTS.body,
         fontSize: '16px',
         fontStyle: 'bold',
-        color: '#1a1a2e',
-        backgroundColor: '#2ecc71',
+        letterSpacing: 1.5,
         padding: { x: 18, y: 10 },
       })
       .setOrigin(0.5);
@@ -379,6 +533,10 @@ export class LineupScene extends Phaser.Scene {
     const totalCompleto = this.seleccionIds.size >= 11;
 
     this.actualizarContadorPosiciones(requeridos, seleccionados);
+    // Redibuja las tabs: el badge de contador de la tab activa (ver
+    // dibujarTabs) tiene que reflejar la selección actual, no solo
+    // actualizarse al cambiar de tab.
+    this.dibujarTabs(this.scale.width);
 
     for (const [id, contenedor] of this.contenedoresPorId) {
       const carta = this.cartasPorId.get(id);
@@ -418,7 +576,7 @@ export class LineupScene extends Phaser.Scene {
     });
 
     const textos = piezas.map((pieza) =>
-      this.add.text(0, 0, pieza.texto, { fontFamily: 'Arial', fontSize: '15px', color: pieza.color })
+      this.add.text(0, 0, pieza.texto, { fontFamily: FONTS.data, fontSize: '15px', color: pieza.color })
     );
     const anchoTotal = textos.reduce((suma, texto) => suma + texto.width, 0);
 
@@ -438,7 +596,7 @@ export class LineupScene extends Phaser.Scene {
 
     if (fit.exact) {
       this.botonConfirmar.setInteractive({ useHandCursor: true });
-      this.botonConfirmar.setStyle({ backgroundColor: '#2ecc71', color: '#1a1a2e' });
+      this.botonConfirmar.setStyle({ backgroundColor: COLORS.accent, color: COLORS.bg.base });
       this.botonConfirmar.setAlpha(1);
     } else {
       this.botonConfirmar.disableInteractive();
@@ -456,24 +614,47 @@ export class LineupScene extends Phaser.Scene {
     const label = FORMATIONS[this.formacionElegida].label;
 
     const textoFormacion = this.add.text(30, y + 22, `Formación: ${label}`, {
-      fontFamily: 'Arial',
+      fontFamily: FONTS.body,
       fontSize: '16px',
-      color: '#ffffff',
+      color: COLORS.text.primary,
     });
     this.panelFormacion.add(textoFormacion);
 
-    const botonCambiar = this.add
-      .text(anchoPantalla - 30, y + 22, 'Cambiar ▼', {
-        fontFamily: 'Arial',
-        fontSize: '14px',
-        color: '#1a1a2e',
-        backgroundColor: '#d4af37',
-        padding: { x: 10, y: 6 },
-      })
-      .setOrigin(1, 0)
-      .setInteractive({ useHandCursor: true });
-    botonCambiar.on('pointerdown', () => this.alternarListaFormaciones(anchoPantalla, y));
-    this.panelFormacion.add(botonCambiar);
+    // "Cambiar ▼": ya no es un botón sólido dorado, es una caja con borde
+    // hairline y fondo transparente (mismo tratamiento que la barra de
+    // aviso de abajo).
+    const textoCambiar = this.add.text(0, 0, 'Cambiar ▼', {
+      fontFamily: FONTS.body,
+      fontSize: '14px',
+      color: COLORS.text.primary,
+    });
+    const padXCambiar = 10;
+    const padYCambiar = 6;
+    const anchoCambiar = textoCambiar.width + padXCambiar * 2;
+    const altoCambiar = textoCambiar.height + padYCambiar * 2;
+    const xCambiar = anchoPantalla - 30 - anchoCambiar;
+    const yCambiar = y + 22;
+    textoCambiar.setPosition(xCambiar + padXCambiar, yCambiar + padYCambiar);
+
+    const cajaCambiar = this.add.rectangle(
+      xCambiar + anchoCambiar / 2,
+      yCambiar + altoCambiar / 2,
+      anchoCambiar,
+      altoCambiar
+    );
+    cajaCambiar.setStrokeStyle(1, hexToNumber(COLORS.text.secondary), 0.3);
+    this.panelFormacion.add(cajaCambiar);
+    this.panelFormacion.add(textoCambiar);
+
+    const zonaCambiar = this.add.zone(
+      xCambiar + anchoCambiar / 2,
+      yCambiar + altoCambiar / 2,
+      anchoCambiar,
+      altoCambiar
+    );
+    zonaCambiar.setInteractive({ useHandCursor: true });
+    zonaCambiar.on('pointerdown', () => this.alternarListaFormaciones(anchoPantalla, y));
+    this.panelFormacion.add(zonaCambiar);
 
     if (!fit.exact) {
       const partes = [];
@@ -483,12 +664,36 @@ export class LineupScene extends Phaser.Scene {
       for (const [posicion, cantidad] of Object.entries(fit.sobran)) {
         partes.push(`te sobran ${cantidad} ${nombrePosicion(posicion, cantidad)}`);
       }
-      const aviso = this.add.text(30, y + 54, `Con ${label} ${partes.join(' y ')}.`, {
-        fontFamily: 'Arial',
-        fontSize: '13px',
-        color: '#f4a300',
-        wordWrap: { width: anchoPantalla - 60 },
-      });
+
+      // Barra con borde hairline ámbar (apagado, para no confundirse con
+      // una card Gold) + triángulo de advertencia dibujado a mano a la
+      // izquierda del texto.
+      const xIzq = 30;
+      const anchoBarra = anchoPantalla - 60;
+      const topBarra = y + 50;
+      const altoBarra = 32;
+      const centroBarra = topBarra + altoBarra / 2;
+
+      const barra = this.add.rectangle(anchoPantalla / 2, centroBarra, anchoBarra, altoBarra);
+      barra.setStrokeStyle(1, AMBAR_AVISO, 0.8);
+      this.panelFormacion.add(barra);
+
+      const xTriangulo = xIzq + 16;
+      const s = 6;
+      const triangulo = this.add.graphics();
+      triangulo.fillStyle(AMBAR_AVISO, 1);
+      triangulo.fillTriangle(xTriangulo, centroBarra - s, xTriangulo - s, centroBarra + s, xTriangulo + s, centroBarra + s);
+      this.panelFormacion.add(triangulo);
+
+      const xTexto = xTriangulo + s + 12;
+      const aviso = this.add
+        .text(xTexto, centroBarra, `Con ${label} ${partes.join(' y ')}.`, {
+          fontFamily: FONTS.body,
+          fontSize: '13px',
+          color: AMBAR_AVISO_TEXTO,
+          wordWrap: { width: anchoPantalla - 30 - xTexto - 10 },
+        })
+        .setOrigin(0, 0.5);
       this.panelFormacion.add(aviso);
     }
   }
@@ -539,7 +744,7 @@ export class LineupScene extends Phaser.Scene {
     if (!formationFit(this.cartasSeleccionadas(), this.formacionElegida).exact) return;
 
     this.botonConfirmar.disableInteractive();
-    this.botonConfirmar.setText('Guardando...');
+    this.botonConfirmar.setText('GUARDANDO...');
 
     const seleccionadas = this.cartasSeleccionadas();
     const starters = construirStarters(seleccionadas, this.formacionElegida);
@@ -551,6 +756,14 @@ export class LineupScene extends Phaser.Scene {
 
     try {
       const lineupGuardado = await saveLineup(this.managerId, this.seasonNumber, this.formacionElegida, slots);
+
+      // Guardamos el lineup confirmado y la temporada REAL que resolvió
+      // saveLineup (podría diferir de this.seasonNumber si el manager no
+      // tenía temporada en curso y se le creó una): los necesitamos en
+      // mostrarExito para arrancar SeasonScene con el número correcto
+      // DESPUÉS de que la persistencia terminó con éxito.
+      this.lineupGuardado = lineupGuardado;
+      this.seasonNumber = lineupGuardado.season_number;
 
       try {
         const rating = calcularRatingDelOnce(seleccionadas);
@@ -565,7 +778,7 @@ export class LineupScene extends Phaser.Scene {
       this.mostrarExito();
     } catch (error) {
       console.error('No se pudo guardar el lineup:', error);
-      this.botonConfirmar.setText('Confirmar 11');
+      this.botonConfirmar.setText('CONFIRMAR 11');
       this.actualizarBotonConfirmar(); // vuelve a habilitarlo (la selección sigue siendo válida)
       this.mostrarError(error);
     }
@@ -599,19 +812,42 @@ export class LineupScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    // TODO: conectar con Fase 4 - motor de temporada (en vez de volver a
-    // la colección, acá debería arrancar el flujo de jugar la temporada).
-    const boton = this.add
-      .text(anchoPantalla / 2, altoPantalla / 2 + 30, 'Volver a mi Dream Team', {
+    // Botón principal: "Jugar Temporada". Como mostrarExito() se ejecuta
+    // SIEMPRE después de que confirmar() terminó el await de saveLineup/
+    // ensureSeason, la persistencia del 11 ya está completa cuando se
+    // navega a SeasonScene (que además hoy valida el lineup y deriva al
+    // jugador a armar el 11 si no existiera).
+    const botonJugar = this.add
+      .text(anchoPantalla / 2, altoPantalla / 2 + 20, 'Jugar Temporada ▶', {
         fontFamily: 'Arial',
-        fontSize: '16px',
+        fontSize: '15px',
+        fontStyle: 'bold',
         color: '#1a1a2e',
-        backgroundColor: '#d4af37',
-        padding: { x: 16, y: 10 },
+        backgroundColor: '#2ecc71',
+        padding: { x: 18, y: 10 },
       })
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true });
-    boton.on('pointerdown', () =>
+    botonJugar.on('pointerdown', () =>
+      this.scene.start('SeasonScene', {
+        managerId: this.managerId,
+        seasonNumber: this.lineupGuardado?.season_number ?? this.seasonNumber,
+      })
+    );
+
+    // Acción secundaria: si el jugador prefiere volver a la colección antes
+    // de arrancar la temporada, también puede (el 11 ya quedó guardado).
+    const botonColeccion = this.add
+      .text(anchoPantalla / 2, altoPantalla / 2 + 70, 'Volver a mi Dream Team', {
+        fontFamily: 'Arial',
+        fontSize: '14px',
+        color: '#ffffff',
+        backgroundColor: '#3a4256',
+        padding: { x: 14, y: 8 },
+      })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true });
+    botonColeccion.on('pointerdown', () =>
       this.scene.start('CollectionScene', { managerId: this.managerId, cards: this.cards })
     );
   }
