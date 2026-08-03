@@ -20,13 +20,24 @@
 // - moral y fatiga DENTRO de un tramo de fechas (mientras se juegan jornadas
 //   seguidas) las sigue calculando seasonSimulator.js — no se duplica esa
 //   lógica acá.
-// - careerState.js es dueño de money, pressure y streak, y es el ÚNICO lugar
-//   autorizado para tocar moral/fatiga ENTRE tramos (cuando se resuelve un
-//   evento). Ningún otro archivo debe mutar estas 4 variables directamente:
-//   todo pasa por applyEffects().
+// - careerState.js es dueño de money, pressure, streak y ratingDelta, y es el
+//   ÚNICO lugar autorizado para tocar moral/fatiga ENTRE tramos (cuando se
+//   resuelve un evento). Ningún otro archivo debe mutar estas 5 variables
+//   directamente: todo pasa por applyEffects().
+//
+// -----------------------------------------------------------------------
+// ratingDelta NO ES PROGRESO DE CARRERA
+// -----------------------------------------------------------------------
+//
+// ratingDelta es el "estado de gracia o crisis" TEMPORAL del equipo en ESTA
+// temporada: lo mueven los eventos (clave rating_efectivo del catálogo) y se
+// vuelve a 0 cuando la temporada termina (ver resetRatingDeltaTemporada).
+// El progreso a largo plazo del plantel NO vive acá: vive en el ratingBase que
+// administra el orquestador, que es inmutable dentro de una temporada y solo
+// cambia entre temporadas por una decisión explícita fuera de este sistema.
 import { supabase } from '../supabaseClient.js';
 
-// --- Clamps de las 4 variables que administra este archivo ---
+// --- Clamps de las 5 variables que administra este archivo ---
 const MORALE_MIN = 0;
 const MORALE_MAX = 100;
 const FATIGUE_MIN = 0;
@@ -34,6 +45,11 @@ const FATIGUE_MAX = 100;
 const PRESSURE_MIN = 0;
 const PRESSURE_MAX = 100;
 const MONEY_MIN = 0; // sin techo: no hay tope de cuánto puede juntar un manager
+// ratingDelta se clampea simétrico y chico a propósito: una racha de eventos
+// buenos no puede convertir a un equipo mediocre en candidato, ni una de malos
+// hundirlo por debajo de lo que su plantel realmente vale.
+const RATING_DELTA_MIN = -8;
+const RATING_DELTA_MAX = 8;
 
 // --- Constantes de getEffectiveRating (mismo estilo que las MAYÚSCULAS de
 // seasonSimulator.js) ---
@@ -67,7 +83,11 @@ let state = null;
 // una sola vez al arrancar o resumir una temporada. Los valores iniciales
 // vienen de una fila ya leída de `managers`/`seasons` por quien llame a
 // esto — este archivo no hace el SELECT inicial, solo recibe los datos.
-export function initCareerState({ managerId, seasonId, money, morale, fatigue, pressure, streak }) {
+//
+// ratingDelta arranca en 0 salvo que se lo pasen: es estado de la temporada en
+// curso, no un valor de carrera, así que resumir una temporada a mitad de
+// camino es el único caso donde tiene sentido pasarlo distinto de 0.
+export function initCareerState({ managerId, seasonId, money, morale, fatigue, pressure, streak, ratingDelta = 0 }) {
   state = {
     managerId,
     seasonId,
@@ -76,27 +96,46 @@ export function initCareerState({ managerId, seasonId, money, morale, fatigue, p
     fatigue,
     pressure,
     streak,
+    ratingDelta,
   };
 }
 
 // getState devuelve una COPIA del estado actual, nunca la referencia
 // interna: así nadie de afuera puede mutar money/morale/fatiga/pressure/
-// streak salteándose applyEffects (que es el único camino permitido).
+// streak/ratingDelta salteándose applyEffects (que es el único camino
+// permitido).
 export function getState() {
   return { ...state };
 }
 
 // applyEffects es el único camino de mutación de money/morale/fatiga/
-// pressure. Todos los deltas son opcionales (un evento puede afectar solo
-// alguna variable). Clampeamos cada una:
+// pressure/ratingDelta. Todos los deltas son opcionales (un evento puede
+// afectar solo alguna variable) y todos se SUMAN a lo que ya había: nunca
+// reemplazan el valor vigente. Clampeamos cada una:
 //   - morale, fatigue, pressure: entre 0 y 100.
 //   - money: piso en 0, sin techo (un evento que resta 500k a un manager con
 //     300k no lo deja en negativo, se planta en 0).
-export function applyEffects({ moneyDelta = 0, moraleDelta = 0, fatigueDelta = 0, pressureDelta = 0 } = {}) {
+//   - ratingDelta: entre -8 y +8. Ojo con el nombre del parámetro: acá
+//     `ratingDelta` es el delta que trae UN evento, y state.ratingDelta es el
+//     acumulado de todos los eventos de la temporada. Se suma uno al otro,
+//     igual que las otras cuatro.
+export function applyEffects({ moneyDelta = 0, moraleDelta = 0, fatigueDelta = 0, pressureDelta = 0, ratingDelta = 0 } = {}) {
   state.money = Math.max(MONEY_MIN, state.money + moneyDelta);
   state.morale = clamp(state.morale + moraleDelta, MORALE_MIN, MORALE_MAX);
   state.fatigue = clamp(state.fatigue + fatigueDelta, FATIGUE_MIN, FATIGUE_MAX);
   state.pressure = clamp(state.pressure + pressureDelta, PRESSURE_MIN, PRESSURE_MAX);
+  state.ratingDelta = clamp(state.ratingDelta + ratingDelta, RATING_DELTA_MIN, RATING_DELTA_MAX);
+}
+
+// resetRatingDeltaTemporada borra el estado de gracia/crisis acumulado y deja
+// la próxima temporada arrancando desde el rating real del plantel. NO toca
+// money, pressure, streak, morale ni fatiga: esas cuatro cruzan de una
+// temporada a la siguiente, ratingDelta no.
+//
+// Lo llama el orquestador cuando la temporada llega a su fin (SEASON_COMPLETE),
+// que es el único momento en que corresponde.
+export function resetRatingDeltaTemporada() {
+  state.ratingDelta = 0;
 }
 
 // syncStreakFromResultados deriva el streak actual a partir del array
@@ -133,14 +172,18 @@ export function syncStreakFromResultados(resultados) {
 // getEffectiveRating NO reemplaza el cálculo interno de seasonSimulator.js
 // (moral/10 - fatiga/10 sigue viviendo ahí, ver simularTemporadaCompleta).
 // Es un envoltorio que ajusta el ratingPlantel de BASE antes de pasárselo al
-// simulador, sumando el momentum de streak y restando la penalización de
-// pressure — dos variables que seasonSimulator.js no conoce porque son
-// responsabilidad de este archivo.
+// simulador, sumando el momentum de streak, restando la penalización de
+// pressure y sumando el ratingDelta acumulado de los eventos de la temporada —
+// tres variables que seasonSimulator.js no conoce porque son responsabilidad
+// de este archivo.
 //
 // Nunca se guarda este valor en ningún lado: se recalcula cada vez que se
-// pide, a partir del streak/pressure vigentes en memoria.
+// pide, a partir del streak/pressure/ratingDelta vigentes en memoria.
 export function getEffectiveRating(baseRating) {
-  return baseRating + momentumPorStreak(state.streak) - penalizacionPorPresion(state.pressure);
+  return baseRating
+    + momentumPorStreak(state.streak)
+    - penalizacionPorPresion(state.pressure)
+    + state.ratingDelta;
 }
 
 function momentumPorStreak(streak) {

@@ -341,13 +341,21 @@ function construirMomentosDestacados(resultados) {
 // SIMULACIÓN POR TRAMOS
 // -----------------------------------------------------------------------
 
+// esListaDeRivalesValida dice si lo que nos pasaron sirve como liga: un array
+// con exactamente las 19 fuerzas. Se usa en dos lados (para decidir si hay que
+// generar una liga nueva y para el chequeo de tramo continuado de
+// simularTramo), así que la condición vive en un solo lugar.
+function esListaDeRivalesValida(rivalesFuerza) {
+  return Array.isArray(rivalesFuerza) && rivalesFuerza.length === CANTIDAD_RIVALES;
+}
+
 // resolverRivales devuelve la lista de 19 fuerzas de rival a usar. Si el que
 // llama pasó una lista válida se respeta tal cual (es lo que permite testear
 // con una liga fija y determinística, y lo que permite que varios tramos de
 // la MISMA temporada compartan los mismos rivales); si no, se genera una
 // nueva alrededor del rating del plantel.
 function resolverRivales(rivalesFuerza, ratingPlantel) {
-  return Array.isArray(rivalesFuerza) && rivalesFuerza.length === CANTIDAD_RIVALES
+  return esListaDeRivalesValida(rivalesFuerza)
     ? rivalesFuerza
     : generarRivalesAlrededorDe(ratingPlantel);
 }
@@ -383,9 +391,11 @@ function crearEstadoInicial(estado = {}) {
 //   - desdeJornada / hastaJornada: rango de fechas a jugar, 1-based e
 //     INCLUSIVO en los dos extremos. Si hastaJornada < desdeJornada no se
 //     simula nada y se devuelve una copia del estado (caso pretemporada).
-//   - rivalesFuerza (opcional): lista de 19 fuerzas de rival. Pasarla es lo
-//     que garantiza que todos los tramos de una misma temporada jueguen
-//     contra la misma liga; si se omite, cada tramo generaría rivales nuevos.
+//   - rivalesFuerza: lista de 19 fuerzas de rival. Es lo que garantiza que
+//     todos los tramos de una misma temporada jueguen contra la misma liga.
+//     Solo es opcional en el PRIMER tramo (desdeJornada === 1), que es el que
+//     puede permitirse sortear una liga nueva; de la fecha 2 en adelante es
+//     obligatoria y omitirla tira error (ver abajo).
 //   - estado (opcional): lo que devolvió el tramo anterior. De acá sale
 //     ratingPlantel y el punto de partida de moral/fatiga/contadores. En el
 //     primer tramo alcanza con pasar { ratingPlantel } (y, si se quiere,
@@ -404,6 +414,20 @@ export function simularTramo({ desdeJornada, hastaJornada, rivalesFuerza, estado
   // tocar nada. Ojo que esto se chequea ANTES de resolver rivales, para no
   // quemar azar generando una liga que no se va a usar.
   if (hastaJornada < desdeJornada) return nuevoEstado;
+
+  // Un tramo que NO arranca en la fecha 1 es, por definición, la continuación
+  // de una temporada que ya se venía jugando: la liga contra la que se juega
+  // ya existe y hay que pasarla. Si no viene, resolverRivales sortearía una
+  // liga NUEVA y el jugador terminaría enfrentando rivales distintos en la
+  // segunda mitad del año sin que nadie se entere. Preferimos romper fuerte y
+  // temprano antes que dejar pasar una temporada silenciosamente incoherente.
+  if (desdeJornada > 1 && !esListaDeRivalesValida(rivalesFuerza)) {
+    throw new Error(
+      `simularTramo: hace falta rivalesFuerza con ${CANTIDAD_RIVALES} elementos para simular desde la jornada ${desdeJornada} ` +
+        '(solo el primer tramo, desdeJornada === 1, puede generar una liga nueva). ' +
+        'Pasá la MISMA lista en todos los tramos de la temporada.'
+    );
+  }
 
   const rivales = resolverRivales(rivalesFuerza, nuevoEstado.ratingPlantel);
 

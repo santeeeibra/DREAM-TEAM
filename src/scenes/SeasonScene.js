@@ -1,57 +1,64 @@
 // SeasonScene.js — pantalla que juega una temporada completa (liga de 38
 // fechas) para el manager actual.
 //
-// No dibuja los 38 partidos uno por uno: usa seasonSimulator.js (motor de
-// liga, lógica pura) para resolver toda la temporada de una, y eventSlots.js
-// para sortear qué eventos de events_catalog le tocan en el camino. Esta
-// escena solo se encarga de: traer los datos de Supabase (vía seasons.js),
-// mostrarle al jugador los eventos para que elija una opción en cada uno, y
-// después mostrar el resultado.
+// A diferencia de una versión anterior que resolvía todos los eventos de la
+// temporada de una sola vez y recién después corría el motor de liga entero
+// (simularTemporadaCompleta), esta escena usa seasonOrchestrator.js: avanza
+// la temporada TRAMO a tramo, parando en cada evento que necesita una
+// decisión del jugador. Eso es lo que permite mostrar el calendario
+// avanzando fecha a fecha en vez de saltar directo al resultado final.
 //
 // Flujo, de punta a punta:
 //   1. Cargar datos: rating del 11 titular, fila de `seasons` (se crea si
-//      no existía), y sortear la lista de eventos de la temporada.
-//   2. Preguntar "Simular rápido" o "Ver resumen" (con la preferencia
-//      guardada en localStorage, pero siempre eligiendo de nuevo).
-//   3. Ir mostrando cada evento sorteado, en orden, y esperar que el
-//      jugador elija una opción. Cada elección se guarda en `season_events`
-//      y acumula un efecto sobre moral/fatiga/dinero/rating.
-//   4. Simular la temporada completa con simularTemporadaCompleta(),
-//      arrancando moral/fatiga/rating desde lo que había en `seasons` más
-//      lo que acumularon los eventos (ver aplicarEfectos: en vez de tratar
-//      de "cortar" la temporada en tramos por cada evento, que complicaría
-//      mucho el simulador, aplicamos el efecto acumulado como punto de
-//      partida de toda la temporada).
-//   5. Si el modo es "rápido", ir directo a la tabla final. Si es "ver
-//      resumen", antes mostrar los momentosDestacados uno por uno.
-//   6. Guardar el cierre de la temporada (`seasons` + el dinero del
-//      manager).
-//   7. Botón final: temporada siguiente (crea la fila de `seasons` N+1,
-//      hereda moral/fatiga, y reinicia esta misma escena), o —si era la
-//      temporada 8— pasa a CareerSummaryScene con el resumen de carrera.
+//      no existía) y el catálogo de eventos activos.
+//   2. Retomar una temporada en curso desde sessionStorage si había una
+//      (ver CLAVE_ESTADO_TEMPORADA), o arrancar el `estado` de cero.
+//   3. Botón "Simular Temporada": dispara avanzarSimulacion(), que llama al
+//      orquestador tramo por tramo hasta el próximo evento o el cierre de
+//      la temporada, animando el número de fecha en pantalla en el camino.
+//   4. Si el orquestador para en un evento (EVENT_TRIGGERED), por ahora
+//      queda pendiente mostrarlo (ver TODO en avanzarSimulacion). Si la
+//      temporada termina (SEASON_COMPLETE), se navega a CareerSummaryScene.
 import Phaser from 'phaser';
-import { elegirEventosDeTemporada } from '../engine/eventSlots.js';
-import { simularTemporadaCompleta } from '../engine/seasonSimulator.js';
+import { TOTAL_MATCHDAYS } from '../engine/seasonSimulator.js';
+import { simularHastaProximoEvento, aplicarDecisionYContinuar } from '../engine/seasonOrchestrator.js';
+import * as careerState from '../state/careerState.js';
 import {
-  actualizarMoneyManager,
-  cerrarTemporada,
-  crearSiguienteTemporada,
   getEventosActivos,
   getManagerParaTemporada,
   getOrCreateSeasonRow,
-  guardarEventoResuelto,
   ratingDelOnceTitular,
 } from '../seasons.js';
 
-const ULTIMA_TEMPORADA = 8;
+// Clave de sessionStorage donde se guarda el `estado` de la temporada en
+// curso después de cada tramo simulado. Permite retomarla si el jugador
+// recarga la página a mitad de camino (ver init/create y avanzarSimulacion).
+const CLAVE_ESTADO_TEMPORADA = 'dreamteam_season_estado';
 
-// Clave de localStorage donde se recuerda la última preferencia elegida
-// ("rapido" o "resumen"). Es solo una preferencia recordada para próximas
-// temporadas: la pantalla inicial siempre vuelve a mostrar los dos botones
-// por si el jugador quiere cambiarla puntualmente esta vez.
-const CLAVE_MODO_PREFERIDO = 'ut_temporada_modoPreferido';
+// --- Generación de la liga de rivales de la temporada ---
+//
+// El orquestador (seasonOrchestrator.js) exige que TODOS los tramos de una
+// misma temporada jueguen contra la MISMA lista de 19 fuerzas de rival (si
+// no, simularTramo tira error a partir del segundo tramo). Pero el
+// orquestador no genera ni guarda esa lista por su cuenta: es responsabilidad
+// de quien lo llama. Por eso la generamos acá, UNA sola vez por temporada, y
+// la llevamos colgada como estado.rivalesFuerza — un campo extra que el
+// orquestador no conoce pero que le hace `{...estado}` en cada tramo (ver
+// avanzar() en seasonOrchestrator.js), así que sobrevive intacto de tramo en
+// tramo y también al serializarse en sessionStorage.
+const CANTIDAD_RIVALES = 19;
+const RIVALES_SPREAD = 14;
+const RIVALES_MIN = 40;
+const RIVALES_MAX = 99;
 
-const MS_POR_MOMENTO_DESTACADO = 1000;
+function generarRivalesFuerza(ratingBase) {
+  const rivales = [];
+  for (let i = 0; i < CANTIDAD_RIVALES; i++) {
+    const ruido = (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;
+    rivales.push(Math.round(Phaser.Math.Clamp(ratingBase + ruido * RIVALES_SPREAD, RIVALES_MIN, RIVALES_MAX)));
+  }
+  return rivales;
+}
 
 export class SeasonScene extends Phaser.Scene {
   constructor() {
@@ -71,10 +78,10 @@ export class SeasonScene extends Phaser.Scene {
 
     this.add.rectangle(anchoPantalla / 2, altoPantalla / 2, anchoPantalla, altoPantalla, 0x1a1a2e);
 
-    // contenedorDinamico es el único lugar donde se dibuja cada pantalla
-    // del flujo (carga, elección de modo, evento a evento, momentos
-    // destacados, tabla final): limpiarPantalla() lo vacía entero antes de
-    // dibujar la siguiente, así nunca queda contenido viejo superpuesto.
+    // contenedorDinamico es el único lugar donde se dibuja cada pantalla del
+    // flujo (carga, botón de simular, calendario avanzando): limpiarPantalla()
+    // lo vacía entero antes de dibujar la siguiente, así nunca queda
+    // contenido viejo superpuesto.
     this.contenedorDinamico = this.add.container(0, 0);
 
     this.mostrarCargando();
@@ -132,13 +139,13 @@ export class SeasonScene extends Phaser.Scene {
   }
 
   // ---------------------------------------------------------------------
-  // Paso 1: cargar todo lo que hace falta antes de mostrar nada interactivo.
+  // Paso 1: cargar todo lo que hace falta antes de mostrar nada interactivo,
+  // y retomar la temporada en curso desde sessionStorage si la había.
   // ---------------------------------------------------------------------
   async cargarDatosYArrancar() {
     try {
       const manager = await getManagerParaTemporada(this.managerId);
       this.seasonNumber = this.seasonNumberSolicitado ?? manager.current_season;
-      this.moneyInicial = manager.money;
 
       const [seasonRow, ratingBase, eventosActivos] = await Promise.all([
         getOrCreateSeasonRow(this.managerId, this.seasonNumber),
@@ -147,17 +154,54 @@ export class SeasonScene extends Phaser.Scene {
       ]);
 
       this.seasonRow = seasonRow;
-      this.ratingBase = ratingBase;
-      this.paradas = elegirEventosDeTemporada(eventosActivos);
+      this.eventosActivos = eventosActivos;
 
-      // Acumuladores de los efectos de los eventos de esta temporada:
-      // arrancan en 0 y se les va sumando lo que aporte cada opción
-      // elegida (ver aplicarEfectos). Se usan recién al final, como punto
-      // de partida de simularTemporadaCompleta (ver correrSimulacionYFinalizar).
-      this.moralAcumulada = 0;
-      this.fatigaAcumulada = 0;
-      this.moneyAcumulado = 0;
-      this.ratingAcumulado = 0;
+      const paqueteGuardado = sessionStorage.getItem(CLAVE_ESTADO_TEMPORADA);
+      let careerStateSnapshot = null;
+      if (paqueteGuardado) {
+        const paquete = JSON.parse(paqueteGuardado);
+        this.estado = paquete.estadoOrquestador;
+        careerStateSnapshot = paquete.careerStateSnapshot;
+      } else {
+        this.estado = {
+          ratingBase,
+          moral: seasonRow.morale,
+          fatiga: seasonRow.fatigue,
+          wins: 0,
+          draws: 0,
+          losses: 0,
+          goalsFor: 0,
+          goalsAgainst: 0,
+          points: 0,
+          resultados: [],
+          jornadaActual: 0,
+          eventosDeTemporada: null,
+          rivalesFuerza: generarRivalesFuerza(ratingBase),
+        };
+      }
+
+      // Precondición del orquestador: careerState tiene que estar cargado en
+      // memoria antes de llamar a simularHastaProximoEvento/
+      // aplicarDecisionYContinuar (usan getEffectiveRating, que lee de acá).
+      //
+      // Si veníamos de un F5 a mitad de temporada, rehidratamos careerState
+      // con el snapshot completo guardado junto al estado del orquestador
+      // (money/pressure/streak/ratingDelta), en vez de reconstruirlo de cero
+      // a partir de seasonRow/manager — esos ya están desactualizados
+      // respecto de lo que había en memoria antes del reload.
+      if (careerStateSnapshot) {
+        careerState.initCareerState(careerStateSnapshot);
+      } else {
+        careerState.initCareerState({
+          managerId: this.managerId,
+          seasonId: seasonRow.id,
+          money: manager.money,
+          morale: this.estado.moral,
+          fatigue: this.estado.fatiga,
+          pressure: seasonRow.pressure,
+          streak: seasonRow.streak,
+        });
+      }
 
       this.mostrarPantallaInicial();
     } catch (error) {
@@ -166,18 +210,15 @@ export class SeasonScene extends Phaser.Scene {
   }
 
   // ---------------------------------------------------------------------
-  // Paso 2: elegir el modo de esta temporada ("Simular rápido" / "Ver
-  // resumen"). Se recuerda en localStorage para la próxima vez, pero
-  // siempre se pregunta de nuevo por si el jugador quiere cambiarla.
+  // Paso 2: pantalla con el botón que dispara la simulación.
   // ---------------------------------------------------------------------
   mostrarPantallaInicial() {
     this.limpiarPantalla();
     const anchoPantalla = this.scale.width;
     const altoPantalla = this.scale.height;
-    const modoPreferido = localStorage.getItem(CLAVE_MODO_PREFERIDO);
 
     const titulo = this.add
-      .text(anchoPantalla / 2, altoPantalla / 2 - 100, `Temporada ${this.seasonNumber}`, {
+      .text(anchoPantalla / 2, altoPantalla / 2 - 80, `Temporada ${this.seasonNumber}`, {
         fontFamily: 'Arial',
         fontSize: '24px',
         fontStyle: 'bold',
@@ -186,7 +227,7 @@ export class SeasonScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     const subtitulo = this.add
-      .text(anchoPantalla / 2, altoPantalla / 2 - 60, '¿Cómo querés jugarla?', {
+      .text(anchoPantalla / 2, altoPantalla / 2 - 40, `Fecha ${this.estado.jornadaActual} / ${TOTAL_MATCHDAYS}`, {
         fontFamily: 'Arial',
         fontSize: '15px',
         color: '#ffffff',
@@ -195,295 +236,115 @@ export class SeasonScene extends Phaser.Scene {
 
     this.contenedorDinamico.add([titulo, subtitulo]);
 
-    const crearBotonModo = (modo, etiqueta, y) => {
-      const esPreferido = modo === modoPreferido;
-      const boton = this.add
-        .text(anchoPantalla / 2, y, esPreferido ? `${etiqueta} ★` : etiqueta, {
-          fontFamily: 'Arial',
-          fontSize: '16px',
-          fontStyle: 'bold',
-          color: '#1a1a2e',
-          backgroundColor: '#d4af37',
-          padding: { x: 20, y: 12 },
-        })
-        .setOrigin(0.5)
-        .setInteractive({ useHandCursor: true });
-      boton.on('pointerdown', () => this.elegirModo(modo));
-      this.contenedorDinamico.add(boton);
-    };
-
-    crearBotonModo('rapido', 'Simular rápido', altoPantalla / 2 + 10);
-    crearBotonModo('resumen', 'Ver resumen', altoPantalla / 2 + 70);
-  }
-
-  elegirModo(modo) {
-    localStorage.setItem(CLAVE_MODO_PREFERIDO, modo);
-    this.modoElegido = modo;
-    this.resolverEventos();
-  }
-
-  // ---------------------------------------------------------------------
-  // Paso 3: recorrer los eventos sorteados uno por uno, en orden de
-  // matchday, esperando la elección del jugador en cada uno.
-  // ---------------------------------------------------------------------
-  async resolverEventos() {
-    try {
-      for (const parada of this.paradas) {
-        const opcionElegida = await this.mostrarEventoYEsperarEleccion(parada);
-        this.aplicarEfectos(opcionElegida.effects);
-
-        const identificadorOpcion = opcionElegida.code ?? opcionElegida.label ?? opcionElegida.text ?? 'opcion';
-        await guardarEventoResuelto(
-          this.seasonRow.id,
-          parada.evento.code,
-          parada.matchday,
-          identificadorOpcion,
-          opcionElegida.effects ?? {}
-        );
-      }
-
-      await this.correrSimulacionYFinalizar();
-    } catch (error) {
-      this.mostrarError(error);
-    }
-  }
-
-  // aplicarEfectos suma los efectos de la opción elegida a los
-  // acumuladores de la temporada. Formato esperado de `effects` (ver
-  // events_catalog.options): { morale, fatigue, money, rating_efectivo },
-  // todos opcionales (si un evento no toca alguno, simplemente no lo trae).
-  aplicarEfectos(effects = {}) {
-    this.moralAcumulada += effects.morale ?? 0;
-    this.fatigaAcumulada += effects.fatigue ?? 0;
-    this.moneyAcumulado += effects.money ?? 0;
-    this.ratingAcumulado += effects.rating_efectivo ?? 0;
-  }
-
-  // mostrarEventoYEsperarEleccion pinta el modal de un evento (título +
-  // descripción + 2-3 opciones) y devuelve una Promise que se resuelve
-  // recién cuando el jugador toca una opción. Así resolverEventos() puede
-  // simplemente "await" cada evento en orden, uno atrás del otro.
-  mostrarEventoYEsperarEleccion(parada) {
-    return new Promise((resolve) => {
-      this.limpiarPantalla();
-      const { evento, matchday } = parada;
-      const anchoPantalla = this.scale.width;
-      const altoPantalla = this.scale.height;
-
-      const marco = this.add
-        .rectangle(anchoPantalla / 2, altoPantalla / 2, anchoPantalla - 60, altoPantalla - 120, 0x0f1626, 0.97)
-        .setStrokeStyle(2, 0xd4af37);
-      this.contenedorDinamico.add(marco);
-
-      const etiquetaFecha = this.add
-        .text(anchoPantalla / 2, 90, `Fecha ${matchday}`, {
-          fontFamily: 'Arial',
-          fontSize: '12px',
-          color: '#9aa5b8',
-        })
-        .setOrigin(0.5);
-
-      const titulo = this.add
-        .text(anchoPantalla / 2, 130, evento.title, {
-          fontFamily: 'Arial',
-          fontSize: '19px',
-          fontStyle: 'bold',
-          color: '#d4af37',
-          align: 'center',
-          wordWrap: { width: anchoPantalla - 110 },
-        })
-        .setOrigin(0.5);
-
-      const descripcion = this.add
-        .text(anchoPantalla / 2, 175, evento.description, {
-          fontFamily: 'Arial',
-          fontSize: '14px',
-          color: '#ffffff',
-          align: 'center',
-          wordWrap: { width: anchoPantalla - 110 },
-        })
-        .setOrigin(0.5, 0);
-
-      this.contenedorDinamico.add([etiquetaFecha, titulo, descripcion]);
-
-      const opciones = Array.isArray(evento.options) ? evento.options : [];
-      const yInicial = altoPantalla / 2 + 60;
-      opciones.forEach((opcion, indice) => {
-        const boton = this.add
-          .text(anchoPantalla / 2, yInicial + indice * 60, opcion.label ?? opcion.text ?? `Opción ${indice + 1}`, {
-            fontFamily: 'Arial',
-            fontSize: '15px',
-            color: '#1a1a2e',
-            backgroundColor: '#2ecc71',
-            padding: { x: 18, y: 10 },
-            align: 'center',
-            wordWrap: { width: anchoPantalla - 160 },
-          })
-          .setOrigin(0.5)
-          .setInteractive({ useHandCursor: true });
-        boton.on('pointerdown', () => resolve(opcion));
-        this.contenedorDinamico.add(boton);
-      });
-    });
-  }
-
-  // ---------------------------------------------------------------------
-  // Paso 4: correr el motor de liga con moral/fatiga/rating ya ajustados
-  // por los eventos, y decidir qué mostrar según el modo elegido.
-  // ---------------------------------------------------------------------
-  async correrSimulacionYFinalizar() {
-    const moralInicial = Phaser.Math.Clamp(this.seasonRow.morale + this.moralAcumulada, 0, 100);
-    const fatigaInicial = Phaser.Math.Clamp(this.seasonRow.fatigue + this.fatigaAcumulada, 0, 100);
-    const ratingPlantel = Phaser.Math.Clamp(this.ratingBase + this.ratingAcumulado, 1, 99);
-
-    const resumen = simularTemporadaCompleta({ ratingPlantel, moralInicial, fatigaInicial });
-    this.resumenTemporada = resumen;
-
-    // Guardamos el cierre apenas tenemos el resultado: no hace falta
-    // esperar a que el jugador termine de ver momentos destacados para que
-    // la temporada quede persistida en Supabase.
-    await Promise.all([
-      cerrarTemporada(this.seasonRow.id, resumen, resumen.moralFinal, resumen.fatigaFinal),
-      actualizarMoneyManager(this.managerId, this.moneyInicial + this.moneyAcumulado),
-    ]);
-
-    if (this.modoElegido === 'rapido') {
-      this.mostrarTablaFinal();
-    } else {
-      this.mostrarMomentosDestacados(resumen.momentosDestacados, 0);
-    }
-  }
-
-  // ---------------------------------------------------------------------
-  // Paso 5 (solo modo "resumen"): mostrar los momentosDestacados uno por
-  // uno, con una pausa corta entre cada uno. Tocar la pantalla salta al
-  // siguiente de inmediato (no hace falta esperar el segundo entero).
-  // ---------------------------------------------------------------------
-  mostrarMomentosDestacados(momentos, indice) {
-    if (!momentos || indice >= momentos.length) {
-      this.mostrarTablaFinal();
-      return;
-    }
-
-    this.limpiarPantalla();
-    const anchoPantalla = this.scale.width;
-    const altoPantalla = this.scale.height;
-    const momento = momentos[indice];
-
-    const texto = this.add
-      .text(anchoPantalla / 2, altoPantalla / 2, momento.descripcion, {
-        fontFamily: 'Arial',
-        fontSize: '17px',
-        color: '#ffffff',
-        align: 'center',
-        wordWrap: { width: anchoPantalla - 100 },
-      })
-      .setOrigin(0.5);
-
-    const avisoSaltar = this.add
-      .text(anchoPantalla / 2, altoPantalla - 40, 'Tocá para saltar', {
-        fontFamily: 'Arial',
-        fontSize: '11px',
-        color: '#5a6478',
-      })
-      .setOrigin(0.5);
-
-    this.contenedorDinamico.add([texto, avisoSaltar]);
-
-    // La zona interactiva cubre toda la pantalla: tocar en cualquier lado
-    // adelanta el momento destacado, sin esperar el temporizador de abajo.
-    const zona = this.add.zone(0, 0, anchoPantalla, altoPantalla).setOrigin(0).setInteractive();
-    this.contenedorDinamico.add(zona);
-
-    const avanzar = () => {
-      temporizador.remove(false);
-      this.mostrarMomentosDestacados(momentos, indice + 1);
-    };
-    zona.on('pointerdown', avanzar);
-    const temporizador = this.time.delayedCall(MS_POR_MOMENTO_DESTACADO, avanzar);
-  }
-
-  // ---------------------------------------------------------------------
-  // Paso 6: tabla final de la temporada + botón para seguir.
-  // ---------------------------------------------------------------------
-  mostrarTablaFinal() {
-    this.limpiarPantalla();
-    const anchoPantalla = this.scale.width;
-    const altoPantalla = this.scale.height;
-    const r = this.resumenTemporada;
-
-    const titulo = this.add
-      .text(anchoPantalla / 2, altoPantalla / 2 - 160, `Temporada ${this.seasonNumber} terminada`, {
-        fontFamily: 'Arial',
-        fontSize: '22px',
-        fontStyle: 'bold',
-        color: '#d4af37',
-      })
-      .setOrigin(0.5);
-
-    const lineas = [
-      `Posición final: ${r.league_position}°`,
-      `Puntos: ${r.points}`,
-      `${r.wins}V - ${r.draws}E - ${r.losses}D`,
-      `Goles: ${r.goals_for} a favor / ${r.goals_against} en contra`,
-    ];
-    const textoStats = this.add
-      .text(anchoPantalla / 2, altoPantalla / 2 - 80, lineas.join('\n'), {
+    const boton = this.add
+      .text(anchoPantalla / 2, altoPantalla / 2 + 30, 'Simular Temporada', {
         fontFamily: 'Arial',
         fontSize: '16px',
-        color: '#ffffff',
-        align: 'center',
-        lineSpacing: 10,
+        fontStyle: 'bold',
+        color: '#1a1a2e',
+        backgroundColor: '#d4af37',
+        padding: { x: 20, y: 12 },
       })
-      .setOrigin(0.5, 0);
-
-    this.contenedorDinamico.add([titulo, textoStats]);
-
-    const esUltimaTemporada = this.seasonNumber >= ULTIMA_TEMPORADA;
-    const boton = this.add
-      .text(
-        anchoPantalla / 2,
-        altoPantalla / 2 + 140,
-        esUltimaTemporada ? 'Ver resumen de carrera' : 'Siguiente temporada →',
-        {
-          fontFamily: 'Arial',
-          fontSize: '16px',
-          fontStyle: 'bold',
-          color: '#1a1a2e',
-          backgroundColor: '#2ecc71',
-          padding: { x: 18, y: 10 },
-        }
-      )
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true });
-
-    boton.on('pointerdown', () => {
-      if (esUltimaTemporada) {
-        this.scene.start('CareerSummaryScene', { managerId: this.managerId });
-        return;
-      }
-      this.confirmarSiguienteTemporada(boton);
-    });
+    boton.on('pointerdown', () => this.avanzarSimulacion());
 
     this.contenedorDinamico.add(boton);
   }
 
   // ---------------------------------------------------------------------
-  // Paso 7: crear la temporada siguiente (hereda moral/fatiga del cierre)
-  // y reiniciar esta misma escena para jugarla.
+  // Paso 3: pantalla que se ve mientras se simulan tramos, con la fecha
+  // actual del calendario (actualizarFechaEnPantalla la va refrescando).
   // ---------------------------------------------------------------------
-  async confirmarSiguienteTemporada(boton) {
-    boton.disableInteractive();
-    boton.setText('Preparando...');
+  mostrarPantallaSimulando() {
+    this.limpiarPantalla();
+    const anchoPantalla = this.scale.width;
+    const altoPantalla = this.scale.height;
+
+    const titulo = this.add
+      .text(anchoPantalla / 2, altoPantalla / 2 - 40, `Temporada ${this.seasonNumber}`, {
+        fontFamily: 'Arial',
+        fontSize: '20px',
+        fontStyle: 'bold',
+        color: '#d4af37',
+      })
+      .setOrigin(0.5);
+
+    this.textoFecha = this.add
+      .text(anchoPantalla / 2, altoPantalla / 2 + 10, '', {
+        fontFamily: 'Arial',
+        fontSize: '17px',
+        color: '#ffffff',
+      })
+      .setOrigin(0.5);
+
+    this.contenedorDinamico.add([titulo, this.textoFecha]);
+    this.actualizarFechaEnPantalla(this.estado.jornadaActual);
+  }
+
+  actualizarFechaEnPantalla(jornadaActual) {
+    if (this.textoFecha) {
+      this.textoFecha.setText(`Fecha ${jornadaActual} / ${TOTAL_MATCHDAYS}`);
+    }
+  }
+
+  // ---------------------------------------------------------------------
+  // Loop principal: avanza la temporada tramo por tramo llamando al
+  // orquestador, hasta que aparece un evento o se termina la temporada.
+  //
+  // decisionElegida solo se usa cuando quien llama viene de resolver un
+  // evento pendiente (hoy nunca pasa: ver el TODO más abajo, todavía no hay
+  // pantalla de evento que la produzca). El while(true) está escrito así a
+  // propósito, aunque hoy corte siempre en la primera vuelta (los dos únicos
+  // status que devuelve el orquestador cortan el loop): es la forma más
+  // directa de leer "seguí llamando al orquestador hasta el próximo corte".
+  // ---------------------------------------------------------------------
+  async avanzarSimulacion(decisionElegida = null) {
+    this.mostrarPantallaSimulando();
 
     try {
-      const siguienteTemporada = await crearSiguienteTemporada(
-        this.managerId,
-        this.seasonNumber,
-        this.resumenTemporada.moralFinal,
-        this.resumenTemporada.fatigaFinal
-      );
-      this.scene.restart({ managerId: this.managerId, seasonNumber: siguienteTemporada.season_number });
+      let decisionPendiente = decisionElegida;
+
+      while (true) {
+        const resultado = decisionPendiente
+          ? aplicarDecisionYContinuar({
+              estado: this.estado,
+              decisionElegida: decisionPendiente,
+              rivalesFuerza: this.estado.rivalesFuerza,
+              eventosDisponibles: this.eventosActivos,
+            })
+          : simularHastaProximoEvento({
+              estado: this.estado,
+              rivalesFuerza: this.estado.rivalesFuerza,
+              eventosDisponibles: this.eventosActivos,
+            });
+        decisionPendiente = null;
+
+        // rivalesFuerza es un campo nuestro, no del orquestador: nos
+        // aseguramos de que siga viajando en el estado para el próximo tramo.
+        this.estado = { ...resultado.estado, rivalesFuerza: this.estado.rivalesFuerza };
+
+        this.actualizarFechaEnPantalla(this.estado.jornadaActual);
+        const paquete = {
+          estadoOrquestador: this.estado,
+          careerStateSnapshot: careerState.getState(),
+        };
+        sessionStorage.setItem(CLAVE_ESTADO_TEMPORADA, JSON.stringify(paquete));
+
+        if (resultado.status === 'EVENT_TRIGGERED') {
+          const nuevaDecision = await new Promise((resolve) => {
+            this.scene.launch('EventScene', { eventDetails: resultado.eventDetails, onResolve: resolve });
+          });
+          decisionPendiente = nuevaDecision;
+          continue;
+        }
+
+        if (resultado.status === 'SEASON_COMPLETE') {
+          sessionStorage.removeItem(CLAVE_ESTADO_TEMPORADA);
+          this.scene.start('CareerSummaryScene', { managerId: this.managerId });
+          break;
+        }
+      }
     } catch (error) {
       this.mostrarError(error);
     }
