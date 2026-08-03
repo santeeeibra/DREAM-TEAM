@@ -73,7 +73,12 @@ export class LineupScene extends Phaser.Scene {
   init(data) {
     this.managerId = data.managerId;
     this.seasonNumber = data.seasonNumber ?? null;
-    this.cards = data.cards;
+    // Filtro defensivo: solo cartas con foto real. Los jugadores con
+    // photo_url null/undefined/vacío no se muestran (evita fallos al
+    // cargar texturas y mantiene la grilla/contador consistentes).
+    this.cards = (data.cards ?? []).filter(
+      (carta) => carta.photo_url && carta.photo_url.trim() !== ''
+    );
 
     this.seleccionIds = new Set();
     this.cartasPorId = new Map(this.cards.map((carta) => [carta.user_card_id, carta]));

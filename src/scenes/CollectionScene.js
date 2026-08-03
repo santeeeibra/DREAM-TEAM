@@ -1,4 +1,15 @@
-// CollectionScene.js — escena "MI DREAM TEAM": muestra la colección real de
+Revisar el evento del botón verde en CollectionScene.js:
+Busca dónde se registra el evento pointerdown o click de ese botón superior derecho (Alinear Equipo). Actualmente debe estar haciendo algo como:
+
+JavaScript
+// Código actual erróneo (te manda a armar el 11)
+this.scene.start('LineupScene', { managerId, cards });
+Redirigirlo a la simulación:
+Ese botón debería verificar que el once esté completo o directamente iniciar la escena de partidos/simulación de la temporada:
+
+JavaScript
+// Código correcto deseado
+this.scene.start('SimulationScene', { managerId }); // o el nombre de tu escena de te// CollectionScene.js — escena "MI DREAM TEAM": muestra la colección real de
 // cartas del manager logueado en una grilla de 4 columnas (getManagerCards,
 // join user_cards + cards en Supabase), con scroll vertical (rueda del
 // mouse) por si hay más cartas de las que entran en pantalla.
@@ -27,7 +38,12 @@ export class CollectionScene extends Phaser.Scene {
 
   init(data) {
     this.managerId = data.managerId;
-    this.cards = data.cards;
+    // Filtro defensivo: solo cartas con foto real. Los jugadores con
+    // photo_url null/undefined/vacío no se muestran (evita fallos al
+    // cargar texturas y mantiene la grilla/contador consistentes).
+    this.cards = (data.cards ?? []).filter(
+      (carta) => carta.photo_url && carta.photo_url.trim() !== ''
+    );
   }
 
   preload() {
@@ -86,6 +102,21 @@ export class CollectionScene extends Phaser.Scene {
 
     botonVolver.on('pointerdown', () => {
       this.scene.start('LineupScene', { managerId: this.managerId, cards: this.cards });
+    });
+
+    // Botón "Alinear Equipo": acceso directo a la simulación de temporada
+    // (SeasonScene) desde la colección. SeasonScene se encarga de cargar el
+    // 11 titular y validar que esté completo internamente.
+    const botonAlinear = this.add
+      .text(anchoPantalla - 16, ALTO_HEADER / 2, 'Alinear Equipo ▶', {
+        fontFamily: 'Arial', fontSize: '14px', color: '#1a1a2e',
+        backgroundColor: '#2ecc71', padding: { x: 10, y: 6 },
+      })
+      .setOrigin(1, 0.5).setDepth(11)
+      .setInteractive({ useHandCursor: true });
+
+    botonAlinear.on('pointerdown', () => {
+      this.scene.start('SeasonScene', { managerId: this.managerId });
     });
   }
 

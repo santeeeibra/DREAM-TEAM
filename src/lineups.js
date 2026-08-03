@@ -162,8 +162,12 @@ export async function getManagerCards(managerId) {
 
   if (error) throw error;
 
-  return data.map((fila) => ({
-    ...fila.cards,
-    user_card_id: fila.id,
-  }));
+  return data
+    .map((fila) => ({
+      ...fila.cards,
+      user_card_id: fila.id,
+    }))
+    // Solo cartas con foto real: los jugadores con photo_url null/undefined
+    // o vacío no se muestran en el juego (evita fallos al cargar texturas).
+    .filter((carta) => carta.photo_url && carta.photo_url.trim() !== '');
 }
