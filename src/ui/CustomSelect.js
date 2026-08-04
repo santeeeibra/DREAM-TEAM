@@ -59,16 +59,35 @@ export class CustomSelect {
   }
 
   open() {
-    if (instanciaAbierta && instanciaAbierta !== this) instanciaAbierta.close();
+    if (instanciaAbierta && instanciaAbierta !== this) instanciaAbierta.closeWithAnimation();
     this.list.hidden = false;
     this.trigger.setAttribute('aria-expanded', 'true');
     instanciaAbierta = this;
   }
 
   close() {
+    this.isClosing = false;
     this.list.hidden = true;
     this.trigger.setAttribute('aria-expanded', 'false');
+    this.container.classList.remove('custom-select-closing');
     if (instanciaAbierta === this) instanciaAbierta = null;
+  }
+
+  // Cierra con una micro-animación (fade + slide up) cuando el usuario
+  // elige una opción, para que el dropdown no desaparezca de golpe. Respeta
+  // prefers-reduced-motion. La constante debe coincidir con la transición
+  // CSS de .custom-select-options en style.css.
+  closeWithAnimation() {
+    if (this.isClosing) return;
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      this.close();
+      return;
+    }
+    this.isClosing = true;
+    this.container.classList.add('custom-select-closing');
+    setTimeout(() => {
+      this.close();
+    }, 150);
   }
 
   setDisabled(disabled) {
@@ -108,8 +127,14 @@ export class CustomSelect {
 
       li.append(img, span);
       li.addEventListener('click', () => {
-        this.select(item, img.src);
-        this.close();
+        // try/finally: el menú se cierra SIEMPRE al elegir una opción, aunque
+        // el onChange de la app lance una excepción (antes una excepción acá
+        // dejaba el dropdown abierto y "estático" sin recogerse).
+        try {
+          this.select(item, img.src);
+        } finally {
+          this.closeWithAnimation();
+        }
       });
       this.list.appendChild(li);
     }

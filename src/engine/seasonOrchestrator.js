@@ -129,7 +129,7 @@ function calcularTramoStats(estadoAntes, estadoDespues, desdeJornada, hastaJorna
 // algo". Las dos funciones exportadas terminan acá: simularHastaProximoEvento
 // la llama directo, y aplicarDecisionYContinuar la llama después de aplicar la
 // decisión. No dupliques esta lógica en ninguna de las dos.
-function avanzar({ estado, rivalesFuerza, eventosDisponibles }) {
+function avanzar({ estado, rivalesFuerza, rivalesNombres, eventosDisponibles }) {
   // Copia defensiva: a partir de acá trabajamos sobre lo nuestro y el objeto
   // que nos pasó SeasonScene queda intacto.
   const estadoBase = { ...estado };
@@ -170,6 +170,7 @@ function avanzar({ estado, rivalesFuerza, eventosDisponibles }) {
     desdeJornada,
     hastaJornada,
     rivalesFuerza,
+    rivalesNombres,
     estado: { ...estadoBase, ratingPlantel },
   });
 
@@ -261,6 +262,9 @@ function avanzar({ estado, rivalesFuerza, eventosDisponibles }) {
 //   - rivalesFuerza: las 19 fuerzas de la liga. Pasar SIEMPRE la misma lista
 //     en todas las llamadas de una temporada: es lo que garantiza que todos
 //     los tramos se jueguen contra los mismos rivales (ver simularTramo).
+//   - rivalesNombres (opcional): los 19 nombres de club en el mismo orden que
+//     rivalesFuerza. Se limita a viajar hasta simularTramo, que los adjunta a
+//     cada resultado; no cambia ninguna otra lógica del orquestador.
 //   - eventosDisponibles: filas de events_catalog con active=true. Solo se usa
 //     la primera vez (cuando hay que sortear el calendario); en los llamados
 //     siguientes se ignora porque estado.eventosDeTemporada ya está armado.
@@ -271,8 +275,8 @@ function avanzar({ estado, rivalesFuerza, eventosDisponibles }) {
 //
 // PRECONDICIÓN: careerState.initCareerState() ya tiene que haberse llamado
 // (usamos getEffectiveRating, que lee el estado en memoria).
-export function simularHastaProximoEvento({ estado, rivalesFuerza, eventosDisponibles }) {
-  return avanzar({ estado, rivalesFuerza, eventosDisponibles });
+export function simularHastaProximoEvento({ estado, rivalesFuerza, rivalesNombres, eventosDisponibles }) {
+  return avanzar({ estado, rivalesFuerza, rivalesNombres, eventosDisponibles });
 }
 
 // aplicarDecisionYContinuar resuelve el evento que estaba esperando (aplicando
@@ -287,7 +291,7 @@ export function simularHastaProximoEvento({ estado, rivalesFuerza, eventosDispon
 //     simularHastaProximoEvento.
 //
 // Devuelve exactamente lo mismo que simularHastaProximoEvento.
-export function aplicarDecisionYContinuar({ estado, decisionElegida, rivalesFuerza, eventosDisponibles }) {
+export function aplicarDecisionYContinuar({ estado, decisionElegida, rivalesFuerza, rivalesNombres, eventosDisponibles }) {
   // 1. BUG 1 FIX — sincronizar careerState con el snapshot más reciente de
   //    moral/fatiga ANTES de aplicar el efecto. `estado` es el que vino
   //    actualizándose tramo a tramo con los resultados de los partidos, así
@@ -314,5 +318,5 @@ export function aplicarDecisionYContinuar({ estado, decisionElegida, rivalesFuer
   const estadoSincronizado = { ...estado, moral: morale, fatiga: fatigue };
 
   // 4. Y a partir de acá es exactamente el mismo avance de siempre.
-  return avanzar({ estado: estadoSincronizado, rivalesFuerza, eventosDisponibles });
+  return avanzar({ estado: estadoSincronizado, rivalesFuerza, rivalesNombres, eventosDisponibles });
 }

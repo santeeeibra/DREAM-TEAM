@@ -15,11 +15,12 @@ import { DataError } from '../core/errors.js';
 
 // getManagerParaTemporada trae los datos del manager que necesita
 // SeasonScene antes de arrancar: `current_season` (para resolver la
-// temporada si no vino explícita) y `money` (los eventos pueden afectarlo).
+// temporada si no vino explícita), `money` (los eventos pueden afectarlo)
+// y `reputation` (para sembrar careerState con la reputación inicial).
 export async function getManagerParaTemporada(managerId) {
   const { data, error } = await supabase
     .from('managers')
-    .select('id, money, current_season')
+    .select('id, money, current_season, reputation')
     .eq('id', managerId)
     .single();
   if (error) throw new DataError(error.message, { causa: error });

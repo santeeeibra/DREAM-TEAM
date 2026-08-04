@@ -21,7 +21,12 @@ export async function getManagerForUser(userId) {
 // Crea el DT del usuario logueado. `league` y `club` los controlan los dos
 // <select> encadenados del formulario (ver src/data/leagues.js), no hay un
 // check constraint en la base para esto.
-export async function createManager({ userId, name, country, league, club }) {
+//
+// Además de los nombres (legacy), persistimos los ids estables de liga y
+// club (leagueId/clubId, definidos en leagues.js) y la reputación inicial
+// (reputation, 0-100). Los tres son opcionales para no romper a otros
+// llamadores (p.ej. el panel de dev) que crean managers sin perfil completo.
+export async function createManager({ userId, name, country, league, club, leagueId = null, clubId = null, reputation = 50 }) {
   const { data, error } = await supabase
     .from('managers')
     .insert({
@@ -30,6 +35,9 @@ export async function createManager({ userId, name, country, league, club }) {
       country,
       league,
       club,
+      league_id: leagueId,
+      club_id: clubId,
+      reputation,
     })
     .select()
     .single();

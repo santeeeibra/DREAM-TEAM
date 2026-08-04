@@ -1,5 +1,5 @@
 // CollectionScene.js — escena "MI DREAM TEAM": muestra la colección real de
-// cartas del manager logueado en una grilla de 4 columnas (getManagerCards,
+// cartas del manager logueado en una grilla de 6 columnas (getManagerCards,
 // join user_cards + cards en Supabase), con scroll vertical (rueda del
 // mouse) por si hay más cartas de las que entran en pantalla.
 //
@@ -13,7 +13,7 @@ import { claveAvatarIniciales, generateInitialsAvatarDataURI } from '../utils/in
 import { resolveCardImageUrl } from '../utils/cardImage.js';
 import * as logger from '../core/logger.js';
 
-const COLUMNAS = 4;
+const COLUMNAS = 6;
 const ESPACIO = 20;
 
 // Franja fija de arriba (título + contador + botón), NO se mueve con el

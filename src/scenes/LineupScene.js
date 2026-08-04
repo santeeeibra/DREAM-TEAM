@@ -18,7 +18,7 @@ import { COLORS, FONTS } from '../theme/tokens.js';
 import { getTier } from '../core/ratingTiers.js';
 import * as logger from '../core/logger.js';
 
-const COLUMNAS = 4;
+const COLUMNAS = 6;
 const ESPACIO = 14;
 const MARGEN_SUPERIOR = 10;
 const ALTO_FOOTER = 140; // franja fija de abajo: formación + aviso + botón confirmar

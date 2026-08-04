@@ -3,7 +3,8 @@
 // esta escena solo se encarga de la parte visual: mostrar "Sobre X de 5",
 // y al tocar la pantalla ir revelando carta por carta con su foto y rating.
 import Phaser from 'phaser';
-import { RevealCardSprite, CARD_WIDTH, CARD_HEIGHT, claveImagenCarta } from '../objects/RevealCardSprite.js';
+import goldPackImageUrl from '../assets/images/gold_pack.png';
+import { RevealCardSprite, claveImagenCarta } from '../objects/RevealCardSprite.js';
 import { claveAvatarIniciales, generateInitialsAvatarDataURI } from '../utils/initialsAvatar.js';
 import { resolveCardImageUrl } from '../utils/cardImage.js';
 import * as logger from '../core/logger.js';
@@ -29,6 +30,10 @@ export class PackOpeningScene extends Phaser.Scene {
   // animación. Si una foto no existe o no carga, RevealCardSprite cae
   // solo a un ícono de color (no rompe la apertura del sobre).
   preload() {
+    // Cargamos la imagen real del sobre (gold_pack.png) además de las fotos
+    // de las cartas. Vite procesa el import del PNG y nos da la URL correcta.
+    this.load.image('gold_pack', goldPackImageUrl);
+
     const todasLasCartas = this.packs.flat();
     for (const carta of todasLasCartas) {
       const urlImagen = resolveCardImageUrl(carta);
@@ -87,24 +92,25 @@ export class PackOpeningScene extends Phaser.Scene {
     this.titulo.setText(`Sobre ${this.packIndex + 1} de ${this.packs.length}`);
     this.instruccion.setText('Tocá la pantalla para abrir el sobre');
 
-    const sobre = this.add.rectangle(this.centroX, this.centroY, CARD_WIDTH, CARD_HEIGHT, 0x1e2a4a);
-    sobre.setStrokeStyle(4, 0xd4af37);
-    const sello = this.add
-      .text(this.centroX, this.centroY, '5\ncartas', {
-        fontFamily: 'Arial',
-        fontSize: '20px',
-        color: '#d4af37',
-        align: 'center',
-      })
-      .setOrigin(0.5);
+    // Sobre nuevo: usamos la imagen real en lugar del rectángulo básico
+    // con bordes amarillos.
+    const sobre = this.add.image(this.centroX, this.centroY, 'gold_pack');
 
-    this.grupoSobreCerrado = this.add.container(0, 0, [sobre, sello]);
-    this.tweens.add({
+    // Escala fija para darle protagonismo al sobre en el canvas de 1280x720.
+    // La imagen original mide 677x369 px, así que 1.15 la deja en ~778x424 px:
+    // grande y con margen prolijo a los costados.
+    sobre.setScale(1.15);
+
+    this.grupoSobreCerrado = this.add.container(0, 0, [sobre]);
+
+    // Pequeña animación de flotación para darle dinamismo al sobre cerrado.
+    this.tweenSobre = this.tweens.add({
       targets: this.grupoSobreCerrado,
-      scale: { from: 0.95, to: 1.05 },
-      duration: 650,
+      y: -10,
+      duration: 1500,
       yoyo: true,
       repeat: -1,
+      ease: 'Sine.easeInOut',
     });
   }
 
@@ -141,6 +147,10 @@ export class PackOpeningScene extends Phaser.Scene {
     if (this.currentCardSprite) {
       this.currentCardSprite.destroy();
       this.currentCardSprite = null;
+    }
+    if (this.tweenSobre) {
+      this.tweenSobre.stop();
+      this.tweenSobre = null;
     }
     if (this.grupoSobreCerrado) {
       this.grupoSobreCerrado.destroy();

@@ -36,6 +36,7 @@
 // administra el orquestador, que es inmutable dentro de una temporada y solo
 // cambia entre temporadas por una decisión explícita fuera de este sistema.
 import { supabase } from '../data/supabaseClient.js';
+import { leagues } from '../data/leagues.js';
 
 // --- Clamps de las 5 variables que administra este archivo ---
 const MORALE_MIN = 0;
@@ -99,7 +100,7 @@ let state = null;
 // ratingDelta arranca en 0 salvo que se lo pasen: es estado de la temporada en
 // curso, no un valor de carrera, así que resumir una temporada a mitad de
 // camino es el único caso donde tiene sentido pasarlo distinto de 0.
-export function initCareerState({ managerId, seasonId, money, morale, fatigue, pressure, streak, ratingDelta = 0 }) {
+export function initCareerState({ managerId, seasonId, money, morale, fatigue, pressure, streak, ratingDelta = 0, reputation = 50 }) {
   state = {
     managerId,
     seasonId,
@@ -109,7 +110,41 @@ export function initCareerState({ managerId, seasonId, money, morale, fatigue, p
     pressure,
     streak,
     ratingDelta,
+    reputation,
   };
+}
+
+// setManagerProfile guarda la identidad del DT (nombre, país, liga, club y
+// sus ids estables) en el estado de la carrera. La llama la pantalla de
+// creación de DT (main.js) apenas se confirma la creación, y también el
+// orquestador cuando resume una carrera ya existente, para que cualquier
+// escena posterior (HUD de temporada, resúmenes, narrativa) pueda mostrar
+// el perfil sin volver a consultar Supabase.
+//
+// leagueId/clubId son los slugs de leagues.js (ej. 'premier-league' /
+// 'arsenal'); league/club son los nombres legacy (ej. 'Premier League' /
+// 'Arsenal'). Si solo llegan los nombres (caso de managers viejos),
+// resolvemos los ids con los helpers de leagues.js.
+export function setManagerProfile({ name, country, league, club, leagueId = null, clubId = null }) {
+  let ligaId = leagueId;
+  let clubIdResuelto = clubId;
+
+  if (!ligaId && league) ligaId = leagues.find((l) => l.league === league)?.id ?? null;
+  if (!clubIdResuelto && club) {
+    const liga = leagues.find((l) => l.clubs.some((c) => c.name === club));
+    clubIdResuelto = liga?.clubs.find((c) => c.name === club)?.id ?? null;
+  }
+
+  state.managerProfile = {
+    name,
+    country,
+    league,
+    club,
+    leagueId: ligaId,
+    clubId: clubIdResuelto,
+  };
+
+  return state.managerProfile;
 }
 
 // getState devuelve una COPIA del estado actual, nunca la referencia

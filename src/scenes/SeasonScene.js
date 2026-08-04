@@ -16,9 +16,18 @@
 //   3. Botón "Simular Temporada": dispara avanzarSimulacion(), que llama al
 //      orquestador tramo por tramo hasta el próximo evento o el cierre de
 //      la temporada, animando el número de fecha en pantalla en el camino.
-//   4. Si el orquestador para en un evento (EVENT_TRIGGERED), por ahora
-//      queda pendiente mostrarlo (ver TODO en avanzarSimulacion). Si la
-//      temporada termina (SEASON_COMPLETE), se navega a CareerSummaryScene.
+//   4. Cuando un tramo vuelve con tramoStats, la pantalla muestra un
+//      "ticker de scoreboard": los resultados del tramo (resultados[]) se
+//      revelan uno por uno con ~250ms entre cada uno, y el contador de
+//      puntos/record del HUD va sumando en vivo. Un tap/click en cualquier
+//      momento corta el ticker y asienta el estado final del tramo de una.
+//   5. Si el orquestador para en un evento (EVENT_TRIGGERED), después del
+//      ticker se lanza EventScene con el dilema. Si la temporada termina
+//      (SEASON_COMPLETE), se navega a CareerSummaryScene.
+//
+// Todo lo del ticker es 100% capa de presentación: los resultados ya llegan
+// calculados en tramoStats.resultados, no se toca ni seasonOrchestrator.js
+// ni seasonSimulator.js.
 import Phaser from 'phaser';
 import { TOTAL_MATCHDAYS, construirMomentosDestacados } from '../engine/seasonSimulator.js';
 import { simularHastaProximoEvento, aplicarDecisionYContinuar } from '../engine/seasonOrchestrator.js';
@@ -34,13 +43,33 @@ import {
   getOrCreateSeasonRow,
   ratingDelOnceTitular,
 } from '../data/seasonsRepo.js';
-import { ULTIMA_TEMPORADA, CANTIDAD_RIVALES, RIVALES_SPREAD, RIVALES_MIN, RIVALES_MAX } from '../core/constants.js';
+import { ULTIMA_TEMPORADA } from '../core/constants.js';
+import { generarRivalesFuerza, RIVALES_NOMBRES } from '../engine/rivals.js';
 import * as logger from '../core/logger.js';
 
 // Clave de sessionStorage donde se guarda el `estado` de la temporada en
 // curso después de cada tramo simulado. Permite retomarla si el jugador
 // recarga la página a mitad de camino (ver init/create y avanzarSimulacion).
 const CLAVE_ESTADO_TEMPORADA = 'dreamteam_season_estado';
+
+// Delay entre cada resultado revelado por el ticker de scoreboard (~250ms,
+// ver asentarTramoConTicker).
+const DELAY_TICKER_MS = 250;
+
+// Colores del scoreboard según el resultado de la fecha (win/draw/loss),
+// en el mismo formato de color string '#RRGGBB' que usa Phaser.Text.
+const COLOR_RESULTADO = {
+  win: '#2ecc71',
+  draw: '#d4af37',
+  loss: '#e74c3c',
+};
+
+// esperar devuelve una Promise que resuelve después de `ms` milisegundos. Se
+// usa para espaciar la revelación de resultados del ticker sin bloquear el
+// loop de Phaser.
+function esperar(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 // --- Generación de la liga de rivales de la temporada ---
 //
@@ -52,16 +81,11 @@ const CLAVE_ESTADO_TEMPORADA = 'dreamteam_season_estado';
 // la llevamos colgada como estado.rivalesFuerza — un campo extra que el
 // orquestador no conoce pero que le hace `{...estado}` en cada tramo (ver
 // avanzar() en seasonOrchestrator.js), así que sobrevive intacto de tramo en
-// tramo y también al serializarse en sessionStorage.
-
-function generarRivalesFuerza(ratingBase) {
-  const rivales = [];
-  for (let i = 0; i < CANTIDAD_RIVALES; i++) {
-    const ruido = (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;
-    rivales.push(Math.round(Phaser.Math.Clamp(ratingBase + ruido * RIVALES_SPREAD, RIVALES_MIN, RIVALES_MAX)));
-  }
-  return rivales;
-}
+// tramo y también al serializarse en sessionStorage. La generación en sí
+// vive en ../engine/rivals.js (generarRivalesFuerza). rivalesNombres viaja
+// exactamente igual: es el pool fijo RIVALES_NOMBRES (mismo archivo), asignado
+// una sola vez por temporada para que cada índice siga siendo el mismo club
+// ficticio de tramo en tramo.
 
 export class SeasonScene extends Phaser.Scene {
   constructor() {
@@ -270,6 +294,7 @@ export class SeasonScene extends Phaser.Scene {
           jornadaActual: 0,
           eventosDeTemporada: null,
           rivalesFuerza: generarRivalesFuerza(ratingBase),
+          rivalesNombres: RIVALES_NOMBRES,
         };
       }
 
@@ -293,6 +318,7 @@ export class SeasonScene extends Phaser.Scene {
           fatigue: this.estado.fatiga,
           pressure: seasonRow.pressure,
           streak: seasonRow.streak,
+          reputation: manager.reputation ?? 50,
         });
       }
 
@@ -300,6 +326,34 @@ export class SeasonScene extends Phaser.Scene {
     } catch (error) {
       this.mostrarError(error);
     }
+  }
+
+  // ---------------------------------------------------------------------
+  // calcularProximoRangoTramo deriva el rango de fechas que va a resolver el
+  // próximo "Avanzar", usando la MISMA regla que usa seasonOrchestrator.js
+  // para cortar tramos: desde la fecha siguiente a la actual hasta el
+  // matchday del próximo evento (o el final de la liga si no queda ninguno).
+  //
+  // Es capa de presentación pura: no adelanta nada de la simulación, solo
+  // replica la cuenta del corte para mostrar en el botón qué fechas se van
+  // a jugar. En el primer tramo eventosDeTemporada todavía es null (el
+  // sorteo recién pasa dentro de la primera llamada al orquestador), así que
+  // lo único que se puede mostrar ahí es "1 a 38" — resultado correcto para
+  // el caso común, se afina a partir del primer corte.
+  // ---------------------------------------------------------------------
+  calcularProximoRangoTramo() {
+    const jornadaActual = this.estado?.jornadaActual ?? 0;
+    const desdeJornada = jornadaActual + 1;
+
+    let hastaJornada = TOTAL_MATCHDAYS;
+    if (Array.isArray(this.estado?.eventosDeTemporada)) {
+      const proximaParada = this.estado.eventosDeTemporada.find(
+        (parada) => parada.matchday > jornadaActual
+      );
+      if (proximaParada) hastaJornada = proximaParada.matchday;
+    }
+
+    return { desdeJornada, hastaJornada };
   }
 
   // ---------------------------------------------------------------------
@@ -329,8 +383,17 @@ export class SeasonScene extends Phaser.Scene {
 
     this.contenedorDinamico.add([titulo, subtitulo]);
 
+    // El botón muestra por adelantado el rango de fechas que va a resolver:
+    // deriva el próximo corte desde el estado (misma regla que el
+    // orquestador) en vez de esperar a que el tramo ya esté simulado.
+    const { desdeJornada, hastaJornada } = this.calcularProximoRangoTramo();
+    const etiquetaBoton =
+      desdeJornada === hastaJornada
+        ? `Jugar fecha ${desdeJornada} →`
+        : `Jugar fechas ${desdeJornada} a ${hastaJornada} →`;
+
     const boton = this.add
-      .text(anchoPantalla / 2, altoPantalla / 2 + 30, 'Simular Temporada', {
+      .text(anchoPantalla / 2, altoPantalla / 2 + 30, etiquetaBoton, {
         fontFamily: 'Arial',
         fontSize: '16px',
         fontStyle: 'bold',
@@ -347,7 +410,8 @@ export class SeasonScene extends Phaser.Scene {
 
   // ---------------------------------------------------------------------
   // Paso 3: pantalla que se ve mientras se simulan tramos, con la fecha
-  // actual del calendario (actualizarFechaEnPantalla la va refrescando).
+  // actual del calendario (actualizarFechaEnPantalla la va refrescando), el
+  // ticker de scoreboard en el centro y el HUD de puntos/record abajo.
   // ---------------------------------------------------------------------
   mostrarPantallaSimulando() {
     this.limpiarPantalla();
@@ -371,7 +435,71 @@ export class SeasonScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    this.contenedorDinamico.add([titulo, this.textoFecha]);
+    // Ticker de scoreboard: texto central que se va reemplazando con cada
+    // resultado revelado ("Fecha X — vs Rival — 2-1"). Arranca vacío y se
+    // llena desde asentarTramoConTicker.
+    this.textoTicker = this.add
+      .text(anchoPantalla / 2, altoPantalla / 2 + 55, '', {
+        fontFamily: 'Arial',
+        fontSize: '16px',
+        fontStyle: 'bold',
+        color: '#ffffff',
+        align: 'center',
+        wordWrap: { width: anchoPantalla - 80 },
+      })
+      .setOrigin(0.5);
+
+    // HUD de puntos/record: contadores que van sumando en vivo con cada
+    // resultado revelado. Arrancan con los totales vigentes al mostrar la
+    // pantalla (el estado pre-tramo de la iteración actual).
+    if (this.estado) {
+      this.puntosHUD = this.estado.points ?? 0;
+      this.winsHUD = this.estado.wins ?? 0;
+      this.drawsHUD = this.estado.draws ?? 0;
+      this.lossesHUD = this.estado.losses ?? 0;
+    } else {
+      this.puntosHUD = 0;
+      this.winsHUD = 0;
+      this.drawsHUD = 0;
+      this.lossesHUD = 0;
+    }
+
+    this.textoPuntosHUD = this.add
+      .text(anchoPantalla / 2, altoPantalla - 80, `Puntos: ${this.puntosHUD}`, {
+        fontFamily: 'Arial',
+        fontSize: '20px',
+        fontStyle: 'bold',
+        color: '#d4af37',
+      })
+      .setOrigin(0.5);
+
+    this.textoRecordHUD = this.add
+      .text(anchoPantalla / 2, altoPantalla - 48, `${this.winsHUD}G ${this.drawsHUD}E ${this.lossesHUD}P`, {
+        fontFamily: 'Arial',
+        fontSize: '15px',
+        color: '#ffffff',
+      })
+      .setOrigin(0.5);
+
+    // Footer de corte: Moral/Fatiga al final del tramo. Se deja vacío y solo
+    // se rellena cuando el ticker termina (o se corta) y se asienta el estado
+    // final del tramo.
+    this.textoFooterCorte = this.add
+      .text(anchoPantalla / 2, altoPantalla - 16, '', {
+        fontFamily: 'Arial',
+        fontSize: '13px',
+        color: '#9aa0b4',
+      })
+      .setOrigin(0.5);
+
+    this.contenedorDinamico.add([
+      titulo,
+      this.textoFecha,
+      this.textoTicker,
+      this.textoPuntosHUD,
+      this.textoRecordHUD,
+      this.textoFooterCorte,
+    ]);
     this.actualizarFechaEnPantalla(this.estado.jornadaActual);
   }
 
@@ -382,15 +510,119 @@ export class SeasonScene extends Phaser.Scene {
   }
 
   // ---------------------------------------------------------------------
+  // asentarTramoConTicker "revela" los resultados de un tramo uno por uno en
+  // el HUD antes de dejar asentado el estado final, sin tocar la lógica de
+  // simulación (los resultados ya vienen calculados en tramoStats).
+  //
+  // - Por cada resultado de tramoStats.resultados espera DELAY_TICKER_MS y
+  //   pinta en this.textoTicker "Fecha {jornada} — vs {rivalNombre} —
+  //   {golesPlantel}-{golesRival}" con el color del resultado
+  //   (win/draw/loss).
+  // - En paralelo suma en vivo el contador de puntos (3/1/0) y el record
+  //   (G/E/P) del HUD, partiendo del snapshot pre-tramo que pasa el caller
+  //   (antes de pisar this.estado con el estado post-tramo).
+  // - Un tap/click en cualquier punto corta el ticker: se asienta directo el
+  //   estado final (puntos/record totales + footer Moral/Fatiga del corte).
+  //
+  // Estados del HUD que maneja:
+  //   - this.puntosHUD / winsHUD / drawsHUD / lossesHUD: contadores en vivo.
+  //   - this.textoTicker: última línea revelada del scoreboard.
+  //   - this.textoFooterCorte: "Moral X | Fatiga Y" al asentar el tramo.
+  // ---------------------------------------------------------------------
+  async asentarTramoConTicker(tramoStats, estadoPreTramo) {
+    const resultados = tramoStats?.resultados ?? [];
+    const corte = tramoStats ?? {};
+    // Totales ACUMULADOS de la temporada al corte: this.estado ya quedó
+    // pisado con el estado post-tramo antes de llamarnos. OJO con no usar
+    // tramoStats.points/wins/draws/losses acá: esos son los DELTAS del tramo
+    // (estadoDespues - estadoAntes), no los totales que muestra el HUD.
+    const totalesAlCorte = {
+      points: this.estado?.points ?? this.puntosHUD,
+      wins: this.estado?.wins ?? this.winsHUD,
+      draws: this.estado?.draws ?? this.drawsHUD,
+      losses: this.estado?.losses ?? this.lossesHUD,
+    };
+
+    this.tickerCortado = false;
+    this.puntosHUD = estadoPreTramo?.points ?? 0;
+    this.winsHUD = estadoPreTramo?.wins ?? 0;
+    this.drawsHUD = estadoPreTramo?.draws ?? 0;
+    this.lossesHUD = estadoPreTramo?.losses ?? 0;
+
+    // Tap/click durante la animación: corta el ticker y salta directo a
+    // asentar el estado final del tramo.
+    const desregistrarClick = () => {
+      if (this.handlerCorteTicker) {
+        this.input.off('pointerdown', this.handlerCorteTicker);
+        this.handlerCorteTicker = null;
+      }
+    };
+    this.handlerCorteTicker = () => {
+      this.tickerCortado = true;
+    };
+    this.input.on('pointerdown', this.handlerCorteTicker);
+
+    try {
+      for (const resultado of resultados) {
+        if (this.tickerCortado) break;
+        await esperar(DELAY_TICKER_MS);
+        if (this.tickerCortado) break;
+
+        const textoResultado = `Fecha ${resultado.jornada} — vs ${resultado.rivalNombre ?? 'Rival'} — ${resultado.golesPlantel}-${resultado.golesRival}`;
+        const colorResultado = COLOR_RESULTADO[resultado.resultado] ?? '#ffffff';
+        this.textoTicker?.setText(textoResultado).setColor(colorResultado);
+
+        // Suma en vivo del contador. La fuente de verdad para el resultado
+        // es el propio campo `resultado` ('win'/'draw'/'loss') — el mismo
+        // criterio que ya usó seasonSimulator.js para calcular el tramo.
+        if (resultado.resultado === 'win') {
+          this.puntosHUD += 3;
+          this.winsHUD += 1;
+        } else if (resultado.resultado === 'draw') {
+          this.puntosHUD += 1;
+          this.drawsHUD += 1;
+        } else {
+          this.lossesHUD += 1;
+        }
+        this.actualizarHUD();
+      }
+
+      // Al asentar (ticker completo o cortado) los contadores quedan en los
+      // totales acumulados de la temporada y aparece el footer moral/fatiga
+      // del corte. Si el ticker se cortó a la mitad, este paso es el que
+      // salta directo al estado final del tramo.
+      this.puntosHUD = totalesAlCorte.points;
+      this.winsHUD = totalesAlCorte.wins;
+      this.drawsHUD = totalesAlCorte.draws;
+      this.lossesHUD = totalesAlCorte.losses;
+      this.actualizarHUD();
+
+      if (this.textoFooterCorte) {
+        this.textoFooterCorte.setText(
+          `Moral ${corte.moralAlCorte ?? '—'} | Fatiga ${corte.fatigaAlCorte ?? '—'}`
+        );
+      }
+    } finally {
+      desregistrarClick();
+    }
+  }
+
+  actualizarHUD() {
+    if (this.textoPuntosHUD) this.textoPuntosHUD.setText(`Puntos: ${this.puntosHUD}`);
+    if (this.textoRecordHUD) this.textoRecordHUD.setText(`${this.winsHUD}G ${this.drawsHUD}E ${this.lossesHUD}P`);
+  }
+
+  // ---------------------------------------------------------------------
   // Loop principal: avanza la temporada tramo por tramo llamando al
   // orquestador, hasta que aparece un evento o se termina la temporada.
   //
   // decisionElegida solo se usa cuando quien llama viene de resolver un
-  // evento pendiente (hoy nunca pasa: ver el TODO más abajo, todavía no hay
-  // pantalla de evento que la produzca). El while(true) está escrito así a
-  // propósito, aunque hoy corte siempre en la primera vuelta (los dos únicos
-  // status que devuelve el orquestador cortan el loop): es la forma más
-  // directa de leer "seguí llamando al orquestador hasta el próximo corte".
+  // evento pendiente (ver el manejo de EVENT_TRIGGERED más abajo: EventScene
+  // resuelve con la opción elegida y el loop continúa con esa decisión). El
+  // while(true) está escrito así a propósito, aunque hoy corte siempre en la
+  // primera vuelta (los dos únicos status que devuelve el orquestador cortan
+  // el loop): es la forma más directa de leer "seguí llamando al orquestador
+  // hasta el próximo corte".
   // ---------------------------------------------------------------------
   async avanzarSimulacion(decisionElegida = null) {
     this.mostrarPantallaSimulando();
@@ -404,18 +636,35 @@ export class SeasonScene extends Phaser.Scene {
               estado: this.estado,
               decisionElegida: decisionPendiente,
               rivalesFuerza: this.estado.rivalesFuerza,
+              rivalesNombres: this.estado.rivalesNombres,
               eventosDisponibles: this.eventosActivos,
             })
           : simularHastaProximoEvento({
               estado: this.estado,
               rivalesFuerza: this.estado.rivalesFuerza,
+              rivalesNombres: this.estado.rivalesNombres,
               eventosDisponibles: this.eventosActivos,
             });
         decisionPendiente = null;
 
-        // rivalesFuerza es un campo nuestro, no del orquestador: nos
-        // aseguramos de que siga viajando en el estado para el próximo tramo.
-        this.estado = { ...resultado.estado, rivalesFuerza: this.estado.rivalesFuerza };
+        // Snapshot de los contadores PRE-tramo. Hay que capturarlo ANTES de
+        // pisar this.estado con el estado post-tramo: el ticker suma desde
+        // esta base para mostrar los puntos/record acumulándose en vivo.
+        const estadoPreTramo = {
+          wins: this.estado.wins,
+          draws: this.estado.draws,
+          losses: this.estado.losses,
+          points: this.estado.points,
+        };
+
+        // rivalesFuerza/rivalesNombres son campos nuestros, no del
+        // orquestador: nos aseguramos de que sigan viajando en el estado para
+        // el próximo tramo.
+        this.estado = {
+          ...resultado.estado,
+          rivalesFuerza: this.estado.rivalesFuerza,
+          rivalesNombres: this.estado.rivalesNombres,
+        };
 
         this.actualizarFechaEnPantalla(this.estado.jornadaActual);
         const paquete = {
@@ -423,6 +672,10 @@ export class SeasonScene extends Phaser.Scene {
           careerStateSnapshot: careerState.getState(),
         };
         sessionStorage.setItem(CLAVE_ESTADO_TEMPORADA, JSON.stringify(paquete));
+
+        // Antes de avanzar al evento o al resumen final, revelamos los
+        // resultados del tramo con el ticker de scoreboard.
+        await this.asentarTramoConTicker(resultado.tramoStats, estadoPreTramo);
 
         if (resultado.status === 'EVENT_TRIGGERED') {
           // resultado.eventDetails es la parada que arma eventSlots.js:

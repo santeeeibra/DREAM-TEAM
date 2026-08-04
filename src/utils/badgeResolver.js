@@ -7,6 +7,30 @@
 // dropdown.
 const THESPORTSDB_KEY = '3'; // clave pública de pruebas de TheSportsDB
 
+// ids estables de TheSportsDB para las ligas del catálogo (leagues.js).
+// Resolver por id (lookupleague.php?id=) es mucho más confiable que buscar
+// por nombre: el buscador de la API no encuentra nombres en español como
+// "LaLiga" o "Liga Profesional". El key (nombre legible o id del catálogo)
+// permite que getLeagueLogoUrl funcione con cualquiera de los dos.
+const LEAGUE_LOGO_IDS = {
+  'Premier League': '4328',
+  'premier-league': '4328',
+  'LaLiga': '4335',
+  'laliga': '4335',
+  'Serie A': '4332',
+  'serie-a': '4332',
+  'Bundesliga': '4331',
+  'bundesliga': '4331',
+  'Ligue 1': '4334',
+  'ligue-1': '4334',
+  'Liga Profesional': '4406',
+  'liga-profesional': '4406',
+  'Brasileirão': '4351',
+  'brasileirao': '4351',
+  'MLS': '4346',
+  'mls': '4346',
+};
+
 const leagueLogoCache = new Map();
 const clubBadgeCache = new Map();
 
@@ -54,11 +78,17 @@ export function getClubBadgeUrl(clubName) {
   );
 }
 
-export function getLeagueLogoUrl(leagueName) {
-  const url = `https://www.thesportsdb.com/api/v1/json/${THESPORTSDB_KEY}/searchleagues.php?l=${encodeURIComponent(leagueName)}`;
+export function getLeagueLogoUrl(leagueNameOrId) {
+  const theSportsDbId = LEAGUE_LOGO_IDS[leagueNameOrId];
+  if (!theSportsDbId) {
+    // Liga fuera del mapeo: no podemos resolver un logo confiable, así que
+    // caemos directo al avatar de iniciales sin intentar un lookup frágil.
+    return Promise.resolve(getInitialsAvatarUrl(leagueNameOrId));
+  }
+  const url = `https://www.thesportsdb.com/api/v1/json/${THESPORTSDB_KEY}/lookupleague.php?id=${theSportsDbId}`;
   return resolveConCache(
     leagueLogoCache,
-    leagueName,
+    theSportsDbId,
     url,
     (data) => data?.leagues?.[0]?.strBadge || data?.leagues?.[0]?.strLogo,
   );

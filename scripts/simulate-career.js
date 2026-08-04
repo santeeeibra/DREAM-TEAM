@@ -134,6 +134,7 @@ const { calcularTablaFinal } = await import('../src/engine/leagueTable.js');
 const { FATIGA_INICIAL_POR_DEFECTO, MORAL_INICIAL_POR_DEFECTO } = await import(
   '../src/engine/seasonSimulator.js'
 );
+const { generarRivalesFuerza } = await import('../src/engine/rivals.js');
 const careerState = await import('../src/state/careerState.js');
 
 // -----------------------------------------------------------------------
@@ -151,27 +152,6 @@ const STREAK_INICIAL = 0; // mismo default que la columna seasons.streak
 const RATING_DELTA_CLAMP = 8;
 const MORAL_FATIGA_MIN = 0;
 const MORAL_FATIGA_MAX = 100;
-
-// Mismos parámetros de generación de rivales que usa SeasonScene.js
-// (generarRivalesFuerza), reescritos acá sin Phaser.Math.Clamp porque este
-// harness no puede importar Phaser.
-const CANTIDAD_RIVALES = 19;
-const RIVALES_SPREAD = 14;
-const RIVALES_MIN = 40;
-const RIVALES_MAX = 99;
-
-function clamp(valor, minimo, maximo) {
-  return Math.max(minimo, Math.min(maximo, valor));
-}
-
-function generarRivalesFuerza(ratingBase) {
-  const rivales = [];
-  for (let i = 0; i < CANTIDAD_RIVALES; i++) {
-    const ruido = (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;
-    rivales.push(Math.round(clamp(ratingBase + ruido * RIVALES_SPREAD, RIVALES_MIN, RIVALES_MAX)));
-  }
-  return rivales;
-}
 
 // -----------------------------------------------------------------------
 // 4. Fixture de eventos

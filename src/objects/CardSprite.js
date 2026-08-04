@@ -9,6 +9,7 @@
 import Phaser from 'phaser';
 import { getTier } from '../core/ratingTiers.js';
 import { colorDeCarta } from '../shared/cardColors.js';
+import { fitImagen } from '../utils/fitImage.js';
 import { claveAvatarIniciales } from '../utils/initialsAvatar.js';
 import { FONTS } from '../theme/tokens.js';
 
@@ -177,7 +178,10 @@ export class CardSprite extends Phaser.GameObjects.Container {
       : claveAvatarIniciales(this.cardData.id);
 
     const imagen = new Phaser.GameObjects.Image(this.scene, 0, -10, clave);
-    imagen.setDisplaySize(60, 60);
+    // contain: el retrato conserva su proporción dentro del marco 60×60 en
+    // vez de estirarse para llenar el cuadrado (texturas no cuadradas ya no
+    // se deforman).
+    fitImagen(imagen, 60, 60, 'contain');
     this.add(imagen);
   }
 

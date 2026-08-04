@@ -34,18 +34,66 @@
     </div>
 
     <div id="manager-form-container" class="pantalla-centrada" style="display: none">
-      <h1>Creá tu DT</h1>
-      <input id="manager-name" type="text" placeholder="Nombre del DT" />
-      <!-- Dropdowns personalizados (CustomSelect, ver src/ui/CustomSelect.js):
-           reemplazan a los <select> nativos para poder mostrar bandera/escudo
-           junto a cada opción. Las opciones se generan e insertan en main.js
-           a partir de src/data/countries.js y src/data/leagues.js; los tres
-           arrancan vacíos y deshabilitados hasta que main.js los llena. -->
-      <div id="manager-country"></div>
-      <div id="manager-league"></div>
-      <div id="manager-club"></div>
-      <button id="btn-create-manager">Crear DT y abrir sobres</button>
-      <p id="manager-error" class="mensaje-error"></p>
+      <header class="manager-header">
+        <h1>Firmá tu primer contrato</h1>
+        <p class="manager-subtitulo">Elegí quién va a dirigir a tu Dream Team esta temporada.</p>
+      </header>
+
+      <div class="manager-layout">
+        <!-- Columna izquierda: el formulario en sí. Los dropdowns
+             personalizados (CustomSelect, ver src/ui/CustomSelect.js)
+             reemplazan a los <select> nativos para poder mostrar
+             bandera/escudo junto a cada opción. Las opciones se generan e
+             insertan en main.js a partir de src/data/countries.js y
+             src/data/leagues.js. -->
+        <div class="manager-formulario">
+          <label class="campo-etiqueta" for="manager-name">Nombre del DT</label>
+          <input id="manager-name" type="text" placeholder="Ej. Santiago Javier" maxlength="32" />
+
+          <label class="campo-etiqueta">Nacionalidad del DT</label>
+          <div id="manager-country"></div>
+
+          <label class="campo-etiqueta">Liga a dirigir</label>
+          <div id="manager-league"></div>
+
+          <label class="campo-etiqueta">Club inicial</label>
+          <div id="manager-club"></div>
+
+          <button id="btn-create-manager">Firmar contrato ✍️</button>
+          <p id="manager-error" class="mensaje-error"></p>
+        </div>
+
+        <!-- Columna derecha: panel de perfil en vivo. Lo pinta
+             actualizarResumen() en main.js a medida que el usuario tipea y
+             elige: foto/avatar, nombre, club + ficha, barra de reputación y
+             estado del contrato. -->
+        <aside class="manager-resumen" aria-label="Resumen del perfil del DT">
+          <div class="resumen-avatar">
+            <img id="resumen-foto" alt="Avatar del DT" />
+          </div>
+          <p id="resumen-nombre" class="resumen-nombre">Tu nombre acá</p>
+
+          <div class="resumen-divisor"></div>
+
+          <div id="resumen-ficha" class="resumen-ficha">Sin contrato todavía</div>
+
+          <div class="resumen-reputacion">
+            <div class="reputacion-fila">
+              <span class="reputacion-etiqueta">Reputación 50</span>
+              <span class="reputacion-valor">50</span>
+            </div>
+            <div class="reputacion-barra">
+              <div id="resumen-reputacion" class="reputacion-lleno"></div>
+            </div>
+            <p class="reputacion-pie">Nace en 50 y crece con tus resultados.</p>
+          </div>
+
+          <div class="resumen-contrato">
+            <span class="contrato-icono">📄</span>
+            <span id="resumen-contrato">Completá tu perfil para firmar</span>
+          </div>
+        </aside>
+      </div>
     </div>
 
     <div id="app"></div>

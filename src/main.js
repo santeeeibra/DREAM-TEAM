@@ -1,7 +1,9 @@
 // main.js — el punto de entrada del juego. Orquesta 3 pantallas, en orden:
 //   1. Login (auth-container): entrar o crear cuenta con Supabase Auth.
 //   2. Creación de DT (manager-form-container): solo si el usuario todavía
-//      no tiene un manager creado.
+//      no tiene un manager creado. Acá se configura el perfil del DT
+//      (nombre, país, liga y club) y, al confirmar, se siembra el estado
+//      global de carrera con esos datos (careerState).
 //   3. Apertura de sobres (app, con Phaser): arma y muestra el plantel de
 //      25 cartas apenas se crea el DT.
 import './style.css';
@@ -12,14 +14,15 @@ import { openInitialPacks, getManagerCards } from './data/cardsRepo.js';
 import { countries } from './data/countries.js';
 import { leagues } from './data/leagues.js';
 import { CustomSelect } from './ui/CustomSelect.js';
-import { getCountryFlagUrl, getLeagueLogoUrl, getClubBadgeUrl } from './utils/badgeResolver.js';
+import { getCountryFlagUrl, getLeagueLogoUrl, getClubBadgeUrl, getInitialsAvatarUrl } from './utils/badgeResolver.js';
+import { initCareerState, setManagerProfile } from './state/careerState.js';
 import { PackOpeningScene } from './scenes/PackOpeningScene.js';
 import { LineupScene } from './scenes/LineupScene.js';
 import { CollectionScene } from './scenes/CollectionScene.js';
 import { SeasonScene } from './scenes/SeasonScene.js';
 import { CareerSummaryScene } from './scenes/CareerSummaryScene.js';
 import { CareerTimelineScene } from './scenes/CareerTimelineScene.js';
-import { EventScene } from './scenes/EventScene.js';
+import { EventScene } from './scenes/EventScene.jsx';
 import { initDevPanel } from './dev/DevPanel.js';
 import { setDevGame, setDevManagerId } from './dev/devContext.js';
 
@@ -39,49 +42,143 @@ const managerName = document.getElementById('manager-name');
 const managerError = document.getElementById('manager-error');
 const btnCreateManager = document.getElementById('btn-create-manager');
 
+// Panel de resumen en vivo del perfil del DT (lado derecho del formulario).
+const resumenFoto = document.getElementById('resumen-foto');
+const resumenNombre = document.getElementById('resumen-nombre');
+const resumenFicha = document.getElementById('resumen-ficha');
+const resumenReputacion = document.getElementById('resumen-reputacion');
+const resumenContrato = document.getElementById('resumen-contrato');
+
+// actualizarResumen pinta el panel de perfil en vivo (columna derecha del
+// formulario) a partir de lo que el usuario ya eligió: nombre, país, liga y
+// club. Se llama en cada cambio de selector y en cada tecla del input.
+function actualizarResumen() {
+  const nombre = managerName.value.trim();
+  const pais = managerCountry.getValue();
+  const liga = managerLeague.getValue();
+  const club = managerClub.getValue();
+
+  resumenNombre.textContent = nombre || 'Tu nombre acá';
+  resumenFoto.src = nombre
+    ? `https://ui-avatars.com/api/?name=${encodeURIComponent(nombre)}&background=16213e&color=e0e0ff&bold=true&size=96`
+    : getInitialsAvatarUrl('DT');
+
+  resumenFicha.innerHTML = '';
+
+  if (club) {
+    const img = document.createElement('img');
+    img.alt = '';
+    img.onerror = () => {
+      img.onerror = null;
+      img.src = getInitialsAvatarUrl(club);
+    };
+    img.src = getClubBadgeUrl(club);
+    const span = document.createElement('span');
+    span.textContent = club;
+    resumenFicha.append(img, span);
+    resumenContrato.textContent = `Fichaje por ${liga}`;
+  } else if (liga) {
+    const span = document.createElement('span');
+    span.textContent = `Liga elegida: ${liga}`;
+    resumenFicha.append(span);
+    resumenContrato.textContent = 'Elegí el club para firmar';
+  } else {
+    const span = document.createElement('span');
+    span.textContent = pais ? `País: ${pais}` : 'Sin contrato todavía';
+    resumenFicha.append(span);
+    resumenContrato.textContent = 'Completá tu perfil para firmar';
+  }
+
+  // Barra de reputación inicial (seed de 50, "neutral"): la reputación nace
+  // en 50 y la va moviendo la narrativa de eventos de la temporada.
+  const reputacion = 50;
+  resumenReputacion.style.width = reputacion + '%';
+  // .reputacion-etiqueta vive en .reputacion-fila (hermano de
+  // .reputacion-barra, no hijo), así que subimos al panel .resumen-reputacion
+  // antes de buscarla; esto evita un TypeError que dejaba el dropdown abierto.
+  const panelReputacion = resumenReputacion.closest('.resumen-reputacion');
+  if (panelReputacion) {
+    panelReputacion.querySelector('.reputacion-etiqueta').textContent = `Reputación ${reputacion}`;
+    panelReputacion.querySelector('.reputacion-valor').textContent = String(reputacion);
+  }
+}
+
+// El título de liga puede traer el sufijo "Log" de CustomSelect (ver su
+// constructor): lo normalizamos acá para la comparación exacta.
+function limpiarNombreLiga(nombreLiga) {
+  return nombreLiga?.replace(/\s*Log$/, '') ?? null;
+}
+
+// resolverIdsSeleccion devuelve la liga y el club elegidos en el formulario
+// con sus ids estables de leagues.js, listos para persistir en
+// managers.league_id / managers.club_id y para sembrar careerState.
+function resolverIdsSeleccion() {
+  const ligaNombre = limpiarNombreLiga(managerLeague.getValue());
+  const clubNombre = managerClub.getValue();
+
+  const liga = leagues.find((l) => l.league === ligaNombre) ?? null;
+  const club = liga
+    ? liga.clubs.find((c) => c.name === clubNombre) ?? null
+    : clubNombre
+      ? leagues.find((l) => l.clubs.some((c) => c.name === clubNombre))?.clubs.find((c) => c.name === clubNombre) ?? null
+      : null;
+
+  return { liga, club };
+}
+
+managerName.addEventListener('input', actualizarResumen);
+
 // Dropdown de club: sus opciones dependen de la liga elegida (ver más
 // abajo), así que arranca vacío y deshabilitado.
 const managerClub = new CustomSelect(document.getElementById('manager-club'), {
   placeholder: 'Elegí el club',
   emptyMessage: 'Esta liga no tiene clubes cargados',
   imgShape: 'badge',
+  onChange: () => {
+    actualizarResumen();
+    managerError.textContent = '';
+  },
 });
 
-// Dropdown de liga: sus opciones dependen del país elegido (ver el
-// onChange de managerCountry). Al cambiar de liga, reconstruimos el
-// dropdown de club con los clubes de esa liga (buscados en leagues.js).
+// Dropdown de liga: se llena al inicio con TODAS las ligas del catálogo de
+// leagues.js, sin filtrar por el país del DT (la nacionalidad es solo un
+// dato del perfil, no condiciona la liga). Al cambiar de liga, reconstruimos
+// el dropdown de club con los clubes de esa liga (buscados en leagues.js).
 const managerLeague = new CustomSelect(document.getElementById('manager-league'), {
   placeholder: 'Elegí la liga',
-  emptyMessage: 'Este país no tiene ligas disponibles',
+  emptyMessage: 'No hay ligas disponibles',
   imgShape: 'badge',
   onChange: (leagueName) => {
     const ligaElegida = leagues.find((l) => l.league === leagueName);
     managerClub.setItems(
       (ligaElegida?.clubs ?? []).map((club) => ({
-        value: club,
-        label: club,
-        resolveImg: () => getClubBadgeUrl(club),
+        value: club.name,
+        label: club.name,
+        resolveImg: () => getClubBadgeUrl(club.name),
       })),
     );
+    actualizarResumen();
   },
 });
+// El catálogo completo de ligas está siempre disponible en "Liga a dirigir":
+// managerCountry no filtra las ligas.
+managerLeague.setItems(
+  leagues.map((l) => ({
+    value: l.league,
+    label: l.league,
+    resolveImg: () => getLeagueLogoUrl(l.league),
+  })),
+);
 
-// Dropdown de país: se llena de entrada con las ~195 opciones de
-// countries.js, mostrando bandera (FlagCDN) + nombre en cada ítem. Al
-// elegir un país, filtramos las ligas de leagues.js por su campo `country`
-// y repoblamos el dropdown de liga (que a su vez vacía el de club).
+// Dropdown de país (nacionalidad del DT): se llena de entrada con las ~195
+// opciones de countries.js, mostrando bandera (FlagCDN) + nombre en cada
+// ítem. No filtra las ligas: el país define la nacionalidad del entrenador,
+// y la liga se elige libremente en el catálogo completo (managerLeague).
 const managerCountry = new CustomSelect(document.getElementById('manager-country'), {
   placeholder: 'Elegí tu país',
   imgShape: 'flag',
-  onChange: (countryName) => {
-    const ligasDelPais = leagues.filter((l) => l.country === countryName);
-    managerLeague.setItems(
-      ligasDelPais.map((l) => ({
-        value: l.league,
-        label: l.league,
-        resolveImg: () => getLeagueLogoUrl(l.league),
-      })),
-    );
+  onChange: () => {
+    actualizarResumen();
   },
 });
 managerCountry.setItems(
@@ -102,6 +199,7 @@ function mostrarSoloFormularioManager() {
   authContainer.style.display = 'none';
   managerFormContainer.style.display = 'flex';
   appContainer.style.display = 'none';
+  actualizarResumen();
 }
 
 // Crea el juego Phaser (vacío de escenas activas) y registra las escenas
@@ -125,10 +223,18 @@ async function crearJuego() {
 
   const game = new Phaser.Game({
     type: Phaser.AUTO,
-    width: 800,
-    height: 600,
+    width: 1280,
+    height: 720,
     backgroundColor: '#1a1a2e',
     parent: 'app',
+    // Escala responsiva: el canvas ocupa todo el ancho disponible de la
+    // ventana (y el alto proporcional 16:9), centrado automáticamente.
+    // Antes quedaba fijo en 800×600, lo que dejaba márgenes laterales
+    // enormes en pantallas anchas.
+    scale: {
+      mode: Phaser.Scale.FIT,
+      autoCenter: Phaser.Scale.CENTER_BOTH,
+    },
   });
 
   game.scene.add('PackOpeningScene', PackOpeningScene);
@@ -265,7 +371,7 @@ btnCreateManager.addEventListener('click', async () => {
 
   const nombre = managerName.value.trim();
   const pais = managerCountry.getValue();
-  const liga = managerLeague.getValue();
+  const liga = limpiarNombreLiga(managerLeague.getValue());
   const club = managerClub.getValue();
 
   if (!nombre || !pais || !liga || !club) {
@@ -280,10 +386,47 @@ btnCreateManager.addEventListener('click', async () => {
     return;
   }
 
+  // Resolvemos los ids estables de liga y club (leagues.js) para persistirlos
+  // (managers.league_id / managers.club_id) y para sembrar careerState.
+  const { liga: ligaObj, club: clubObj } = resolverIdsSeleccion();
+
   btnCreateManager.disabled = true;
   try {
-    const manager = await createManager({ userId: usuario.id, name: nombre, country: pais, league: liga, club });
+    const manager = await createManager({
+      userId: usuario.id,
+      name: nombre,
+      country: pais,
+      league: liga,
+      club,
+      leagueId: ligaObj?.id ?? null,
+      clubId: clubObj?.id ?? null,
+      reputation: 50,
+    });
+
     setDevManagerId(manager.id); // el panel de dev necesita saber quién es el manager actual
+
+    // Sembramos el estado global de la carrera: el perfil del DT y los
+    // valores iniciales. Las escenas siguientes (SeasonScene, EventScene,
+    // CareerSummaryScene) consumen esto sin volver a consultar la base.
+    initCareerState({
+      managerId: manager.id,
+      seasonId: null,
+      money: manager.money ?? 1000000,
+      morale: 70,
+      fatigue: 0,
+      pressure: 50,
+      streak: 0,
+      reputation: manager.reputation ?? 50,
+    });
+    setManagerProfile({
+      name: nombre,
+      country: pais,
+      league: liga,
+      club,
+      leagueId: ligaObj?.id ?? null,
+      clubId: clubObj?.id ?? null,
+    });
+
     const packs = await openInitialPacks(manager.id);
     mostrarAperturaDeSobres(packs, manager.id);
   } catch (error) {

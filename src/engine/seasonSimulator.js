@@ -429,6 +429,9 @@ function crearEstadoInicial(estado = {}) {
 //     Solo es opcional en el PRIMER tramo (desdeJornada === 1), que es el que
 //     puede permitirse sortear una liga nueva; de la fecha 2 en adelante es
 //     obligatoria y omitirla tira error (ver abajo).
+//   - rivalesNombres (opcional): lista de 19 nombres de club, mismo índice que
+//     rivalesFuerza. Es puramente informativo (queda en resultados[].rivalNombre)
+//     y no participa de ningún cálculo; si no viene, rivalNombre queda undefined.
 //   - estado (opcional): lo que devolvió el tramo anterior. De acá sale
 //     ratingPlantel y el punto de partida de moral/fatiga/contadores. En el
 //     primer tramo alcanza con pasar { ratingPlantel } (y, si se quiere,
@@ -443,7 +446,7 @@ function crearEstadoInicial(estado = {}) {
 // jornada 20 vuelve a rivalesFuerza[0] (la revancha de la fecha 1). La
 // primera rueda (fechas 1-19) se juega de local y la segunda (20-38) de
 // visitante, así cada rival aparece exactamente dos veces.
-export function simularTramo({ desdeJornada, hastaJornada, rivalesFuerza, estado, k }) {
+export function simularTramo({ desdeJornada, hastaJornada, rivalesFuerza, rivalesNombres, estado, k }) {
   const nuevoEstado = crearEstadoInicial(estado);
   const kReversion = resolverKReversion(k);
 
@@ -472,6 +475,7 @@ export function simularTramo({ desdeJornada, hastaJornada, rivalesFuerza, estado
     // Ver "INDEXADO DE rivalesFuerza" arriba: jornada 1 => rivales[0].
     const indiceRival = (jornada - 1) % CANTIDAD_RIVALES;
     const fuerzaRival = rivales[indiceRival];
+    const nombreRival = rivalesNombres?.[indiceRival];
     const esLocal = jornada <= CANTIDAD_RIVALES;
 
     const fuerzaPlantel = nuevoEstado.ratingPlantel + nuevoEstado.moral / 10 - nuevoEstado.fatiga / 10;
@@ -504,6 +508,7 @@ export function simularTramo({ desdeJornada, hastaJornada, rivalesFuerza, estado
       jornada,
       esLocal,
       rivalFuerza: fuerzaRival,
+      rivalNombre: nombreRival,
       golesPlantel,
       golesRival,
       resultado,
