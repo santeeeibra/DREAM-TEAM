@@ -19,11 +19,12 @@ export const APODOS = [
 ];
 
 export const CLUBES_RIVALES = [
-  'Atlético Ribera', 'Deportivo Ancla', 'Unión del Valle', 'Racing Portuario',
-  'Ferro Austral', 'Sportivo Bahía', 'Cóndor FC', 'Olimpo Andino', 'Real Meseta',
-  'Náutico Sur', 'Talleres del Sud', 'Estrella Roja Norte', 'Independiente Chubut',
-  'Gimnasia Pampa', 'Vélez Litoral', 'Argentinos del Este', 'Belgrano Costero',
-  'San Lorenzo del Mar', 'Newell\'s Patagónico',
+  // Clubes reales de la Premier League: matchean ESTILOS_CLUB en balance.js.
+  // Los últimos 5 no tienen estilo propio → caen al default (club neutro).
+  'Manchester City', 'Arsenal', 'Liverpool', 'Chelsea', 'Manchester United',
+  'Tottenham', 'Aston Villa', 'Newcastle', 'West Ham', 'Brighton',
+  'Burnley', 'Sheffield United', 'Luton Town', 'Brentford',
+  'Everton', 'Crystal Palace', 'Fulham', 'Wolverhampton', 'Nottingham Forest',
 ];
 
 export const CLUBES_JUGABLES = [

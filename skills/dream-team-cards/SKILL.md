@@ -1,0 +1,42 @@
+---
+name: dream-team-cards
+description: "Activa cuando toques cartas, sobres, plantel, alineación (once), chips, HUD o cualquier cosa visible en la UI de este repo. Cubre legibilidad de variables (fatiga/presión: subir es malo), ritmo de pantallas y las reglas visuales de cartas y sobres: rarezas, multiplicadores de venta, reveal, fotos, foil, penalidad de posición y garantías del draft."
+---
+
+# Cartas, sobres y feedback al jugador
+
+Activar cuando toques cartas, sobres, pantallas, chips, HUD o cualquier cosa visible.
+
+## Legibilidad de las variables
+- Fatiga y presión: **subir es malo**. No mostrar un `+8` verde en un
+  chip de fatiga. Usá color por bueno/malo, no por signo matemático,
+  y flecha ↑/↓ en vez de +/− donde confunda.
+- Toda variable que cambie tras una decisión tiene que verse cambiar.
+  Si el jugador no ve el efecto, la decisión no existió.
+
+## Ritmo
+- El objetivo es **partida corta y con ganas de volver a jugar**.
+  Si una pantalla agrega clicks sin agregar decisión, sobra.
+- No metas pantallas intermedias de confirmación salvo que se pierda
+  algo irreversible.
+
+## Antes de tocar visual
+- Leé cómo está resuelto el resto de la UI y seguí ese patrón.
+  No introduzcas un sistema de estilos nuevo.
+
+## Cartas y sobres (reglas visuales)
+- Rarezas: bronce / oro_comun / oro_unico / epica (definidas en
+  `src/engine/balance.js`, estilos en `src/ui/cartas.css`). Multiplicadores
+  de `valorDeVenta` (×0.12 / ×0.25 / ×0.35 / ×0.6) en `src/engine/cartas.js`.
+- Reveal escalonado: 55ms por carta dentro del grid. No lo cambies sin
+  re-verificar desktop y `prefers-reduced-motion` (la accesibilidad es parte
+  del diseño, no un extra).
+- Foto del jugador: `object-position: 50% 16%` ancla la cara; cambiarlo
+  desencuadra los retratos. Fallback: silueta SVG (`SIL_CARTA`).
+- Efectos foil/holo solo en desktop (`hover:hover` + `pointer:fine`).
+- Penalidad fuera de posición: `penalidad(posCarta, slot)` en
+  `src/data/posiciones.js` devuelve 0 (natural) / 2 (línea vecina) /
+  6 (fuera). La carta muestra el rating original tachado + el efectivo.
+- Draft inicial: `sobresIniciales(rng)` garantiza puestos (1 POR, 4 DEF,
+  3 MED, 3 DEL) para armar un 4-3-3 sin penalidad. `sobreRefuerzo` sube el
+  piso de rareza post-temporada.

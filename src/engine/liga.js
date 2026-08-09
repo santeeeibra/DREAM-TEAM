@@ -1,5 +1,5 @@
 // PURA. Resolución de temporada por tramos (§2.2): sin motor de partido en vivo.
-import { LIGA, FUERZA, ESCALADA_LIGA } from './balance.js';
+import { LIGA, FUERZA, ESCALADA_LIGA, ESTILOS_CLUB } from './balance.js';
 import { CLUBES_RIVALES } from '../data/nombres.js';
 
 export const MI_EQUIPO = 0;
@@ -29,6 +29,11 @@ function gauss(rng, media, sd) {
 }
 const clampNum = (v, a, b) => Math.max(a, Math.min(b, v));
 
+/** Estilo de juego del rival por nombre. Default implícito: club neutro. */
+export function getEstiloRival(nombreRival) {
+  return ESTILOS_CLUB[nombreRival] ?? { goles_mod: 0, concedidos_mod: 0, presion_extra: 1 };
+}
+
 /** Round-robin (círculo) ida y vuelta: 38 fechas para 20 equipos. */
 function generarFixture(rng, n) {
   const ids = rng.shuffle([...Array(n).keys()]);
@@ -52,9 +57,9 @@ function tablaVacia(equipos) {
   return equipos.map((e) => ({ id: e.id, pj: 0, g: 0, e: 0, p: 0, gf: 0, gc: 0, pts: 0 }));
 }
 
-function goles(rng, fuerza, rival, localia) {
+function goles(rng, fuerza, rival, localia, mod = 1) {
   const lambda = clampNum(
-    FUERZA.GOLES_BASE * Math.exp((fuerza - rival) / FUERZA.GOLES_ESCALA) * localia,
+    FUERZA.GOLES_BASE * Math.exp((fuerza - rival) / FUERZA.GOLES_ESCALA) * localia * mod,
     0.15, 4.5,
   );
   return rng.poisson(lambda);
@@ -71,8 +76,19 @@ export function simularTramo(rng, liga, desde, hasta, fuerzaMia) {
       const local = liga.equipos[localId], visita = liga.equipos[visitaId];
       const fl = (local.esMio ? fuerzaMia : local.fuerza) + gauss(rng, 0, 1.2);
       const fv = (visita.esMio ? fuerzaMia : visita.fuerza) + gauss(rng, 0, 1.2);
-      const gl = goles(rng, fl, fv, FUERZA.LOCALIA);
-      const gv = goles(rng, fv, fl, FUERZA.VISITA);
+      let gl = goles(rng, fl, fv, FUERZA.LOCALIA);
+      let gv = goles(rng, fv, fl, FUERZA.VISITA);
+      // Estilo del rival: el fuerte te cierra (menos goles) y te castiga más (más en contra).
+      if (local.esMio || visita.esMio) {
+        const estilo = getEstiloRival((local.esMio ? visita : local).nombre);
+        if (local.esMio) {
+          gl = goles(rng, fl, fv, FUERZA.LOCALIA, 1 - estilo.goles_mod);
+          gv = goles(rng, fv, fl, FUERZA.VISITA, 1 + estilo.concedidos_mod);
+        } else {
+          gl = goles(rng, fl, fv, FUERZA.LOCALIA, 1 + estilo.concedidos_mod);
+          gv = goles(rng, fv, fl, FUERZA.VISITA, 1 - estilo.goles_mod);
+        }
+      }
       anotar(liga.tabla, localId, gl, gv);
       anotar(liga.tabla, visitaId, gv, gl);
       if (local.esMio || visita.esMio) {

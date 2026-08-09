@@ -3,7 +3,7 @@
 import { createRng } from './rng.js';
 import { CARRERA, TRAMO, TEMPORADA, LIGA, DESPIDO } from './balance.js';
 import { createEstado, aplicarEfectos, resetRatingDelta } from './state.js';
-import { crearLiga, simularTramo, miPosicion, posiciones, fuerzaDeEquipo } from './liga.js';
+import { crearLiga, simularTramo, miPosicion, posiciones, fuerzaDeEquipo, getEstiloRival } from './liga.js';
 import { ratingOnce, autoOnce, onceCompleto } from './once.js';
 import { sobresIniciales, sobreRefuerzo } from './sobresLocal.js';
 import { cargarCartasDB, envejecerPlantel, valorDeVenta } from './cartas.js';
@@ -173,7 +173,8 @@ export function jugarTramo(c) {
     money: TRAMO.INGRESO_NETO,
     moral: redondear(TRAMO.MORAL_POR_RENDIMIENTO * (ppp - 1.35)) + driftMoral(c.estado.moral),
     presion: redondear(-TRAMO.PRESION_POR_RENDIMIENTO * (ppp - 1.35))
-      + (pos > c.objetivo ? TRAMO.PRESION_OBJETIVO_LEJOS : TRAMO.PRESION_OBJETIVO_CERCA),
+      + (pos > c.objetivo ? TRAMO.PRESION_OBJETIVO_LEJOS : TRAMO.PRESION_OBJETIVO_CERCA)
+      + presionExtraDerrotas(partidos),
   };
 
   const r = aplicarEfectos(c.estado, efectos, `tramo-t${c.temporada}-${c.tramo + 1}`, c.historial);
@@ -184,6 +185,11 @@ export function jugarTramo(c) {
   if (c.estado.presion >= DESPIDO.PRESION) return terminarCarrera(c, 'despedido');
   c.fase = FASES.EVENTO;
   return c;
+}
+
+/** Presión extra por perder contra rivales de peso (ESTILOS_CLUB.presion_extra). */
+function presionExtraDerrotas(partidos) {
+  return partidos.reduce((s, p) => (p.res === 'P' ? s + getEstiloRival(p.rival).presion_extra : s), 0);
 }
 
 function driftMoral(moral) {
