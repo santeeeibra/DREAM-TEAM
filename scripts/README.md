@@ -28,3 +28,20 @@ node scripts/apply-approved.js
 Requiere `SUPABASE_URL` y `SUPABASE_SERVICE_KEY` en `.env` (service
 role: estos scripts corren del lado del backend, nunca desde el
 cliente).
+
+# Escudos de club
+
+- **`fetch-escudoteca-badges.js`**: pobla `clubs.logo_url` (LaLiga y
+  Premier) con los escudos reales de Escudoteca Paladar Negro
+  (`paladarnegro.net/escudoteca`), en vez del escudo genérico de
+  iniciales que se ve hoy en el selector de club del onboarding.
+  Scrapea la galería de cada liga, matchea por nombre contra la tabla
+  `clubs` y sube cada PNG al bucket `club-badges`. Los clubes que no
+  matcheen solos se resuelven a mano en `escudoteca-overrides.json`
+  (`{ "Nombre exacto en clubs.name": "URL directa al PNG" }`).
+
+  ```bash
+  node scripts/fetch-escudoteca-badges.js --dry-run   # solo matchea, no sube nada
+  node scripts/fetch-escudoteca-badges.js              # laliga + premier
+  node scripts/fetch-escudoteca-badges.js --liga=laliga
+  ```

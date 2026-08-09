@@ -66,12 +66,12 @@ const LIGAS = [
   { id: 'laliga', label: 'LaLiga', logo: 'https://media.api-sports.io/football/leagues/140.png' },
 ];
 
-// Escudo del club: sale de la fila de `clubs` si trae columna de escudo
-// (badge_url / club_badge_url / badge). Si no viene o el CDN falla, cae al
-// escudo generado por nombre (badgeGenerator.js) — el escudo SIEMPRE se ve,
-// nunca queda un hueco vacío.
+// Escudo del club: sale de la columna `logo_url` de la fila de `clubs`
+// (poblada por scripts/fetch-escudoteca-badges.js). Si no viene o el CDN
+// falla, cae al escudo generado por nombre (badgeGenerator.js) — el escudo
+// SIEMPRE se ve, nunca queda un hueco vacío.
 const escudoDe = (cl) => {
-  const badge = cl.badge_url || cl.club_badge_url || cl.badge || '';
+  const badge = cl.logo_url || cl.badge_url || cl.club_badge_url || cl.badge || '';
   const fallback = generateClubBadgeDataURI(cl.name);
   return badge
     ? `<img class="escudo" src="${esc(badge)}" alt="" referrerpolicy="no-referrer" onerror="this.src='${fallback}'" />`
@@ -690,7 +690,7 @@ const acciones = {
       ob.error = 'No se pudieron cargar los clubes. Revisá tu conexión e intentá de nuevo.';
     } else {
       clubes.forEach(cl => {
-        const badge = cl.badge_url || cl.club_badge_url || cl.badge;
+        const badge = cl.logo_url || cl.badge_url || cl.club_badge_url || cl.badge;
         if (badge) { const img = new Image(); img.src = badge; }
       });
       ob.clubes = clubes;
@@ -723,7 +723,7 @@ const acciones = {
       fetchAbrirSobre({ managerId, packId: PACK_ID, free: true }),
     ]);
     const cartasInicialesDB = sobres.every(Boolean) ? sobres : null;
-    ui.miEscudo = club?.badge_url || club?.club_badge_url || club?.badge || '';
+    ui.miEscudo = club?.logo_url || club?.badge_url || club?.club_badge_url || club?.badge || '';
     c = iniciarCarrera({ dt: ob.nombre, club: club?.name || ob.nombre, cartasInicialesDB });
     ob.enviando = false;
     ui.vista = 'sobres'; ui.sobresAbiertos = [];
