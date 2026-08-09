@@ -1,13 +1,3 @@
-<<<<<<< HEAD
-node_modules
-dist
-.env
-.vercel
-tmp-*
-graphify/
-.agents/
-graphify-out/
-=======
 # Dependencies
 node_modules/
 dream-team/node_modules/
@@ -41,5 +31,10 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 
+# Local / herramientas
+tmp-*
+graphify/
+.agents/
+graphify-out/
+
 .vercel
->>>>>>> 82ed002a593741bf1138f96d1dc26ba56736de6e

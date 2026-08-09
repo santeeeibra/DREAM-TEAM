@@ -1,5 +1,3 @@
-@import 'flag-icons/css/flag-icons.min.css';
-
 /* =============================================================
    BASE — paleta oscura del juego
    =============================================================
@@ -24,7 +22,7 @@ body {
   gap: 10px;
 }
 
-.pantalla-centrada h1 {hay que rediseñar la tabla dela liga , tiene que ser algo similar al modelo de la imagen
+.pantalla-centrada h1 {
   margin: 0 0 10px;
   font-family: 'Rajdhani', Arial, sans-serif;
   font-size: 28px;

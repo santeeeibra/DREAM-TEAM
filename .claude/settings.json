@@ -1,5 +1,4 @@
 {
-<<<<<<< HEAD
   "hooks": {
     "PreToolUse": [
       {
@@ -21,11 +20,8 @@
         ]
       }
     ]
-  }
-}
-=======
+  },
   "enabledPlugins": {
     "superpowers@claude-plugins-official": true
   }
 }
->>>>>>> 82ed002a593741bf1138f96d1dc26ba56736de6e
