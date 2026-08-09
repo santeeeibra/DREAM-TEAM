@@ -1,0 +1,8 @@
+node_modules
+dist
+.env
+.vercel
+tmp-*
+graphify/
+.agents/
+graphify-out/

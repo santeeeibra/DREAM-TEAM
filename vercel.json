@@ -1,0 +1,1 @@
+{ "buildCommand": "vite build", "outputDirectory": "dist", "functions": { "api/evento.js": { "maxDuration": 10 } } }

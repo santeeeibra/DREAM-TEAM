@@ -1,0 +1,44 @@
+[
+  {
+    "id": "bec69d4e-be44-4d08-811f-860a1d128460",
+    "fut_id": null,
+    "name": "Josh Dasilva",
+    "league_id": "premier",
+    "reason": "no_image"
+  },
+  {
+    "id": "e700330d-8eb6-44b3-ae2d-a53fde3c2654",
+    "fut_id": null,
+    "name": "Amad Diallo",
+    "league_id": "premier",
+    "reason": "no_image"
+  },
+  {
+    "id": "41101e43-c803-47ed-9528-8c8a7154303a",
+    "fut_id": null,
+    "name": "Callum Olusesi",
+    "league_id": "premier",
+    "reason": "no_image"
+  },
+  {
+    "id": "ab26d462-9799-442b-9cfd-674fd9f4dad8",
+    "fut_id": null,
+    "name": "Carlos Alcaraz Durán",
+    "league_id": "premier",
+    "reason": "no_image"
+  },
+  {
+    "id": "7bde26f1-455e-4f48-93c4-5a720a6ae3c7",
+    "fut_id": null,
+    "name": "Marcos Senesi Barón",
+    "league_id": "premier",
+    "reason": "no_image"
+  },
+  {
+    "id": "843630c0-d0c0-4670-afc3-cddb6c413790",
+    "fut_id": null,
+    "name": "Diego Gómez Amarilla",
+    "league_id": "premier",
+    "reason": "no_image"
+  }
+]

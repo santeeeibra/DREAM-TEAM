@@ -1,0 +1,136 @@
+/* Cartas v2 — rediseño. Rareza real del juego: bronce / oro_comun / oro_unico / epica
+   (coincide 1:1 con RAREZAS de balance.js, no hay catálogo paralelo).
+   El wrapper de reveal se llama .carta-slot (no .slot: ese nombre ya lo usa
+   la grilla de formación del 11 titular en index.html). */
+
+@property --holo{ syntax:'<angle>'; inherits:false; initial-value:0deg; }
+
+:root{
+  --card-base:#15171c; --card-base-2:#0d0f13;
+  --card-name:#f2f0ea; --card-meta:#8b909a;
+  --card-ease:cubic-bezier(0.23,1,0.32,1);
+
+  --bronce-1:#a5652f; --bronce-2:#d99457;
+  --oro_comun-1:#c39a1f; --oro_comun-2:#efd069;
+  --oro_unico-1:#ffb020; --oro_unico-2:#fff2b8;
+  --epica-1:#7b2ff7;   --epica-2:#f0a6ff;
+}
+
+.grid-cartas{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:14px}
+
+/* ============ reveal escalonado ============ */
+.carta-slot{opacity:0;animation:cartaReveal 480ms var(--card-ease) forwards;animation-delay:calc(var(--i)*55ms)}
+@keyframes cartaReveal{from{opacity:0;transform:translateY(16px) scale(.94)}to{opacity:1;transform:none}}
+
+/* ============ borde de rareza + hover ============ */
+.card{
+  --r1:var(--bronce-1);--r2:var(--bronce-2);
+  --glow:transparent;--glow-strong:transparent;
+  position:relative;border-radius:16px;padding:2.5px;cursor:pointer;
+  background:linear-gradient(160deg,var(--r2),var(--r1) 45%,#34373f 100%);
+  box-shadow:0 10px 30px rgba(0,0,0,.55);
+  transition:transform 220ms var(--card-ease), box-shadow 260ms var(--card-ease);
+}
+.card[data-rarity="oro_comun"]{--r1:var(--oro_comun-1);--r2:var(--oro_comun-2);--glow:rgba(201,162,39,.28)}
+.card[data-rarity="oro_unico"]{--r1:var(--oro_unico-1);--r2:var(--oro_unico-2);--glow:rgba(255,176,32,.5);--glow-strong:rgba(255,176,32,.7)}
+.card[data-rarity="epica"]  {--r1:var(--epica-1);--r2:var(--epica-2);--glow:rgba(162,75,240,.6);--glow-strong:rgba(227,75,214,.75)}
+
+.card[data-rarity="oro_unico"]{
+  background:conic-gradient(from var(--holo), #b8790a,#ffd65c,#fff6d0,#ffb347,#b8790a);
+  animation:cartaHolo 6s linear infinite;
+  box-shadow:0 10px 30px rgba(0,0,0,.55), 0 0 26px -6px var(--glow);
+}
+.card[data-rarity="epica"]{
+  background:conic-gradient(from var(--holo), #7b2ff7,#e34bd6,#ffcf6e,#a24bf0,#7b2ff7);
+  animation:cartaHolo 4.2s linear infinite, cartaBreathe 3.2s ease-in-out infinite;
+  box-shadow:0 12px 34px rgba(0,0,0,.6), 0 0 34px -4px var(--glow);
+}
+@keyframes cartaHolo{to{--holo:360deg}}
+@keyframes cartaBreathe{0%,100%{box-shadow:0 12px 34px rgba(0,0,0,.6), 0 0 30px -6px var(--glow)}50%{box-shadow:0 12px 34px rgba(0,0,0,.6), 0 0 46px -2px var(--glow-strong)}}
+
+@media (hover:hover) and (pointer:fine){
+  .card:hover{transform:translateY(-6px);box-shadow:0 20px 44px rgba(0,0,0,.6), 0 0 44px -6px var(--glow-strong,var(--glow))}
+}
+
+.card.sel{outline:2px solid var(--fluor);outline-offset:2px}
+.card.bloqueada{filter:grayscale(.7);opacity:.5;cursor:not-allowed}
+
+.card-inner{position:relative;border-radius:14px;overflow:hidden;
+  background:
+    radial-gradient(120% 82% at 50% -18%, color-mix(in srgb,var(--r1) 30%,transparent), transparent 60%),
+    linear-gradient(180deg,var(--card-base) 0%, var(--card-base-2) 100%);
+}
+
+/* ---- pozo de foto: recorte consistente y centrado (arregla el "no centrados") ---- */
+.photo-well{position:relative;aspect-ratio:1/1;overflow:hidden}
+.photo-well img{width:100%;height:100%;object-fit:cover;object-position:50% 16%;display:block}
+.photo-well::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(80% 70% at 50% 22%, transparent 42%, rgba(0,0,0,.32) 100%),
+            linear-gradient(180deg, transparent 55%, var(--card-base-2) 98%)}
+.photo-well::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(180deg, color-mix(in srgb,var(--r1) 20%,transparent), transparent 46%);mix-blend-mode:soft-light}
+
+/* rayos detrás del OVR en épicas/únicas */
+.rays{position:absolute;top:-30%;left:-20%;width:140%;height:120%;z-index:0;pointer-events:none;opacity:0;
+  background:conic-gradient(from 0deg at 30% 30%, transparent 0deg, color-mix(in srgb,var(--r2) 60%,transparent) 14deg, transparent 28deg, transparent 60deg, color-mix(in srgb,var(--r2) 45%,transparent) 74deg, transparent 88deg)}
+.card[data-rarity="oro_unico"] .rays{opacity:.35}
+.card[data-rarity="epica"] .rays{opacity:.5;animation:cartaSpin 14s linear infinite}
+@keyframes cartaSpin{to{transform:rotate(360deg)}}
+
+/* destello diagonal periódico solo en únicas/épicas */
+.glint{position:absolute;inset:0;z-index:2;pointer-events:none;opacity:0}
+.card[data-rarity="oro_unico"] .glint,
+.card[data-rarity="epica"] .glint{opacity:1;
+  background:linear-gradient(115deg,transparent 42%,rgba(255,255,255,.22) 49%,transparent 57%);
+  background-size:250% 250%;animation:cartaGlint 5s ease-in-out infinite}
+.card[data-rarity="epica"] .glint{background:linear-gradient(115deg,transparent 42%,rgba(240,166,255,.28) 49%,transparent 57%);background-size:250% 250%;animation-duration:4s}
+@keyframes cartaGlint{0%{background-position:170% 0}22%,100%{background-position:-70% 0}}
+
+/* foil que sigue al cursor (delegado desde main.js, solo desktop) */
+.foil{position:absolute;inset:0;z-index:2;pointer-events:none;opacity:0;transition:opacity 200ms var(--card-ease);
+  background:radial-gradient(200px 200px at var(--mx,50%) var(--my,50%), rgba(255,255,255,.28), transparent 60%);mix-blend-mode:overlay}
+@media (hover:hover) and (pointer:fine){
+  .card[data-rarity="oro_unico"]:hover .foil,
+  .card[data-rarity="epica"]:hover .foil{opacity:1}
+}
+
+/* flash único al aparecer */
+.flash{position:absolute;inset:0;z-index:4;pointer-events:none;opacity:0;background:radial-gradient(70% 60% at 50% 30%, color-mix(in srgb,var(--r2) 85%,white), transparent 70%)}
+.card[data-rarity="oro_unico"] .flash{animation:cartaFlash 700ms var(--card-ease) forwards;animation-delay:calc(var(--i)*55ms + 140ms)}
+.card[data-rarity="epica"] .flash{animation:cartaFlash 820ms var(--card-ease) forwards;animation-delay:calc(var(--i)*55ms + 140ms)}
+@keyframes cartaFlash{0%{opacity:0}18%{opacity:.85}100%{opacity:0}}
+
+/* ---- OVR + posición ---- */
+.ovr{position:absolute;top:10px;left:12px;z-index:3;line-height:1}
+.ovr .num{font-family:"Anton",sans-serif;font-weight:400;font-size:32px;color:var(--r2);text-shadow:0 2px 12px rgba(0,0,0,.75);font-variant-numeric:tabular-nums}
+.card[data-rarity="oro_unico"] .ovr .num,
+.card[data-rarity="epica"] .ovr .num{
+  background:linear-gradient(180deg,var(--r2),var(--r1));-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 10px var(--glow))}
+.ovr .pos{font-family:'Barlow Condensed';font-weight:700;font-size:12px;letter-spacing:.12em;color:#d3d6dc;margin-top:-2px}
+
+/* rating real → rating en el puesto elegido (penalidad de posición) */
+.ovr .num-cambio{display:flex;align-items:baseline;gap:4px;font-size:0}
+.ovr .num-cambio .orig{font-family:'Anton';font-size:16px;color:#8b909a;text-decoration:line-through;font-variant-numeric:tabular-nums}
+.ovr .num-cambio .flecha{font-size:11px;color:#8b909a}
+.ovr .num-cambio .efectivo{font-family:'Anton';font-size:28px;font-variant-numeric:tabular-nums}
+.card.pen-vecino .ovr .num, .card.pen-vecino .ovr .num-cambio .efectivo{background:none;-webkit-background-clip:initial;background-clip:initial;filter:none;color:var(--ambar)}
+.card.pen-fuera .ovr .num, .card.pen-fuera .ovr .num-cambio .efectivo{background:none;-webkit-background-clip:initial;background-clip:initial;filter:none;color:#D6402E}
+
+/* ---- pie ---- */
+.foot{position:relative;z-index:3;padding:2px 10px 10px}
+.foot .name{font-family:'Barlow Condensed';font-weight:700;font-size:16px;line-height:1.1;text-transform:uppercase;color:var(--card-name);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.metarow{display:flex;align-items:center;justify-content:space-between;margin-top:6px;gap:6px}
+.metarow .age{font-size:11px;color:var(--card-meta);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rarity-chip{display:inline-flex;align-items:center;flex:none;font-family:'Barlow Condensed';font-weight:700;font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:2px 7px;border-radius:6px;color:#0c0d10;background:linear-gradient(135deg,var(--r2),var(--r1));box-shadow:0 0 14px -3px var(--glow)}
+.card[data-rarity="bronce"] .rarity-chip{color:#1a0f07}
+
+/* ---- accesibilidad: menos movimiento ---- */
+@media (prefers-reduced-motion:reduce){
+  .carta-slot{animation:cartaFadeOnly 300ms ease forwards}
+  @keyframes cartaFadeOnly{to{opacity:1}}
+  .card[data-rarity="oro_unico"],.card[data-rarity="epica"]{animation:none}
+  .glint,.rays,.foil{animation:none}
+  .flash{animation:cartaFadeFlash 400ms ease forwards}
+  @keyframes cartaFadeFlash{0%{opacity:.5}100%{opacity:0}}
+}

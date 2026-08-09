@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Dream Team — Modo Carrera DT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/src/ui/cartas.css">
+<style>
+:root{
+  --noche:#080B09; --cancha:#0E1712; --panel:#121D17; --linea:rgba(233,255,240,.10);
+  --papel:#EFE9DB; --tiza:#EAF2EC; --humo:#7E8F85;
+  --fluor:#FF5E1A; --led:#6FE39A; --rojo:#FF4A4A; --ambar:#FFC24B;
+  --r:4px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:
+    radial-gradient(120% 60% at 50% -10%, #16281E 0%, transparent 60%),
+    repeating-linear-gradient(90deg, transparent 0 46px, rgba(255,255,255,.014) 46px 92px),
+    var(--noche);
+  color:var(--tiza); font-family:'Barlow',system-ui,sans-serif; font-size:16px; line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+}
+#app{max-width:940px;margin:0 auto;padding:20px 18px 80px}
+h1,h2,h3,.display{font-family:'Anton',Impact,sans-serif;font-weight:400;letter-spacing:.01em;text-transform:uppercase;line-height:.95}
+h1{font-size:clamp(38px,8vw,68px)}
+h2{font-size:clamp(24px,4.4vw,36px)}
+h3{font-size:19px}
+.eyebrow{font-family:'Barlow Condensed';font-weight:700;text-transform:uppercase;letter-spacing:.22em;font-size:12px;color:var(--humo)}
+.num{font-family:'Barlow Condensed';font-weight:700;font-variant-numeric:tabular-nums}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+.btn{
+  display:inline-flex;align-items:center;gap:10px;padding:13px 20px;border-radius:var(--r);
+  background:var(--fluor);color:#0B0704;font-family:'Barlow Condensed';font-weight:700;
+  text-transform:uppercase;letter-spacing:.09em;font-size:18px;
+  transition:transform .12s ease, filter .12s ease; box-shadow:0 0 0 0 rgba(255,94,26,.5);
+}
+.btn:hover{filter:brightness(1.08);transform:translateY(-1px)}
+.btn:active{transform:translateY(1px)}
+.btn.ghost{background:transparent;color:var(--tiza);box-shadow:inset 0 0 0 1px var(--linea)}
+.btn.ghost:hover{box-shadow:inset 0 0 0 1px var(--fluor);color:var(--fluor)}
+.btn:disabled{opacity:.35;cursor:not-allowed;transform:none}
+input,select{
+  background:var(--cancha);border:1px solid var(--linea);border-radius:var(--r);
+  padding:12px 14px;color:var(--tiza);font:inherit;width:100%
+}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--fluor);outline-offset:2px}
+.panel{background:var(--panel);border:1px solid var(--linea);border-radius:var(--r);padding:18px}
+.stack{display:flex;flex-direction:column;gap:16px}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.sep{height:1px;background:var(--linea);margin:6px 0}
+.muted{color:var(--humo)}
+
+/* ── dropdowns del onboarding (país y club) ── */
+.dropdown{position:relative}
+.dd-btn{
+  display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+  background:var(--cancha);border:1px solid var(--linea);border-radius:var(--r);
+  padding:12px 14px;color:var(--tiza);font:inherit;cursor:pointer;line-height:1.45
+}
+.dd-btn:hover{border-color:var(--fluor)}
+.dd-btn:disabled{opacity:.35;cursor:not-allowed;border-color:var(--linea)}
+.dd-btn.dd-placeholder{color:var(--humo)}
+.dd-caret{margin-left:auto;color:var(--humo);font-size:12px}
+.dd-opciones{
+  position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:30;
+  max-height:264px;overflow-y:auto;list-style:none;padding:6px;
+  display:flex;flex-direction:column;gap:2px;border-radius:var(--r);
+  background:var(--panel);border:1px solid var(--linea);
+  box-shadow:0 14px 34px rgba(0,0,0,.55)
+}
+.dd-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:3px;cursor:pointer;font-size:15px}
+.dd-item:hover{background:rgba(255,94,26,.10);color:var(--fluor)}
+.dd-item.activo{color:var(--fluor);font-weight:700;background:rgba(255,94,26,.06)}
+.flag{width:22px;height:15px;object-fit:cover;border-radius:2px;box-shadow:0 0 0 1px rgba(255,255,255,.14)}
+.escudo{width:22px;height:22px;object-fit:contain;flex:none}
+.liga-logo{width:26px;height:26px;object-fit:contain;flex:none}
+
+/* ── SIGNATURE: el marcador ── */
+.marcador{
+  position:sticky;top:0;z-index:20;margin:-20px -18px 18px;padding:10px 18px;
+  background:linear-gradient(180deg,rgba(8,11,9,.97),rgba(8,11,9,.86));
+  border-bottom:1px solid var(--linea);backdrop-filter:blur(8px);
+}
+.marcador .top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.marcador .club{font-family:'Anton';font-size:17px;text-transform:uppercase}
+.gauges{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:8px}
+.gauge{position:relative}
+.gauge .lbl{font-family:'Barlow Condensed';font-weight:700;font-size:10.5px;letter-spacing:.14em;color:var(--humo);text-transform:uppercase}
+.gauge .val{font-family:'Barlow Condensed';font-weight:700;font-size:22px;line-height:1;font-variant-numeric:tabular-nums}
+.gauge .bar{height:3px;background:rgba(255,255,255,.09);margin-top:4px;overflow:hidden}
+.gauge .bar i{display:block;height:100%;background:var(--led);width:0;transition:width .6s cubic-bezier(.2,.7,.2,1)}
+.gauge.warn .bar i{background:var(--ambar)} .gauge.bad .bar i{background:var(--rojo)}
+.gauge .delta{position:absolute;right:0;top:-2px;font-family:'Barlow Condensed';font-weight:700;font-size:13px;opacity:0}
+.gauge .delta.on{animation:flotar 1.6s ease forwards}
+@keyframes flotar{0%{opacity:0;transform:translateY(6px)}18%{opacity:1;transform:translateY(0)}75%{opacity:1}100%{opacity:0;transform:translateY(-8px)}}
+.pos{color:var(--led)} .neg{color:var(--rojo)}
+
+/* cinta de fixture */
+.cinta{display:flex;gap:2px;margin-top:10px}
+.cinta i{flex:1;height:6px;background:rgba(255,255,255,.07);border-radius:1px;transition:background .3s}
+.cinta i.G{background:var(--led)} .cinta i.E{background:var(--humo)} .cinta i.P{background:var(--rojo)}
+.cinta i.hoy{box-shadow:0 0 0 1px var(--fluor)}
+
+/* cartas: estilos del componente en src/ui/cartas.css (importado desde main.js) */
+.pen-vecino-tx{color:var(--ambar)}
+.pen-fuera-tx{color:#D6402E}
+.aviso{border-left:3px solid var(--ambar);padding:8px 12px;background:rgba(0,0,0,.25);font-size:13px;margin:0}
+
+/* once */
+.cancha-grid{display:grid;gap:10px;background:
+  linear-gradient(180deg,rgba(111,227,154,.05),transparent),var(--cancha);
+  border:1px solid var(--linea);padding:14px;border-radius:var(--r)}
+.linea-f{display:grid;gap:8px;grid-auto-flow:column;justify-content:center}
+.slot{
+  min-width:78px;padding:8px 6px;text-align:center;border:1px dashed var(--linea);border-radius:3px;
+  background:rgba(0,0,0,.25);cursor:pointer;transition:border-color .15s,background .15s
+}
+.slot:hover{border-color:var(--fluor)}
+.slot.activo{border-color:var(--fluor);background:rgba(255,94,26,.10)}
+.slot .sl{font-family:'Barlow Condensed';font-weight:700;font-size:10px;letter-spacing:.14em;color:var(--humo)}
+.slot .sn{font-family:'Barlow Condensed';font-weight:700;font-size:13px;text-transform:uppercase;line-height:1.05}
+.slot .sr{font-family:'Anton';font-size:18px}
+.slot.vecino .sr{color:var(--ambar)}
+.slot.fuera .sr{color:#D6402E}
+.slot.vacio{border-style:dashed;border-color:var(--ambar)}
+.slot.vacio .sn{color:var(--ambar)}
+
+/* evento */
+.evento{border-left:3px solid var(--fluor);animation:entrar .35s cubic-bezier(.2,.8,.2,1)}
+@keyframes entrar{from{opacity:0;transform:translateY(10px)}}
+.opcion{
+  width:100%;text-align:left;padding:14px;border:1px solid var(--linea);border-radius:var(--r);
+  background:rgba(255,255,255,.02);transition:border-color .15s,background .15s;
+}
+.opcion:hover{border-color:var(--fluor);background:rgba(255,94,26,.06)}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.chip{font-family:'Barlow Condensed';font-weight:700;font-size:13px;letter-spacing:.04em;
+  padding:2px 8px;border-radius:99px;background:rgba(255,255,255,.06)}
+.chip.pos{color:var(--led)} .chip.neg{color:var(--rojo)}
+.rama{display:flex;align-items:center;gap:8px;margin-top:6px}
+.rama .prob{font-family:'Anton';font-size:13px;color:var(--humo);min-width:34px}
+.rama .chips{margin-top:0}
+
+/* tabla */
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{font-family:'Barlow Condensed';font-weight:700;text-transform:uppercase;letter-spacing:.12em;
+  font-size:11px;color:var(--humo);text-align:left;padding:6px 8px;border-bottom:1px solid var(--linea)}
+td{padding:6px 8px;border-bottom:1px solid rgba(255,255,255,.045)}
+tr.mio td{background:rgba(255,94,26,.12);font-weight:700}
+td.n{text-align:right;font-family:'Barlow Condensed';font-weight:700;font-variant-numeric:tabular-nums}
+.partido{display:flex;justify-content:space-between;gap:10px;padding:7px 10px;border-bottom:1px solid rgba(255,255,255,.05);font-size:14px}
+.res{font-family:'Anton';font-size:15px;width:22px;text-align:center}
+.res.G{color:var(--led)} .res.E{color:var(--humo)} .res.P{color:var(--rojo)}
+.hint{font-size:13px;color:var(--humo)}
+@media (max-width:560px){
+  .gauges{grid-template-columns:repeat(3,1fr)}
+  .linea-f{grid-auto-flow:row;grid-template-columns:repeat(4,1fr)}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+  <div id="app"></div>
+  <script type="module" src="/src/ui/main.js"></script>
+</body>
+</html>

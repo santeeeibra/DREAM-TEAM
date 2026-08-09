@@ -1,0 +1,21 @@
+{
+  "name": "dream-team",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "sim": "node scripts/simulate-career.js 200",
+    "sim:random": "node scripts/simulate-career.js 200 --politica=random",
+    "audit": "node scripts/audit-orphans.js"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.112.0",
+    "esbuild": "^0.28.1",
+    "jsdom": "^30.0.1"
+  }
+}
