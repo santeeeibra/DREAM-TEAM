@@ -7,6 +7,7 @@ import {
 } from '../engine/index.js';
 import { CLUBES_JUGABLES } from '../data/nombres.js';
 import { pedirNarracion } from '../net/evento.js';
+import { generateClubBadgeDataURI } from '../utils/badgeGenerator.js';
 
 const app = document.getElementById('app');
 // Único pack disponible por ahora (Sobre Dream Team): se usa tanto para los
@@ -15,7 +16,7 @@ const PACK_ID = 'b34f5178-ad24-47b8-a957-5c4c6c7e6587';
 let c = null;
 let ui = {
   vista: 'intro', vistaAnterior: 'intro', slot: null, sobresAbiertos: [], deltas: null, tabla: false,
-  sel: new Set(), salen: new Set(), fuenteIA: null, cargando: false,
+  sel: new Set(), salen: new Set(), fuenteIA: null, cargando: false, detalleAbierto: new Set(),
   onboarding: { liga: null, clubes: [], clubId: '', nombre: '', pais: '', cargando: false, error: null, enviando: false, abierto: null },
 };
 
@@ -25,6 +26,15 @@ const ICONO = { money: '💰', moral: '😊', fatiga: '🔋', presion: '🔥', r
 const NOMBRE_VAR = { money: 'Plata', moral: 'Moral', fatiga: 'Fatiga', presion: 'Presión', ratingDelta: 'Nivel' };
 // fatiga y presión: subir es malo. El resto: subir es bueno.
 const MALO_SI_SUBE = new Set(['fatiga', 'presion']);
+// Recordatorio corto de qué mueve cada variable en la cancha — se repite acá
+// (además de en la guía) porque en el momento de decidir es cuando más falta hace.
+const EXPLICACION_VAR = {
+  moral: 'sube = rinde mejor',
+  fatiga: 'sube = rinde peor',
+  presion: 'llega a 100 y te echan',
+  ratingDelta: 'fuerza extra este tramo',
+  money: 'para fichar refuerzos',
+};
 
 // Silueta de fallback cuando el jugador no tiene foto (mismo trazo que antes,
 // ahora es el <img src> por defecto en vez de una rama de markup aparte).
@@ -62,8 +72,41 @@ const LIGAS = [
 const escudoDe = (cl) => {
   const badge = cl.badge_url || cl.club_badge_url || cl.badge || '';
   return badge
-    ? `<img class="escudo" src="${esc(badge)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()" />`
+    ? `<img class="escudo" src="${esc(badge)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()" />`
     : '';
+};
+
+// Escudos de los 19 rivales de la liga (la fila `clubs` del DT no los cubre).
+// Fuente: Escudoteca Paladar Negro, PNGs hotlinkeables. Si la URL falla o el
+// club no está (Luton Town), el onerror cae al SVG generado por nombre
+// (badgeGenerator.js) — mismo patrón de fallback que las fotos de carta.
+const ESCUDOS_RIVALES = {
+  'Manchester City': 'https://paladarnegro.net/escudoteca/inglaterra/premier/png/manchestercity.png',
+  'Arsenal': 'https://paladarnegro.net/escudoteca/inglaterra/premier/png/arsenal.png',
+  'Liverpool': 'https://paladarnegro.net/escudoteca/inglaterra/premier/png/liverpool.png',
+  'Chelsea': 'https://paladarnegro.net/escudoteca/inglaterra/premier/png/chelsea.png',
+  'Manchester United': 'https://paladarnegro.net/escudoteca/inglaterra/premier/png/manchesterunited.png',
+  'Tottenham': 'https://paladarnegro.net/escudoteca/inglaterra/premier/png/tottenham.png',
+  'Aston Villa': 'https://paladarnegro.net/escudoteca/inglaterra/premier/png/astonvilla.png',
+  'Newcastle': 'https://paladarnegro.net/escudoteca/inglaterra/premier/png/newcastle.png',
+  'West Ham': 'https://paladarnegro.net/escudoteca/inglaterra/premier/png/westham.png',
+  'Brighton': 'https://paladarnegro.net/escudoteca/inglaterra/premier/png/brighton.png',
+  'Burnley': 'https://paladarnegro.net/escudoteca/inglaterra/premier/png/burnley.png',
+  'Sheffield United': 'https://paladarnegro.net/escudoteca/inglaterra/championship/png/sheffield.png',
+  'Luton Town': '',
+  'Brentford': 'https://paladarnegro.net/escudoteca/inglaterra/premier/png/brentford.png',
+  'Everton': 'https://paladarnegro.net/escudoteca/inglaterra/premier/png/everton.png',
+  'Crystal Palace': 'https://paladarnegro.net/escudoteca/inglaterra/premier/png/crystalpalace.png',
+  'Fulham': 'https://paladarnegro.net/escudoteca/inglaterra/premier/png/fulham.png',
+  'Wolverhampton': 'https://paladarnegro.net/escudoteca/inglaterra/premier/png/wolves.png',
+  'Nottingham Forest': 'https://paladarnegro.net/escudoteca/inglaterra/premier/png/nottingham_forest.png',
+};
+const escudoRival = (nombre) => {
+  const url = ESCUDOS_RIVALES[nombre] || '';
+  const fallback = generateClubBadgeDataURI(nombre);
+  return url
+    ? `<img class="escudo" src="${esc(url)}" alt="" referrerpolicy="no-referrer" onerror="this.src='${fallback}'" />`
+    : `<img class="escudo" src="${fallback}" alt="" />`;
 };
 
 // Para fatiga/presión el "+" confunde (subir es malo): usamos flecha de dirección.
@@ -77,6 +120,92 @@ function chip(k, v) {
   if (v === 0) return `<span class="chip">${ICONO[k]} 0</span>`;
   const bueno = MALO_SI_SUBE.has(k) ? v < 0 : v > 0;
   return `<span class="chip ${bueno ? 'pos' : 'neg'}">${ICONO[k]} ${signoDelta(k, v)}${Math.abs(v)}</span>`;
+}
+
+const STAT_MAX = { money: 10, moral: 15, fatiga: 15, presion: 15, ratingDelta: 5 };
+
+function statRow(k, v) {
+  if (v === 0) return '';
+  const bueno = MALO_SI_SUBE.has(k) ? v < 0 : v > 0;
+  const cls = bueno ? 'pos' : 'neg';
+  const pct = Math.min(100, Math.round(Math.abs(v) / (STAT_MAX[k] || 10) * 100));
+  const signo = MALO_SI_SUBE.has(k) ? (v > 0 ? '▲' : '▼') : (v > 0 ? '+' : '−');
+  const label = k === 'money' ? `${signo}${Math.abs(v)}M` : `${signo}${Math.abs(v)}`;
+  return `<div class="stat-row">
+    <span class="stat-lbl">${NOMBRE_VAR[k]}</span>
+    <div class="stat-track"><div class="stat-fill ${cls}" style="width:${pct}%"></div></div>
+    <span class="stat-val ${cls}">${label}</span>
+  </div>`;
+}
+
+function probLabel(prob) {
+  if (prob >= 0.65) return 'Lo más probable';
+  if (prob >= 0.45) return 'Posible';
+  return 'Menos probable';
+}
+
+function splitBar(resultados) {
+  const maxProb = Math.max(...resultados.map(r => r.prob));
+  const segs = resultados.map(r => {
+    const pct = Math.round(r.prob * 100);
+    const isTop = r.prob === maxProb;
+    return `<div class="split-seg${isTop ? ' top' : ''}" style="flex:${pct}" title="${pct}%"></div>`;
+  }).join('<div class="split-gap"></div>');
+  return `<div class="split-bar-wrap">
+    <div class="split-bar">${segs}</div>
+  </div>`;
+}
+
+// Tira fija arriba de las opciones: qué mueve cada variable, siempre a la vista
+// en el momento de decidir (antes esto solo vivía en la guía, un tap aparte).
+function leyendaVars() {
+  const orden = ['moral', 'fatiga', 'presion', 'ratingDelta', 'money'];
+  return `<div class="leyenda-vars">${orden.map((k) =>
+    `<div class="leyenda-item"><span class="li-ico">${ICONO[k]}</span><span class="li-tx"><b>${NOMBRE_VAR[k]}</b> ${EXPLICACION_VAR[k]}</span></div>`
+  ).join('')}</div>`;
+}
+
+// Promedio ponderado por probabilidad de cada efecto: reduce dos (o más)
+// bloques de números a UNA sola foto de "para dónde empuja" la opción, en vez
+// de mostrar cada resultado posible por separado (eso es lo que generaba la
+// pared de rojos: el resultado menos probable se veía tan grande como el otro).
+function valorEsperado(opcionCat) {
+  if (!opcionCat.resultado) return opcionCat.efectos;
+  const acc = {};
+  for (const r of opcionCat.resultado) {
+    for (const [k, v] of Object.entries(r.efectos)) acc[k] = (acc[k] || 0) + v * r.prob;
+  }
+  return acc;
+}
+
+function chipEsperado(k, v) {
+  const r = Math.round(v * 10) / 10;
+  if (Math.abs(r) < 0.05) return `<span class="chip">${ICONO[k]} ±0</span>`;
+  const bueno = MALO_SI_SUBE.has(k) ? r < 0 : r > 0;
+  const mag = Number.isInteger(r) ? Math.abs(r) : Math.abs(r).toFixed(1);
+  return `<span class="chip ${bueno ? 'pos' : 'neg'}" title="Promedio esperado según probabilidad de cada resultado">${ICONO[k]} ${signoDelta(k, r)}${mag}</span>`;
+}
+
+function chipsEsperados(opcionCat) {
+  const v = valorEsperado(opcionCat);
+  const entradas = Object.entries(v).filter(([, val]) => Math.abs(val) >= 0.05);
+  if (!entradas.length) return `<span class="chip">Sin cambios</span>`;
+  return entradas.map(([k, val]) => chipEsperado(k, val)).join('');
+}
+
+function resultadoBloque(efectos, prob, isTopProb) {
+  const filas = Object.entries(efectos).map(([k, v]) => statRow(k, v)).filter(Boolean).join('');
+  const probPct = prob != null ? Math.round(prob * 100) : null;
+  const header = probPct != null
+    ? `<div class="res-header">
+        <span class="res-label${isTopProb ? ' top' : ''}">${probLabel(prob)}</span>
+        <span class="prob-badge">${probPct}%</span>
+      </div>`
+    : '';
+  return `<div class="res-bloque${isTopProb ? ' top' : ''}">
+    ${header}
+    <div class="stat-rows">${filas || '<span class="sin-cambios">Sin cambios</span>'}</div>
+  </div>`;
 }
 
 // money se guarda en millones (1 decimal, ver state.js/balance.js); la UI lo
@@ -125,11 +254,18 @@ function marcador() {
     const critico = k === 'presion' ? v >= 80 : k === 'fatiga' ? v >= 80 : k === 'moral' ? v <= 25 : false;
     const alerta = k === 'presion' ? v >= 60 : k === 'fatiga' ? v >= 60 : k === 'moral' ? v <= 40 : false;
     const d = ui.deltas?.[k];
+    const dir = k === 'ratingDelta' ? 'fuerza' : MALO_SI_SUBE.has(k) ? '↓ mejor' : '↑ mejor';
+    const estado = critico ? 'CRITICO' : alerta ? 'ALERTA' : null;
     return `<div class="gauge ${critico ? 'bad' : alerta ? 'warn' : ''}">
-      <div class="lbl">${NOMBRE_VAR[k]}</div>
-      <div class="val">${k === 'money' ? fmtMoney(v) : v}</div>
+      <div class="gauge-head">
+        <div class="lbl">${NOMBRE_VAR[k]}</div>
+        <div class="val">${k === 'money' ? fmtMoney(v) : v}</div>
+      </div>
       <div class="bar"><i style="width:${pctv}%"></i></div>
-      ${d ? `<span class="delta on ${d === 0 ? '' : (MALO_SI_SUBE.has(k) ? d < 0 : d > 0) ? 'pos' : 'neg'}">${signoDelta(k, d)}${Math.abs(d)}</span>` : ''}
+      <div class="gauge-foot">
+        <span class="dir">${estado ?? dir}</span>
+        ${d ? `<span class="delta on ${d === 0 ? '' : (MALO_SI_SUBE.has(k) ? d < 0 : d > 0) ? 'pos' : 'neg'}">${signoDelta(k, d)}${Math.abs(d)}</span>` : ''}
+      </div>
     </div>`;
   };
   const cinta = c.liga ? `<div class="cinta">${Array.from({ length: LIGA.FECHAS }, (_, i) => {
@@ -361,8 +497,9 @@ const PANTALLAS = {
       <div class="panel stack">
         <div class="eyebrow">Resultados del tramo · ${t.pts} de ${t.partidos.length * 3} puntos</div>
         <div>${t.partidos.map((p) => `<div class="partido">
-          <span><span class="res ${p.res}">${p.res}</span> ${esc(p.rival)} <span class="muted">(${p.localia})</span></span>
-          <span class="num">${p.gf}-${p.gc}</span></div>`).join('')}</div>
+          <span class="eq">${escudoRival(p.rival)}<span>${esc(p.rival)} <span class="muted">(${p.localia})</span></span></span>
+          <span class="res-fila"><span class="res ${p.res}">${p.res}</span><span class="num">${p.gf}-${p.gc}</span></span>
+        </div>`).join('')}</div>
         <div class="row"><button class="btn" data-accion="ir-evento">Seguir</button></div>
       </div>
       ${tablaPosiciones()}
@@ -383,23 +520,30 @@ const PANTALLAS = {
         <div class="eyebrow">Temporada ${c.temporada} · Decisión ${c.tramo + 1}</div>
         <h2>${esc(n.titulo)}</h2>
         <p>${esc(n.texto)}</p>
+        ${leyendaVars()}
         <div class="stack">
           ${n.opciones.map((o) => {
             const opcionCat = p.opciones.find((x) => x.id === o.id);
-            const cuerpo = opcionCat.resultado
-              ? opcionCat.resultado.map((r) => `
-                  <div class="rama">
-                    <span class="prob">${Math.round(r.prob * 100)}%</span>
-                    <div class="chips">${Object.entries(r.efectos).map(([k, v]) => chip(k, v)).join('') || '<span class="chip">sin cambios</span>'}</div>
-                  </div>`).join('')
-              : `<div class="chips">${Object.entries(opcionCat.efectos).map(([k, v]) => chip(k, v)).join('')}</div>`;
-            return `<button class="opcion" data-accion="elegir" data-op="${o.id}">
-              <div style="font-weight:600">${esc(o.label)}</div>
-              ${cuerpo}
-            </button>`;
+            const variable = !!opcionCat.resultado;
+            const maxProb = variable ? Math.max(...opcionCat.resultado.map(r => r.prob)) : null;
+            const abierto = ui.detalleAbierto.has(o.id);
+            const detalle = variable
+              ? `<div class="consecuencias">${splitBar(opcionCat.resultado)}${opcionCat.resultado.map((r) => resultadoBloque(r.efectos, r.prob, r.prob === maxProb)).join('')}</div>`
+              : `<div class="consecuencias">${resultadoBloque(opcionCat.efectos, null, false)}</div>`;
+            return `<div class="opcion-card">
+              <button class="opcion-main" data-accion="elegir" data-op="${o.id}">
+                <div class="opcion-top">
+                  <span class="opcion-label">${esc(o.label)}</span>
+                  ${variable ? `<span class="riesgo-tag">🎲 resultado incierto</span>` : `<span class="riesgo-tag directo">✓ resultado directo</span>`}
+                </div>
+                <div class="expected-chips">${chipsEsperados(opcionCat)}</div>
+              </button>
+              ${variable ? `<button class="opcion-toggle" data-accion="toggle-detalle" data-op="${o.id}">${abierto ? 'Ocultar el detalle de probabilidades ▲' : `Ver los ${opcionCat.resultado.length} resultados posibles y sus chances ▾`}</button>` : ''}
+              ${variable && abierto ? detalle : ''}
+            </div>`;
           }).join('')}
         </div>
-        <div class="hint">Los íconos son las consecuencias reales (con su % cuando es una apuesta). El relato puede adornar; los números no mienten.</div>
+        <div class="hint">Los íconos de cada opción son el promedio esperado, ponderado por probabilidad. Tocá "ver resultados posibles" para el detalle exacto de cada chance.</div>
       </div>
     </div>`;
   },
@@ -501,6 +645,10 @@ const acciones = {
     if (clubes === null) {
       ob.error = 'No se pudieron cargar los clubes. Revisá tu conexión e intentá de nuevo.';
     } else {
+      clubes.forEach(cl => {
+        const badge = cl.badge_url || cl.club_badge_url || cl.badge;
+        if (badge) { const img = new Image(); img.src = badge; }
+      });
       ob.clubes = clubes;
       ob.clubId = clubes[0]?.id || '';
       ob.error = clubes.length === 0 ? 'No hay clubes cargados para esta liga todavía.' : null;
@@ -571,12 +719,16 @@ const acciones = {
     ui.vista = c.fase === FASES.FIN ? 'fin' : 'resultados';
   },
   async 'ir-evento'() {
-    ui.vista = 'evento'; ui.cargando = true; render();
+    ui.vista = 'evento'; ui.cargando = true; ui.detalleAbierto = new Set(); render();
     const candidatos = candidatosDelTramo(c);
     const narracion = await pedirNarracion(candidatos, contexto(c));
     fijarNarracion(c, narracion); // si es null, el motor sortea y usa el catálogo
     ui.fuenteIA = c.eventoActual.narracion.fuente;
     ui.cargando = false;
+  },
+  'toggle-detalle'(el) {
+    const id = el.dataset.op;
+    ui.detalleAbierto.has(id) ? ui.detalleAbierto.delete(id) : ui.detalleAbierto.add(id);
   },
   elegir(el) {
     const { deltas } = resolverEvento(c, el.dataset.op);
