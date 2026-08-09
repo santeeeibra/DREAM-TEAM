@@ -79,6 +79,11 @@ function chip(k, v) {
   return `<span class="chip ${bueno ? 'pos' : 'neg'}">${ICONO[k]} ${signoDelta(k, v)}${Math.abs(v)}</span>`;
 }
 
+// money se guarda en millones (1 decimal, ver state.js/balance.js); la UI lo
+// muestra como dólares enteros con separador de miles en puntos (formato es-AR).
+const fmtMoney = (v) => 'U$D ' + String(Math.round(v * 1_000_000)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+
+
 const LABEL_RAREZA = { bronce: 'Bronce', oro_comun: 'Oro común', oro_unico: 'Oro único', epica: 'Épica' };
 
 // slot: si viene, la carta muestra su rating EN ESE PUESTO ("88 → 82") y el motivo del descuento.
@@ -122,7 +127,7 @@ function marcador() {
     const d = ui.deltas?.[k];
     return `<div class="gauge ${critico ? 'bad' : alerta ? 'warn' : ''}">
       <div class="lbl">${NOMBRE_VAR[k]}</div>
-      <div class="val">${k === 'money' ? v.toFixed(1) : v}</div>
+      <div class="val">${k === 'money' ? fmtMoney(v) : v}</div>
       <div class="bar"><i style="width:${pctv}%"></i></div>
       ${d ? `<span class="delta on ${d === 0 ? '' : (MALO_SI_SUBE.has(k) ? d < 0 : d > 0) ? 'pos' : 'neg'}">${signoDelta(k, d)}${Math.abs(d)}</span>` : ''}
     </div>`;
@@ -426,7 +431,7 @@ const PANTALLAS = {
         <p class="hint">Cuanto mejor terminaste, mejores son las cartas. Elegí a quiénes sumás.</p>
         <div class="grid-cartas">${c.refuerzo.map((x, i) => carta(x, { sel: ui.sel.has(x.id), accion: 'sel-refuerzo', i })).join('')}</div>
         ${exceso ? `<div class="sep"></div>
-          <div class="eyebrow">Plantel lleno (${CARRERA.PLANTEL_MAX}) — vendé ${exceso} ${exceso === 1 ? 'jugador' : 'jugadores'} ${ingreso ? `· entran ${ingreso.toFixed(1)}M` : ''}</div>
+          <div class="eyebrow">Plantel lleno (${CARRERA.PLANTEL_MAX}) — vendé ${exceso} ${exceso === 1 ? 'jugador' : 'jugadores'} ${ingreso ? `· entran ${fmtMoney(ingreso)}` : ''}</div>
           <div class="grid-cartas">${[...c.plantel].sort((a, b) => a.rating - b.rating).map((x, i) => carta(x, { sel: ui.salen.has(x.id), accion: 'sel-venta', i })).join('')}</div>` : ''}
         <div class="row">
           <button class="btn" data-accion="confirmar-refuerzo" ${faltan ? 'disabled' : ''}>${faltan ? `Faltan ${faltan} salidas` : 'Confirmar plantel'}</button>
