@@ -100,6 +100,50 @@ export const PROGRESION = {
   SUBIDA: [1, 3], BAJADA: [1, 3], MESETA: [-1, 1],
 };
 
+// ─── SISTEMA DE DIFICULTAD ──────────────────────────────────────────────────
+// Modo fácil: valores actuales sin cambios.
+// Modo difícil: presión asimétrica, épicas obligatorias para competir por el título.
+
+export const MODO = { FACIL: 'facil', DIFICIL: 'dificil' };
+
+// En modo difícil, los efectos de presión de cada evento se reemplazan por:
+// - Si el efecto sube presión: siempre +25 (crítico)
+// - Si el efecto baja presión: siempre -10 (alivio limitado)
+// - Si el evento no tenía presión: se deduce del net de moral/ratingDelta
+export const PRESION_DIFICIL = { SUBE: 25, BAJA: -10 };
+
+// Modificador de fuerza por épicas en el 11 (solo modo difícil).
+// Sin épicas, el equipo no puede alcanzar su techo real.
+export const EPICAS_DIFICIL = {
+  SIN_EPICAS_MOD: -5,        // fuerza que se resta si no hay ninguna épica en el XI
+  CON_EPICA_BONUS: 2,        // puntos de fuerza por cada épica (hasta MAX_EPICAS)
+  MAX_EPICAS: 3,
+};
+
+// Probabilidad de que un evento grave reemplace al evento narrativo normal.
+// Solo aplica en modo difícil (0 en modo fácil).
+export const DIFICULTAD = { PROB_GRAVE_POR_TRAMO: 0.30 };
+
+// Presión inicial del DT según el club elegido (solo modo difícil).
+// Clubs grandes: ya arrancás con presión de la hinchada y la directiva.
+// Clubs chicos: arrancan más tranquilos, pero sin margen de error.
+export const PRESION_INICIAL_TIER = {
+  // Premier League — Big 6
+  'Manchester City': 42, 'Arsenal': 36, 'Liverpool': 40,
+  'Chelsea': 32, 'Manchester United': 30, 'Tottenham': 28,
+  // Medianos
+  'Aston Villa': 25, 'Newcastle': 24, 'Brighton': 20, 'West Ham': 20,
+  // LaLiga — tops
+  'Real Madrid': 42, 'Barcelona': 40, 'Atlético Madrid': 34,
+  'Sevilla': 25, 'Valencia': 22, 'Villarreal': 22,
+  // Bundesliga
+  'Bayern Munich': 42, 'Borussia Dortmund': 34, 'RB Leipzig': 28,
+  // Serie A
+  'Juventus': 38, 'Inter Milan': 38, 'AC Milan': 36, 'Napoli': 32,
+};
+// Clubs no listados (chicos): menor presión inicial pero techo de título muy bajo
+export const PRESION_INICIAL_DIFICIL_DEFAULT = 15;
+
 // Estilos de juego por club. Afectan el multiplicador de goles en la simulación (liga.js).
 // goles_mod: cuánto cambia la producción ofensiva del RIVAL al enfrentarlos
 // concedidos_mod: cuánto cambia lo que te meten a vos

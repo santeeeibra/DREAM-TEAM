@@ -32,7 +32,8 @@ function dentroDeCupo(e, historial, temporada) {
 export function candidatosEvento(rng, ctx, historial = []) {
   const nuncaAlta = (e) => e.intensidad !== INTENSIDAD.ALTA || !usadoAlgunaVez(historial, e.id);
 
-  let elegibles = CATALOGO.filter((e) => dentroDeCupo(e, historial, ctx.temporada) && e.filtro(ctx));
+  // Los eventos graves se manejan en un track separado (carrera.js candidatosDelTramo)
+  let elegibles = CATALOGO.filter((e) => !e.grave && dentroDeCupo(e, historial, ctx.temporada) && e.filtro(ctx));
 
   // Si el contexto es tan estrecho que no llega al mínimo, se abre primero
   // relajando el cupo de intensidad (nunca el de "alta", que jamás repite),

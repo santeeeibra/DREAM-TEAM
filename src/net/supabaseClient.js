@@ -104,13 +104,13 @@ export async function fetchClubsPorLiga(liga) {
  * Crea el manager (DT) en la tabla `managers`. Devuelve el id creado o
  * null si no se pudo (sin Supabase configurado o error).
  */
-export async function crearManager({ name, country, league_id, club_id }) {
+export async function crearManager({ name, country, league_id, club_id, modo = 'facil' }) {
   await initSupabase();
   if (!supabase) return null;
   try {
     const { data, error } = await supabase
       .from('managers')
-      .insert({ name, country, league_id, club_id })
+      .insert({ name, country, league_id, club_id, modo })
       .select('id')
       .single();
     if (error) {

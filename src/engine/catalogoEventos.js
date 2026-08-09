@@ -598,7 +598,51 @@ export const CATALOGO = [
       },
     ],
   }),
+
+  // ══════════════════════ FAMILIA: GRAVE (modo difícil) ══════════════════════
+  // Eventos forzados sin elección A/B: el DT solo puede confirmar.
+  // No pasan por IA ni por sorteo con candidatos — el motor los fija directo.
+  // Los efectos son fijos (no se escalan por PRESION_DIFICIL).
+  p('lesion_figura_prePartido', {
+    tags: ['individual'],
+    grave: true,
+    intensidad: INTENSIDAD.MEDIA,
+    filtro: (c) => !!c.figura,
+    titulo: 'Baja de último momento',
+    texto: '{figura} se resintió de una sobrecarga muscular en el entrenamiento de la mañana. El cuerpo médico lo descartó para el próximo partido. No hay vuelta atrás.',
+    opciones: [{ id: 'continuar', label: 'Continuar', efectos: { moral: -30 } }],
+  }),
+  p('suspension_figura_prePartido', {
+    tags: ['individual'],
+    grave: true,
+    intensidad: INTENSIDAD.MEDIA,
+    filtro: (c) => !!c.figura,
+    titulo: 'Suspensión por acumulación',
+    texto: '{figura} llega a la quinta amarilla con el peor timing posible. Se pierde el partido y el banco completo. No hay apelación — el reglamento es el reglamento.',
+    opciones: [{ id: 'continuar', label: 'Continuar', efectos: { moral: -20, presion: 10 } }],
+  }),
+  p('lesion_jugador_normal', {
+    tags: ['vestuario'],
+    grave: true,
+    intensidad: INTENSIDAD.BAJA,
+    filtro: () => true,
+    titulo: 'Baja en el plantel',
+    texto: 'Uno de los jugadores del banco se torció el tobillo en los últimos metros del entrenamiento. No es titular indiscutido, pero deja el plantel más corto para lo que viene.',
+    opciones: [{ id: 'continuar', label: 'Continuar', efectos: { moral: -20, fatiga: 5 } }],
+  }),
+  p('ultimatum_directiva', {
+    tags: ['institucional'],
+    grave: true,
+    intensidad: INTENSIDAD.ALTA,
+    filtro: (c) => c.presion >= 50,
+    titulo: 'Ultimátum de la directiva',
+    texto: 'El presidente del club te citó a su despacho. El mensaje fue breve y sin rodeos: los próximos resultados van a determinar si hay o no hay continuidad. No hay negociación.',
+    opciones: [{ id: 'continuar', label: 'Entendido', efectos: { presion: 15, moral: -10 } }],
+  }),
 ];
+
+/** Catálogo de eventos graves (forzados, sin elección). Solo aparecen en modo difícil. */
+export const CATALOGO_GRAVES = CATALOGO.filter((e) => e.grave);
 
 /** Devuelve el paquete completo por id. Los ids siempre salen de este catálogo (o de la IA validada contra él). */
 export function paquete(id) {

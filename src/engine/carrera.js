@@ -1,13 +1,14 @@
 // PURA. Orquestador del loop completo. Es la única memoria entre tramos.
 // Máquina de fases: sobres → armar11 → tramo → evento → (…) → resumen → refuerzo → … → fin
 import { createRng } from './rng.js';
-import { CARRERA, TRAMO, TEMPORADA, LIGA, DESPIDO } from './balance.js';
+import { CARRERA, TRAMO, TEMPORADA, LIGA, DESPIDO, MODO, DIFICULTAD, PRESION_DIFICIL, EPICAS_DIFICIL, PRESION_INICIAL_TIER, PRESION_INICIAL_DIFICIL_DEFAULT } from './balance.js';
 import { createEstado, aplicarEfectos, resetRatingDelta } from './state.js';
 import { crearLiga, simularTramo, miPosicion, posiciones, fuerzaDeEquipo, getEstiloRival } from './liga.js';
 import { ratingOnce, autoOnce, onceCompleto } from './once.js';
 import { sobresIniciales, sobreRefuerzo } from './sobresLocal.js';
 import { cargarCartasDB, envejecerPlantel, valorDeVenta } from './cartas.js';
 import { candidatosEvento, efectosDeOpcion, elegirPorSorteo } from './candidatosEvento.js';
+import { paquete, CATALOGO_GRAVES } from './catalogoEventos.js';
 
 export const FASES = {
   SOBRES: 'sobres', ONCE: 'once', TRAMO: 'tramo', EVENTO: 'evento',
@@ -48,6 +49,7 @@ export function cargarCarrera(managerDB, plantelDB, temporadasDB = []) {
     rng, 
     dt: managerDB.dt_name || 'DT', 
     club: managerDB.club_id || 'Club Atlético Viedma',
+    modo: managerDB.modo || MODO.FACIL,
     fase: managerDB.fase_actual || FASES.ONCE,
     temporada: managerDB.temporada_actual || 1,
     tramo: managerDB.tramo_actual || 0,
@@ -70,7 +72,7 @@ export function cargarCarrera(managerDB, plantelDB, temporadasDB = []) {
 }
 
 export function iniciarCarrera({
-  seed = Date.now(), dt = 'DT', club = 'Club Atlético Viedma', cartasInicialesDB = null,
+  seed = Date.now(), dt = 'DT', club = 'Club Atlético Viedma', cartasInicialesDB = null, modo = MODO.FACIL,
 } = {}) {
   const rng = createRng(seed);
   // Sobres iniciales: los inyecta la UI desde Supabase (open_pack) o, si vienen
@@ -78,12 +80,18 @@ export function iniciarCarrera({
   const sobres = cartasInicialesDB?.length
     ? cartasInicialesDB.map((s) => cargarCartasDB(s))
     : sobresIniciales(rng).map((s) => cargarCartasDB(s));
+
+  // En modo difícil: la presión inicial depende del peso del club
+  const presionInicial = modo === MODO.DIFICIL
+    ? (PRESION_INICIAL_TIER[club] ?? PRESION_INICIAL_DIFICIL_DEFAULT)
+    : undefined;
+
   return {
-    seed, rng, dt, club,
+    seed, rng, dt, club, modo,
     fase: FASES.SOBRES,
     temporada: 1,
     tramo: 0,
-    estado: createEstado(),
+    estado: createEstado(presionInicial !== undefined ? { presion: presionInicial } : {}),
     plantel: sobres.flat(),
     sobresIniciales: sobres,
     once: [],
@@ -163,6 +171,16 @@ export function jugarTramo(c) {
   let fuerza = fuerzaDeEquipo(ratingActual(c), c.estado, c.momentum);
   if (c.modificadorTramo?.fuerza) fuerza += c.modificadorTramo.fuerza;
   const porId = new Map(c.plantel.map((x) => [x.id, x]));
+
+  // Modo difícil: las épicas en el 11 amplían (o limitan) la fuerza real del equipo.
+  // Sin épicas: el techo de rendimiento baja. Con épicas: pequeño bonus acumulativo.
+  if (c.modo === MODO.DIFICIL) {
+    const epicasEnXI = c.once.filter((id) => porId.get(id)?.rareza === 'epica').length;
+    fuerza += epicasEnXI === 0
+      ? EPICAS_DIFICIL.SIN_EPICAS_MOD
+      : Math.min(epicasEnXI, EPICAS_DIFICIL.MAX_EPICAS) * EPICAS_DIFICIL.CON_EPICA_BONUS;
+  }
+
   const misJugadores = c.once.map((id) => porId.get(id)).filter(Boolean).map((x) => ({ id: x.id, pos: x.pos }));
   const { partidos, estadisticas } = simularTramo(c.rng, c.liga, desde, hasta, fuerza, misJugadores);
   c.partidosTemporada.push(...partidos);
@@ -216,9 +234,30 @@ function driftMoral(moral) {
 }
 const redondear = (v) => Math.round(v * 10) / 10;
 
-/** Devuelve los 4-6 candidatos del punto de decisión (para IA o para sorteo). */
+/** Devuelve los candidatos del punto de decisión. En modo difícil puede ser un evento grave (forzado). */
 export function candidatosDelTramo(c) {
-  const cand = candidatosEvento(c.rng, contexto(c), c.historialEventos);
+  const ctx = contexto(c);
+
+  // Modo difícil: 30% de chance de que el tramo abra con un evento grave (sin elección).
+  if (c.modo === MODO.DIFICIL && CATALOGO_GRAVES.length) {
+    const usadaAlgunaVez = (id) => c.historialEventos.some((h) => h.id === id);
+    const usosEnTemp = (id) => c.historialEventos.filter((h) => h.id === id && h.temporada === c.temporada).length;
+    const elegiblesGraves = CATALOGO_GRAVES.filter((e) => {
+      if (e.intensidad === 'alta' && usadaAlgunaVez(e.id)) return false;
+      if (e.intensidad === 'media' && usosEnTemp(e.id) > 0) return false;
+      if (e.intensidad === 'baja' && usosEnTemp(e.id) >= 3) return false;
+      return e.filtro(ctx);
+    });
+    if (elegiblesGraves.length && c.rng.next() < DIFICULTAD.PROB_GRAVE_POR_TRAMO) {
+      const graveEvento = c.rng.weighted(elegiblesGraves);
+      // Narración fijada desde el catálogo — no pasa por IA
+      const narracion = elegirPorSorteo(c.rng, [graveEvento], ctx);
+      c.eventoActual = { candidatos: [graveEvento], narracion };
+      return [graveEvento];
+    }
+  }
+
+  const cand = candidatosEvento(c.rng, ctx, c.historialEventos);
   c.eventoActual = { candidatos: cand, narracion: null };
   return cand;
 }
@@ -226,6 +265,8 @@ export function candidatosDelTramo(c) {
 /** Narración: la elige la IA (validada afuera) o el sorteo ponderado local. */
 export function fijarNarracion(c, narracion) {
   if (!c.eventoActual) candidatosDelTramo(c);
+  // Evento grave: la narración fue fijada por el motor al detectar el grave. No pisar.
+  if (c.eventoActual.narracion) return c.eventoActual.narracion;
   const valida = narracion
     && c.eventoActual.candidatos.some((x) => x.id === narracion.paqueteId);
   c.eventoActual.narracion = valida
@@ -240,7 +281,14 @@ export function resolverEvento(c, opcionId) {
   if (!n) throw new Error('resolverEvento sin narración fijada');
   const opcion = efectosDeOpcion(c.rng, n.paqueteId, opcionId);
   const motivo = `evento-${n.paqueteId}-${opcionId}` + (opcion.rama ? ` (${opcion.rama})` : '');
-  const r = aplicarEfectos(c.estado, opcion.efectos, motivo, c.historial);
+
+  // Modo difícil: la presión de cada evento narrativo (no grave) se escala simétricamente.
+  // Eventos graves ya tienen efectos calibrados, no se tocan.
+  const efectos = (c.modo === MODO.DIFICIL && !paquete(n.paqueteId).grave)
+    ? escalarPresionDificil(opcion.efectos)
+    : opcion.efectos;
+
+  const r = aplicarEfectos(c.estado, efectos, motivo, c.historial);
   c.estado = r.estado;
   // Efectos que no son del estado global sino del PRÓXIMO tramo únicamente (§ táctica pre-partido).
   c.modificadorTramo = opcion.tramo ? { ...opcion.tramo } : null;
@@ -353,6 +401,23 @@ function terminarCarrera(c, motivo) {
   c.fase = FASES.FIN;
   c.motivoFin = motivo;
   return c;
+}
+
+/**
+ * Modo difícil: reemplaza la presión del evento por los valores asimétricos fijos.
+ * +25 si el efecto era positivo (mala decisión), -10 si era negativo (alivio).
+ * Si el evento no tenía presión, se deduce del net de moral y ratingDelta.
+ */
+function escalarPresionDificil(efectos) {
+  const e = { ...efectos };
+  if (typeof e.presion === 'number' && e.presion !== 0) {
+    e.presion = e.presion > 0 ? PRESION_DIFICIL.SUBE : PRESION_DIFICIL.BAJA;
+  } else {
+    // Sin presión explícita: inferir por calidad neta del outcome
+    const net = (e.moral ?? 0) + (e.ratingDelta ?? 0) * 2 - (e.fatiga ?? 0) * 0.5;
+    e.presion = net > 0 ? PRESION_DIFICIL.BAJA : PRESION_DIFICIL.SUBE;
+  }
+  return e;
 }
 
 export function resumenCarrera(c) {

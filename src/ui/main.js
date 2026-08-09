@@ -17,7 +17,7 @@ let c = null;
 let ui = {
   vista: 'intro', vistaAnterior: 'intro', slot: null, sobresAbiertos: [], deltas: null, tabla: false,
   sel: new Set(), salen: new Set(), fuenteIA: null, cargando: false, detalleAbierto: new Set(), miEscudo: '',
-  onboarding: { liga: null, clubes: [], clubId: '', nombre: '', pais: '', cargando: false, error: null, enviando: false, abierto: null },
+  onboarding: { liga: null, clubes: [], clubId: '', nombre: '', pais: '', cargando: false, error: null, enviando: false, abierto: null, modo: 'facil' },
 };
 
 // ───────────────────────── helpers de vista ─────────────────────────
@@ -388,6 +388,15 @@ const PANTALLAS = {
             ${ob.clubes.map((cl) => `<li role="option" data-accion="ob-club" data-id="${esc(cl.id)}" class="dd-item${ob.clubId === cl.id ? ' activo' : ''}">${escudoDe(cl)} ${esc(cl.name)}</li>`).join('')}
           </ul>` : ''}
         </div>
+        <label class="eyebrow">Dificultad</label>
+        <div class="row">
+          <button type="button" class="btn ${ob.modo === 'facil' ? '' : 'ghost'}" data-accion="ob-modo" data-modo="facil">Accesible</button>
+          <button type="button" class="btn ${ob.modo === 'dificil' ? '' : 'ghost'}" data-accion="ob-modo" data-modo="dificil">Difícil</button>
+        </div>
+        <p class="hint" style="margin-top:-4px">${ob.modo === 'dificil'
+          ? '⚠️ La presión escala fuerte en cada decisión. Sin épicas en el 11, el rendimiento tiene techo. Solo con épicas y aciertos un club chico puede ganar la liga.'
+          : 'Ideal para conocer el juego. Margen de error más generoso, presión más suave.'
+        }</p>
         ${ob.error ? `<p class="aviso">${esc(ob.error)}</p>` : ''}
         <button class="btn" data-accion="ob-confirmar" ${ob.enviando ? 'disabled' : ''}>${ob.enviando ? 'Creando perfil…' : 'Firmar contrato'}</button>
       </div>
@@ -557,6 +566,23 @@ const PANTALLAS = {
     }
     const n = c.eventoActual.narracion;
     const p = paquete(n.paqueteId);
+
+    // Evento grave: notificación forzada sin elección A/B
+    if (p.grave) {
+      const opcionCat = p.opciones[0];
+      return `<div class="stack">
+        ${marcador()}
+        <div class="panel evento stack" style="border-color:rgba(255,91,30,.35)">
+          <div class="eyebrow" style="color:#ff5b1e">⚠️ Notificación — Temporada ${c.temporada}</div>
+          <h2>${esc(n.titulo)}</h2>
+          <p>${esc(n.texto)}</p>
+          ${leyendaVars()}
+          <div class="consecuencias">${resultadoBloque(opcionCat.efectos, null, false)}</div>
+          <button class="btn" data-accion="elegir" data-op="continuar">Continuar</button>
+        </div>
+      </div>`;
+    }
+
     return `<div class="stack">
       ${marcador()}
       <div class="panel evento stack">
@@ -661,6 +687,7 @@ function render() {
 
 // ───────────────────────── acciones ─────────────────────────
 const acciones = {
+  'ob-modo'(el) { ui.onboarding.modo = el.dataset.modo; render(); },
   'ob-pais'(el) {
     const ob = ui.onboarding;
     ob.nombre = document.getElementById('ob-dt')?.value ?? ob.nombre;
@@ -709,7 +736,7 @@ const acciones = {
     }
     ob.enviando = true; ob.error = null; render();
     const { crearManager, fetchAbrirSobre } = await import('../net/supabaseClient.js');
-    const managerId = await crearManager({ name: ob.nombre, country: ob.pais, league_id: ob.liga, club_id: ob.clubId });
+    const managerId = await crearManager({ name: ob.nombre, country: ob.pais, league_id: ob.liga, club_id: ob.clubId, modo: ob.modo || 'facil' });
     if (!managerId) {
       ob.enviando = false;
       ob.error = 'No se pudo crear el perfil. Intentá de nuevo.';
@@ -724,7 +751,7 @@ const acciones = {
     ]);
     const cartasInicialesDB = sobres.every(Boolean) ? sobres : null;
     ui.miEscudo = club?.badge_url || club?.club_badge_url || club?.badge || '';
-    c = iniciarCarrera({ dt: ob.nombre, club: club?.name || ob.nombre, cartasInicialesDB });
+    c = iniciarCarrera({ dt: ob.nombre, club: club?.name || ob.nombre, cartasInicialesDB, modo: ob.modo || 'facil' });
     ob.enviando = false;
     ui.vista = 'sobres'; ui.sobresAbiertos = [];
   },
@@ -766,8 +793,11 @@ const acciones = {
   async 'ir-evento'() {
     ui.vista = 'evento'; ui.cargando = true; ui.detalleAbierto = new Set(); render();
     const candidatos = candidatosDelTramo(c);
-    const narracion = await pedirNarracion(candidatos, contexto(c));
-    fijarNarracion(c, narracion); // si es null, el motor sortea y usa el catálogo
+    // Evento grave: narración ya fijada por el motor, sin llamada a IA
+    if (!c.eventoActual.narracion) {
+      const narracion = await pedirNarracion(candidatos, contexto(c));
+      fijarNarracion(c, narracion); // si es null, el motor sortea y usa el catálogo
+    }
     ui.fuenteIA = c.eventoActual.narracion.fuente;
     ui.cargando = false;
   },
