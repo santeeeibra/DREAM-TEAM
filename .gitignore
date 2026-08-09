@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 node_modules
 dist
 .env
@@ -6,3 +7,39 @@ tmp-*
 graphify/
 .agents/
 graphify-out/
+=======
+# Dependencies
+node_modules/
+dream-team/node_modules/
+
+# Build output
+dist/
+dream-team/dist/
+
+# Env files (contienen SUPABASE_SERVICE_KEY y otras claves — nunca commitear)
+.env
+.env.*
+!.env.example
+dream-team/.env
+dream-team/.env.*
+!dream-team/.env.example
+
+# Supabase CLI local state
+supabase/.temp/
+
+# Datos locales de scripts (CSV descargados a mano de Kaggle + JSON de
+# salida de matching): no son fuente de verdad ni deben commitearse.
+scripts/data/
+
+# Logs
+npm-debug.log*
+*.log
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+.vercel
+>>>>>>> 82ed002a593741bf1138f96d1dc26ba56736de6e

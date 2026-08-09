@@ -1,0 +1,560 @@
+@import 'flag-icons/css/flag-icons.min.css';
+
+/* =============================================================
+   BASE — paleta oscura del juego
+   =============================================================
+   Fondo general más oscuro que las tarjetas (#1a1a2e) para que las
+   superficies "floten" con borde sutil. Tipografías: Rajdhani para
+   títulos (condensada, estilo fichín/EA), Manrope para el cuerpo. */
+body {
+  margin: 0;
+  background: #0f0f1a;
+  color: #ffffff;
+  font-family: 'Manrope', Arial, sans-serif;
+}
+
+/* -------------------------------------------------------------
+   LOGIN (auth-container) — centrado simple, columna angosta
+   ------------------------------------------------------------- */
+.pantalla-centrada {
+  max-width: 320px;
+  margin: 100px auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pantalla-centrada h1 {hay que rediseñar la tabla dela liga , tiene que ser algo similar al modelo de la imagen
+  margin: 0 0 10px;
+  font-family: 'Rajdhani', Arial, sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-align: center;
+  text-transform: uppercase;
+  color: #d4af37;
+}
+
+#auth-container.pantalla-centrada input,
+#auth-container.pantalla-centrada button {
+  padding: 12px 14px;
+  font-size: 15px;
+  border-radius: 10px;
+  border: 1px solid #2b2b45;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+#auth-container.pantalla-centrada input {
+  background: #1a1a2e;
+  color: #ffffff;
+}
+
+#auth-container.pantalla-centrada input:focus {
+  border-color: #d4af37;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15);
+}
+
+#auth-container.pantalla-centrada button {
+  background: #d4af37;
+  color: #1a1a2e;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+}
+
+#auth-container.pantalla-centrada button:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+#auth-container.pantalla-centrada button.boton-secundario {
+  background: transparent;
+  color: #d4af37;
+  border: 1px solid #d4af37;
+}
+
+#auth-container.pantalla-centrada button.boton-secundario:hover:not(:disabled) {
+  background: rgba(212, 175, 55, 0.1);
+}
+
+#auth-container.pantalla-centrada button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* -------------------------------------------------------------
+   CREACIÓN DE DT (manager-form-container)
+   -------------------------------------------------------------
+   Pantalla más ancha que el login: cabecera + layout de dos columnas.
+   Columna izquierda = formulario (nombre, país, liga, club).
+   Columna derecha  = panel de perfil en vivo (foto, reputación, ficha). */
+#manager-form-container.pantalla-centrada {
+  max-width: 900px;
+  margin: 40px auto 60px;
+  gap: 24px;
+}
+
+.manager-header {
+  text-align: center;
+}
+
+.manager-header h1 {
+  margin: 0;
+  font-family: 'Rajdhani', Arial, sans-serif;
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #ffffff;
+}
+
+.manager-header h1::after {
+  content: '';
+  display: block;
+  width: 90px;
+  height: 3px;
+  margin: 10px auto 0;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, #d4af37, transparent);
+}
+
+.manager-subtitulo {
+  margin: 8px 0 0;
+  color: #9aa0b4;
+  font-size: 15px;
+}
+
+.manager-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 780px) {
+  .manager-layout {
+    grid-template-columns: 1fr;
+  }
+  .manager-resumen {
+    order: -1;
+  }
+}
+
+/* ---- Columna izquierda: el formulario ---- */
+.manager-formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 22px 24px 26px;
+  background: #1a1a2e;
+  border: 1px solid #2b2b45;
+  border-radius: 16px;
+}
+
+.campo-etiqueta {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: #9aa0b4;
+}
+
+.campo-etiqueta:first-child {
+  margin-top: 0;
+}
+
+#manager-name {
+  padding: 12px 14px;
+  font-size: 15px;
+  font-family: inherit;
+  border-radius: 10px;
+  border: 1px solid #2b2b45;
+  background: #101020;
+  color: #ffffff;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+#manager-name::placeholder {
+  color: #5d6380;
+}
+
+#manager-name:focus {
+  border-color: #d4af37;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15);
+}
+
+#btn-create-manager {
+  margin-top: 14px;
+  padding: 14px 16px;
+  font-family: 'Rajdhani', Arial, sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, #d4af37, #b8912a);
+  color: #1a1a2e;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+}
+
+#btn-create-manager:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(212, 175, 55, 0.3);
+  filter: brightness(1.06);
+}
+
+#btn-create-manager:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* ---- CustomSelect (país / liga / club) ---- */
+.custom-select {
+  position: relative;
+}
+
+.custom-select-trigger {
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 46px;
+  padding: 8px 12px;
+  font-size: 15px;
+  font-family: inherit;
+  font-weight: 400;
+  border-radius: 10px;
+  border: 1px solid #2b2b45;
+  background: #101020;
+  color: #ffffff;
+  cursor: pointer;
+  text-align: left;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.custom-select-trigger:hover:not(:disabled),
+.custom-select.custom-select-open .custom-select-trigger {
+  border-color: #d4af37;
+}
+
+.custom-select-trigger:disabled,
+.custom-select.custom-select-disabled .custom-select-trigger {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.custom-select.custom-select-open .custom-select-trigger {
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15);
+}
+
+.custom-select-trigger-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.custom-select-placeholder {
+  color: #5d6380;
+}
+
+.custom-select-arrow {
+  font-size: 11px;
+  color: #9aa0b4;
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.custom-select.custom-select-open .custom-select-arrow {
+  transform: rotate(180deg);
+}
+
+.custom-select-options {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: #1a1a2e;
+  border: 1px solid #2b2b45;
+  border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
+  transform-origin: top center;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.custom-select.custom-select-closing .custom-select-options {
+  opacity: 0;
+  transform: translateY(-6px) scale(0.98);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .custom-select-options {
+    transition: none;
+  }
+}
+
+.custom-select-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #ffffff;
+  transition: background 0.12s ease;
+}
+
+.custom-select-option:hover,
+.custom-select-option.highlighted {
+  background: rgba(43, 95, 217, 0.85);
+  color: #ffffff;
+}
+
+.custom-select-empty {
+  padding: 10px;
+  color: #888;
+  font-size: 13px;
+}
+
+.custom-select-trigger-content img,
+.custom-select-option img {
+  flex-shrink: 0;
+  object-fit: cover;
+}
+
+.custom-select--flag .custom-select-trigger-content img,
+.custom-select--flag .custom-select-option img {
+  width: 22px;
+  height: 15px;
+  border-radius: 3px;
+}
+
+.custom-select--badge .custom-select-trigger-content img,
+.custom-select--badge .custom-select-option img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+/* ---- Columna derecha: panel de perfil en vivo ---- */
+.manager-resumen {
+  position: sticky;
+  top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 26px 22px 22px;
+  text-align: center;
+  background: linear-gradient(180deg, #1a1a2e 0%, #151526 100%);
+  border: 1px solid #2b2b45;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.resumen-avatar {
+  width: 96px;
+  height: 96px;
+  margin: 0 auto;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid #d4af37;
+  box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.12);
+}
+
+.resumen-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.resumen-nombre {
+  margin: 0;
+  font-family: 'Rajdhani', Arial, sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: #ffffff;
+  overflow-wrap: break-word;
+}
+
+.resumen-divisor {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #2b2b45, transparent);
+}
+
+.resumen-ficha {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 28px;
+  font-size: 14px;
+  color: #c3c8dc;
+}
+
+.resumen-ficha img {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  border-radius: 5px;
+}
+
+/* Barra de reputación */
+.resumen-reputacion {
+  padding: 14px 12px 12px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid #2b2b45;
+  border-radius: 12px;
+}
+
+.reputacion-fila {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: #9aa0b4;
+}
+
+.reputacion-valor {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: #d4af37;
+}
+
+.reputacion-barra {
+  height: 8px;
+  border-radius: 999px;
+  background: #101020;
+  overflow: hidden;
+}
+
+.reputacion-lleno {
+  height: 100%;
+  width: 50%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #d4af37, #f0d674);
+  transition: width 0.3s ease;
+}
+
+.reputacion-pie {
+  margin: 8px 0 0;
+  font-size: 11px;
+  color: #6d7390;
+}
+
+/* Estado del contrato */
+.resumen-contrato {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #c3c8dc;
+  background: rgba(43, 95, 217, 0.12);
+  border: 1px solid rgba(43, 95, 217, 0.35);
+  border-radius: 12px;
+}
+
+.contrato-icono {
+  font-size: 16px;
+}
+
+/* -------------------------------------------------------------
+   Errores y misceláneos
+   ------------------------------------------------------------- */
+.mensaje-error {
+  color: #ff6b6b;
+  margin: 0;
+  font-size: 13px;
+  min-height: 16px;
+  text-align: center;
+}
+
+#manager-form-container .mensaje-error {
+  text-align: left;
+}
+
+.campo-password {
+  position: relative;
+  display: flex;
+}
+
+.campo-password input {
+  width: 100%;
+  box-sizing: border-box;
+  padding-right: 36px;
+}
+
+#auth-container.pantalla-centrada button.boton-ojo {
+  position: absolute;
+  right: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 4px 8px;
+  background: transparent;
+  border: none;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+#auth-container.pantalla-centrada button.boton-ojo.activo {
+  opacity: 0.5;
+}
+
+/* -------------------------------------------------------------
+   JUEGO (app) — canvas de Phaser
+   -------------------------------------------------------------
+   El contenedor del juego ocupa TODO el viewport (100% de ancho, 100vh
+   de alto, con fallback 100dvh para móviles) y centra el canvas con
+   flexbox.
+
+   ANTES esto era solo `display: flex; justify-content: center;` sin
+   dimensiones propias: al redimensionar la ventana, flexbox estiraba el
+   canvas (flex item) y deformaba la proporción 16:9 original, dejando
+   cartas, textos e imágenes "estirados" aunque Phaser.Scale.FIT ya
+   hubiera calculado el tamaño correcto.
+
+   La regla de abajo fija flex: 0 0 auto + max-width/height: 100% sobre
+   el canvas para que flexbox NUNCA lo estire: solo lo centra. El escalado
+   responsivo lo hace Phaser.Scale.FIT (main.js), que mantiene la
+   proporción exacta y aplica letterbox automáticamente. */
+#app {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+#app canvas {
+  display: block;
+  flex: 0 0 auto;
+  max-width: 100%;
+  max-height: 100%;
+}

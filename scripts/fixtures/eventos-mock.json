@@ -1,0 +1,69 @@
+[
+  {
+    "id": "evento_sponsor_pretemporada",
+    "titulo": "Propuesta de sponsor para la pretemporada",
+    "descripcion": "Una marca ofrece un contrato de pretemporada a cambio de exigir resultados inmediatos.",
+    "min_matchday": 1,
+    "weight": 10,
+    "options": [
+      { "id": "aceptar_sponsor", "label": "Firmar el contrato", "effects": { "money": 400000, "pressure": 10 } },
+      { "id": "rechazar_sponsor", "label": "Rechazar y jugar sin presión extra", "effects": { "pressure": -5 } }
+    ]
+  },
+  {
+    "id": "evento_refuerzo_low_cost",
+    "titulo": "Refuerzo de última hora",
+    "descripcion": "La dirigencia consigue un jugador libre para reforzar el plantel antes de arrancar la liga.",
+    "min_matchday": 1,
+    "weight": 8,
+    "options": [
+      { "id": "sumar_refuerzo", "label": "Incorporarlo ya", "effects": { "money": -150000, "rating_efectivo": 3, "morale": 4 } },
+      { "id": "descartar_refuerzo", "label": "No arriesgar el presupuesto", "effects": {} }
+    ]
+  },
+  {
+    "id": "evento_lesion_arranque",
+    "titulo": "Lesión muscular en el arranque",
+    "descripcion": "Un titular llega justo físicamente a la fecha 8 y el cuerpo médico pide una decisión.",
+    "min_matchday": 8,
+    "weight": 10,
+    "options": [
+      { "id": "descansarlo", "label": "Darle descanso", "effects": { "morale": -3, "fatigue": -15 } },
+      { "id": "forzarlo", "label": "Forzarlo a jugar", "effects": { "morale": 2, "fatigue": 12, "rating_efectivo": -2 } }
+    ]
+  },
+  {
+    "id": "evento_crisis_ecuador",
+    "titulo": "Crisis institucional en el ecuador",
+    "descripcion": "La mitad de la tabla no alcanza y la dirigencia empieza a mirar de cerca al cuerpo técnico.",
+    "min_matchday": 19,
+    "weight": 10,
+    "options": [
+      { "id": "salir_a_bancar", "label": "Salir a bancar al plantel en conferencia", "effects": { "pressure": -10, "morale": 5 } },
+      { "id": "amenaza_publica", "label": "Amenazar públicamente con cambios", "effects": { "pressure": 15, "morale": -6, "rating_efectivo": 2 } },
+      { "id": "silencio", "label": "No hacer declaraciones", "effects": {} }
+    ]
+  },
+  {
+    "id": "evento_oferta_recta_final",
+    "titulo": "Oferta por una figura del plantel",
+    "descripcion": "Un club extranjero ofrece comprar a un jugador clave en plena recta final.",
+    "min_matchday": 30,
+    "weight": 8,
+    "options": [
+      { "id": "vender", "label": "Vender ahora", "effects": { "money": 800000, "rating_efectivo": -5, "morale": -4 } },
+      { "id": "retener", "label": "Retenerlo y priorizar el objetivo deportivo", "effects": { "money": -50000, "morale": 3 } }
+    ]
+  },
+  {
+    "id": "evento_cierre_temporada",
+    "titulo": "Balance de fin de temporada",
+    "descripcion": "El directorio evalúa el cierre del año y decide cómo premiar (o no) al plantel.",
+    "min_matchday": 38,
+    "weight": 10,
+    "options": [
+      { "id": "premio_plantel", "label": "Repartir un bono al plantel", "effects": { "money": -200000, "morale": 8, "fatigue": -10 } },
+      { "id": "ajustar_gastos", "label": "Ajustar gastos de cara al próximo año", "effects": { "money": 300000, "morale": -5, "pressure": 5 } }
+    ]
+  }
+]

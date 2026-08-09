@@ -30,6 +30,10 @@ const CLUBES_STUB = [
   { id: 'a1000000-0000-0000-0000-000000000001', league: 'premier', name: 'Arsenal' },
 ];
 
+// Captura los bodies de open-pack para asertar el contrato (manager_id, free)
+// contra el id real que devolvió crearManager — sin depender de la BD real.
+const bodiesOpenPack = [];
+
 global.fetch = async (url, opts = {}) => {
   const u = String(url);
   const responder = (data, status = 200) => new Response(JSON.stringify(data), {
@@ -44,7 +48,12 @@ global.fetch = async (url, opts = {}) => {
   // POST /rest/v1/managers (crearManager) → PostgREST single: el body es un objeto.
   if (u.includes('/rest/v1/managers')) return responder({ id: 'smoke-manager' }, 201);
   // POST /functions/v1/open-pack → sin cartas: el motor usa el fallback local.
-  if (u.includes('/functions/v1/open-pack')) return responder({ cards: null });
+  // Se captura el body recibido para asertar el contrato más abajo.
+  if (u.includes('/functions/v1/open-pack')) {
+    const body = typeof opts.body === 'string' ? JSON.parse(opts.body) : opts.body;
+    bodiesOpenPack.push(body);
+    return responder({ cards: null });
+  }
   // Todo lo demás (p.ej. /api/evento) falla: narración usa el catálogo local.
   throw new Error(`sin stub en smoke test: ${u}`);
 };
@@ -72,6 +81,19 @@ await click('ob-confirmar');
 await new Promise((r) => setTimeout(r, 50)); // espera crearManager + sobres
 for (let i = 0; i < 3; i++) await click('abrir-sobre', `[data-i="${i}"]`);
 await new Promise((r) => setTimeout(r, 50)); // espera el open-pack local
+
+// Contrato open-pack en el onboarding: 3 sobres, todos con el manager_id que
+// devolvió crearManager (no user_id, no IDs hardcodeados) y free: true.
+if (bodiesOpenPack.length !== 3) {
+  throw new Error(`Se esperaban 3 open-pack en onboarding, llegaron ${bodiesOpenPack.length}`);
+}
+for (const b of bodiesOpenPack) {
+  if (b.manager_id !== 'smoke-manager') throw new Error(`open-pack mandó manager_id incorrecto: ${JSON.stringify(b)}`);
+  if (b.free !== true) throw new Error(`Los sobres de bienvenida deben ser free: true → ${JSON.stringify(b)}`);
+}
+if (localStorage.getItem('manager_id') !== 'smoke-manager') {
+  throw new Error('main.js no persistió manager_id en localStorage');
+}
 await click('ir-once');
 await click('auto-once');
 await click('confirmar-once');
@@ -98,5 +120,17 @@ while (!document.querySelector('[data-accion="reiniciar"]') && pasos++ < 400) {
   throw new Error('Pantalla sin salida:\n' + document.body.textContent.slice(0, 300));
 }
 if (pasos >= 400) throw new Error('La UI se quedó en loop');
+
+// Contrato open-pack en el refuerzo post-temporada: free: false y el mismo
+// manager_id persistido en localStorage (misma fuente que main.js abrir-refuerzo).
+const refuerzos = bodiesOpenPack.slice(3).filter((b) => b.free === false);
+if (refuerzos.length < 1) throw new Error('Ningún sobre de refuerzo llamó a open-pack con free: false');
+for (const b of refuerzos) {
+  if (b.manager_id !== localStorage.getItem('manager_id')) {
+    throw new Error(`Refuerzo mandó manager_id distinto al persistido: ${JSON.stringify(b)}`);
+  }
+}
+console.log(`✔ Contrato open-pack: ${bodiesOpenPack.length} llamadas, manager_id=${localStorage.getItem('manager_id')}, free=true en bienvenida, free=false en refuerzo`);
+
 console.log(`✔ Carrera completa por UI: ${tramos} tramos, ${eventos} decisiones, ${temporadas} cierres de temporada`);
 console.log('  Pantalla final:', document.querySelector('h1')?.textContent.trim());
