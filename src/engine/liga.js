@@ -65,12 +65,31 @@ function goles(rng, fuerza, rival, localia, mod = 1) {
   return rng.poisson(lambda);
 }
 
+// Los rivales no tienen plantel simulado (solo un número de fuerza agregado),
+// así que goleadores/asistencias solo se atribuyen a MI plantel — no hay
+// jugadores reales del otro lado a los que asignarles el gol.
+const PESO_GOL = { DEL: 6, MED: 2, DEF: 0.4, POR: 0.05 };
+const PESO_ASISTENCIA = { DEL: 2, MED: 4, DEF: 1, POR: 0.05 };
+const PROB_ASISTENCIA = 0.78; // el resto son goles individuales, de penal, etc.
+
+function atribuirGol(rng, jugadores) {
+  const autor = rng.weighted(jugadores, (j) => PESO_GOL[j.pos] ?? 1);
+  const resto = jugadores.filter((j) => j.id !== autor.id);
+  const asistente = resto.length && rng.next() < PROB_ASISTENCIA
+    ? rng.weighted(resto, (j) => PESO_ASISTENCIA[j.pos] ?? 1)
+    : null;
+  return { autorId: autor.id, asistenteId: asistente?.id ?? null };
+}
+
 /**
  * Simula las fechas [desde, hasta) del tramo.
  * fuerzaMia se calcula fuera (depende del estado del DT) y entra como número.
+ * misJugadores ({id,pos}[], el 11 titular confirmado) se usa solo para
+ * repartir goles/asistencias de MIS goles entre mis jugadores.
  */
-export function simularTramo(rng, liga, desde, hasta, fuerzaMia) {
+export function simularTramo(rng, liga, desde, hasta, fuerzaMia, misJugadores = []) {
   const misPartidos = [];
+  const estadisticas = { goleadores: {}, asistencias: {} };
   for (let f = desde; f < hasta; f++) {
     for (const [localId, visitaId] of liga.fixture[f]) {
       const local = liga.equipos[localId], visita = liga.equipos[visitaId];
@@ -101,10 +120,18 @@ export function simularTramo(rng, liga, desde, hasta, fuerzaMia) {
           gc: soyLocal ? gv : gl,
           res: (soyLocal ? gl - gv : gv - gl) > 0 ? 'G' : (gl === gv ? 'E' : 'P'),
         });
+        if (misJugadores.length) {
+          const misGoles = soyLocal ? gl : gv;
+          for (let i = 0; i < misGoles; i++) {
+            const { autorId, asistenteId } = atribuirGol(rng, misJugadores);
+            estadisticas.goleadores[autorId] = (estadisticas.goleadores[autorId] || 0) + 1;
+            if (asistenteId) estadisticas.asistencias[asistenteId] = (estadisticas.asistencias[asistenteId] || 0) + 1;
+          }
+        }
       }
     }
   }
-  return misPartidos;
+  return { partidos: misPartidos, estadisticas };
 }
 
 function anotar(tabla, id, gf, gc) {

@@ -87,7 +87,8 @@ input:focus,select:focus,button:focus-visible{outline:2px solid var(--fluor);out
   border-bottom:1px solid var(--linea);backdrop-filter:blur(8px);
 }
 .marcador .top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
-.marcador .club{font-family:'Anton';font-size:17px;text-transform:uppercase}
+.marcador .club{font-family:'Anton';font-size:17px;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.marcador .club .escudo{width:24px;height:24px}
 .gauges{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:8px}
 .gauge{position:relative}
 .gauge-head{display:flex;justify-content:space-between;align-items:baseline;gap:4px}
@@ -195,6 +196,10 @@ input:focus,select:focus,button:focus-visible{outline:2px solid var(--fluor);out
 .stat-fill.pos{background:var(--led)}.stat-fill.neg{background:var(--rojo)}
 .stat-val{font-family:'Barlow Condensed';font-weight:700;font-size:13px;text-align:right}
 .stat-val.pos{color:var(--led)}.stat-val.neg{color:var(--rojo)}
+
+/* goleadores / asistencias */
+.goleadores-row{align-items:flex-start;gap:20px}
+.goleadores-col{flex:1;min-width:180px}
 
 /* tabla */
 table{width:100%;border-collapse:collapse;font-size:14px}

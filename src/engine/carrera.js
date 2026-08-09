@@ -65,6 +65,7 @@ export function cargarCarrera(managerDB, plantelDB, temporadasDB = []) {
     temporadas: temporadasDB,
     titulos: managerDB.titulos || 0,
     motivoFin: managerDB.motivo_fin || null,
+    estadisticas: managerDB.estadisticas_temporada || { goleadores: {}, asistencias: {} },
   };
 }
 
@@ -97,6 +98,7 @@ export function iniciarCarrera({
     temporadas: [],          // SNAPSHOTS de temporadas cerradas (§2.5)
     titulos: 0,
     motivoFin: null,
+    estadisticas: { goleadores: {}, asistencias: {} }, // se resetea cada temporada
   };
 }
 
@@ -160,8 +162,11 @@ export function jugarTramo(c) {
   const [desde, hasta] = limitesTramo[c.tramo];
   let fuerza = fuerzaDeEquipo(ratingActual(c), c.estado, c.momentum);
   if (c.modificadorTramo?.fuerza) fuerza += c.modificadorTramo.fuerza;
-  const partidos = simularTramo(c.rng, c.liga, desde, hasta, fuerza);
+  const porId = new Map(c.plantel.map((x) => [x.id, x]));
+  const misJugadores = c.once.map((id) => porId.get(id)).filter(Boolean).map((x) => ({ id: x.id, pos: x.pos }));
+  const { partidos, estadisticas } = simularTramo(c.rng, c.liga, desde, hasta, fuerza, misJugadores);
   c.partidosTemporada.push(...partidos);
+  acumularEstadisticas(c, estadisticas);
   c.modificadorTramo = null; // el efecto dura un solo tramo, nunca se acumula
 
   const pts = partidos.reduce((s, p) => s + (p.res === 'G' ? 3 : p.res === 'E' ? 1 : 0), 0);
@@ -185,6 +190,16 @@ export function jugarTramo(c) {
   if (c.estado.presion >= DESPIDO.PRESION) return terminarCarrera(c, 'despedido');
   c.fase = FASES.EVENTO;
   return c;
+}
+
+/** Suma los goles/asistencias del tramo al acumulado de la temporada (§ goleadores). */
+function acumularEstadisticas(c, delTramo) {
+  for (const [id, n] of Object.entries(delTramo.goleadores)) {
+    c.estadisticas.goleadores[id] = (c.estadisticas.goleadores[id] || 0) + n;
+  }
+  for (const [id, n] of Object.entries(delTramo.asistencias)) {
+    c.estadisticas.asistencias[id] = (c.estadisticas.asistencias[id] || 0) + n;
+  }
 }
 
 /** Presión extra por perder contra rivales de peso (ESTILOS_CLUB.presion_extra). */
@@ -265,6 +280,7 @@ function cerrarTemporada(c) {
     gf: mia.gf, gc: mia.gc, objetivo: c.objetivo, cumplio, campeon,
     ratingOnceSnapshot: ratingActual(c),
     tablaTop5: tabla.slice(0, 5).map((t) => ({ nombre: t.nombre, pts: t.pts })),
+    estadisticas: { goleadores: { ...c.estadisticas.goleadores }, asistencias: { ...c.estadisticas.asistencias } },
   });
 
   c.ultimaTemporada = c.temporadas[c.temporadas.length - 1];
@@ -325,6 +341,7 @@ export function aplicarRefuerzo(c, idsEntran = [], idsSalen = []) {
   c.partidosTemporada = [];
   c.momentum = 0;
   c.refuerzo = null;
+  c.estadisticas = { goleadores: {}, asistencias: {} };
   c.liga = crearLiga(c.rng, c.club, { temporada: c.temporada, posAnterior: pos });
   c.once = autoOnce(c.plantel);
   c.fase = FASES.ONCE;

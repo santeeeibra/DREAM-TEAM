@@ -16,7 +16,7 @@ const PACK_ID = 'b34f5178-ad24-47b8-a957-5c4c6c7e6587';
 let c = null;
 let ui = {
   vista: 'intro', vistaAnterior: 'intro', slot: null, sobresAbiertos: [], deltas: null, tabla: false,
-  sel: new Set(), salen: new Set(), fuenteIA: null, cargando: false, detalleAbierto: new Set(),
+  sel: new Set(), salen: new Set(), fuenteIA: null, cargando: false, detalleAbierto: new Set(), miEscudo: '',
   onboarding: { liga: null, clubes: [], clubId: '', nombre: '', pais: '', cargando: false, error: null, enviando: false, abierto: null },
 };
 
@@ -67,13 +67,15 @@ const LIGAS = [
 ];
 
 // Escudo del club: sale de la fila de `clubs` si trae columna de escudo
-// (badge_url / club_badge_url / badge). Si no viene o el CDN falla, el onerror
-// lo oculta y queda el nombre — mismo patrón que las fotos de carta.
+// (badge_url / club_badge_url / badge). Si no viene o el CDN falla, cae al
+// escudo generado por nombre (badgeGenerator.js) — el escudo SIEMPRE se ve,
+// nunca queda un hueco vacío.
 const escudoDe = (cl) => {
   const badge = cl.badge_url || cl.club_badge_url || cl.badge || '';
+  const fallback = generateClubBadgeDataURI(cl.name);
   return badge
-    ? `<img class="escudo" src="${esc(badge)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()" />`
-    : '';
+    ? `<img class="escudo" src="${esc(badge)}" alt="" referrerpolicy="no-referrer" onerror="this.src='${fallback}'" />`
+    : `<img class="escudo" src="${fallback}" alt="" />`;
 };
 
 // Escudos de los 19 rivales de la liga (la fila `clubs` del DT no los cubre).
@@ -107,6 +109,18 @@ const escudoRival = (nombre) => {
   return url
     ? `<img class="escudo" src="${esc(url)}" alt="" referrerpolicy="no-referrer" onerror="this.src='${fallback}'" />`
     : `<img class="escudo" src="${fallback}" alt="" />`;
+};
+
+// Escudo de CUALQUIER equipo de la tabla, mío o rival. Para el mío usa el
+// badge real que trajo Supabase en el onboarding (ui.miEscudo); si no hay
+// (o falla), cae al mismo generador por nombre que usan los rivales — nunca
+// queda un club sin escudo en pantalla.
+const escudoClub = (nombre) => {
+  if (c && nombre === c.club && ui.miEscudo) {
+    const fallback = generateClubBadgeDataURI(nombre);
+    return `<img class="escudo" src="${esc(ui.miEscudo)}" alt="" referrerpolicy="no-referrer" onerror="this.src='${fallback}'" />`;
+  }
+  return escudoRival(nombre);
 };
 
 // Para fatiga/presión el "+" confunde (subir es malo): usamos flecha de dirección.
@@ -275,7 +289,7 @@ function marcador() {
 
   return `<div class="marcador">
     <div class="top">
-      <div class="club">${esc(c.club)}</div>
+      <div class="club">${escudoClub(c.club)}<span>${esc(c.club)}</span></div>
       <div class="row" style="gap:10px">
         <div class="eyebrow">T${c.temporada}/${CARRERA.TEMPORADAS} · Fecha ${Math.min(c.partidosTemporada.length + 1, LIGA.FECHAS)} · ${pos ? `${pos}°` : '—'} · Objetivo ${c.objetivo}°</div>
         <button class="btn ghost" style="padding:2px 9px;font-size:13px" data-accion="ver-guia" title="Cómo funcionan las variables">?</button>
@@ -295,7 +309,34 @@ function tablaPosiciones() {
       <button class="btn ghost" data-accion="tabla">${ui.tabla ? 'Ocultar' : 'Ver tabla'}</button>
     </div>
     ${ui.tabla ? `<table><thead><tr><th>#</th><th>Equipo</th><th class="n">PJ</th><th class="n">DG</th><th class="n">Pts</th></tr></thead>
-      <tbody>${t.map((e, i) => `<tr class="${e.id === 0 ? 'mio' : ''}"><td class="n">${i + 1}</td><td>${esc(e.nombre)}</td><td class="n">${e.pj}</td><td class="n">${e.dg > 0 ? '+' : ''}${e.dg}</td><td class="n">${e.pts}</td></tr>`).join('')}</tbody></table>` : ''}
+      <tbody>${t.map((e, i) => `<tr class="${e.id === 0 ? 'mio' : ''}"><td class="n">${i + 1}</td><td class="eq">${escudoClub(e.nombre)}<span>${esc(e.nombre)}</span></td><td class="n">${e.pj}</td><td class="n">${e.dg > 0 ? '+' : ''}${e.dg}</td><td class="n">${e.pts}</td></tr>`).join('')}</tbody></table>` : ''}
+  </div>`;
+}
+
+// Goleadores/asistencias de la temporada — SOLO de mi plantel: los rivales no
+// tienen jugadores simulados, solo un número de fuerza (§liga.js), así que no
+// hay a quién más atribuirle goles sin inventar jugadores que no existen.
+function tablaGoleadores(estadisticas) {
+  const est = estadisticas || c.estadisticas;
+  if (!est) return '';
+  const porId = new Map(c.plantel.map((x) => [x.id, x]));
+  const top = (obj) => Object.entries(obj)
+    .map(([id, n]) => ({ jugador: porId.get(id), n }))
+    .filter((x) => x.jugador)
+    .sort((a, b) => b.n - a.n)
+    .slice(0, 5);
+  const goleadores = top(est.goleadores);
+  const asistencias = top(est.asistencias);
+  if (!goleadores.length && !asistencias.length) return '';
+  const col = (icono, titulo, lista) => `<div class="stack goleadores-col">
+    <div class="eyebrow">${icono} ${titulo}</div>
+    ${lista.length
+      ? `<table><tbody>${lista.map((x, i) => `<tr><td class="n">${i + 1}</td><td>${esc(x.jugador.nombre)}</td><td class="n">${x.n}</td></tr>`).join('')}</tbody></table>`
+      : `<p class="hint">Todavía nadie.</p>`}
+  </div>`;
+  return `<div class="panel stack">
+    <div class="eyebrow">Goleadores y asistencias · ${esc(c.club)}</div>
+    <div class="row goleadores-row">${col('⚽', 'Goleadores', goleadores)}${col('🅰️', 'Asistencias', asistencias)}</div>
   </div>`;
 }
 
@@ -487,6 +528,7 @@ const PANTALLAS = {
         </div>
       </div>
       ${tablaPosiciones()}
+      ${tablaGoleadores()}
     </div>`;
   },
 
@@ -503,6 +545,7 @@ const PANTALLAS = {
         <div class="row"><button class="btn" data-accion="ir-evento">Seguir</button></div>
       </div>
       ${tablaPosiciones()}
+      ${tablaGoleadores()}
     </div>`;
   },
 
@@ -556,7 +599,8 @@ const PANTALLAS = {
         <div class="eyebrow">Fin de la temporada ${t.temporada}</div>
         <h2>${t.campeon ? '¡Campeón!' : t.cumplio ? `${t.posicion}° — objetivo cumplido` : `${t.posicion}° — objetivo incumplido`}</h2>
         <p class="hint">${t.pts} puntos · ${t.g}G ${t.e}E ${t.p}P · ${t.gf}:${t.gc} · el club pedía terminar ${t.objetivo}° o mejor.</p>
-        <table><tbody>${t.tablaTop5.map((x, i) => `<tr class="${x.nombre === c.club ? 'mio' : ''}"><td class="n">${i + 1}</td><td>${esc(x.nombre)}</td><td class="n">${x.pts}</td></tr>`).join('')}</tbody></table>
+        <table><tbody>${t.tablaTop5.map((x, i) => `<tr class="${x.nombre === c.club ? 'mio' : ''}"><td class="n">${i + 1}</td><td class="eq">${escudoClub(x.nombre)}<span>${esc(x.nombre)}</span></td><td class="n">${x.pts}</td></tr>`).join('')}</tbody></table>
+        ${tablaGoleadores(t.estadisticas)}
         <div class="row"><button class="btn" data-accion="abrir-refuerzo">Abrir el sobre de refuerzo</button></div>
       </div>
     </div>`;
@@ -679,6 +723,7 @@ const acciones = {
       fetchAbrirSobre({ managerId, packId: PACK_ID, free: true }),
     ]);
     const cartasInicialesDB = sobres.every(Boolean) ? sobres : null;
+    ui.miEscudo = club?.badge_url || club?.club_badge_url || club?.badge || '';
     c = iniciarCarrera({ dt: ob.nombre, club: club?.name || ob.nombre, cartasInicialesDB });
     ob.enviando = false;
     ui.vista = 'sobres'; ui.sobresAbiertos = [];
