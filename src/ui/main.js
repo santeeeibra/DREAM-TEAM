@@ -20,6 +20,10 @@ let ui = {
   sel: new Set(), salen: new Set(), fuenteIA: null, cargando: false, detalleAbierto: new Set(), miEscudo: '',
   onboarding: { liga: null, clubes: [], clubId: '', nombre: '', pais: '', cargando: false, error: null, enviando: false, abierto: null, modo: 'facil' },
 };
+// La entrada animada del onboarding corre UNA vez por carga de página: cada
+// acción (p. ej. abrir un dropdown) re-renderiza el DOM completo y no queremos
+// que la pantalla "parpadee" en cada interacción.
+let obPrimeraVezOnboarding = true;
 
 // ───────────────────────── helpers de vista ─────────────────────────
 const esc = (s) => String(s).replace(/[&<>"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
@@ -324,6 +328,7 @@ const PANTALLAS = {
   onboarding: () => {
     const ob = ui.onboarding;
     const clubSel = ob.clubes.find((cl) => cl.id === ob.clubId);
+    const ligaSel = LIGAS.find((l) => l.id === ob.liga);
     const clubBtn = !ob.liga
       ? 'Elegí una liga primero'
       : ob.cargando
@@ -331,53 +336,85 @@ const PANTALLAS = {
         : ob.clubes.length === 0
           ? 'No hay clubes para esta liga'
           : clubSel ? clubSel.name : 'Elegí tu club';
+    // Ficha viva: cada campo completado se ve reflejado al instante en la tarjeta.
+    const nombre = ob.nombre.trim() || 'DT';
+    const inicial = (nombre[0] || 'D').toUpperCase();
+    const fichaCompleta = !!(ob.nombre.trim() && ob.pais && ob.liga && ob.clubId);
+    const anim = obPrimeraVezOnboarding ? ' ob-anim' : '';
+    obPrimeraVezOnboarding = false;
+    const paso = (n, ok) => `<span class="ob-step${ok ? ' done' : ''}"><i></i>${n}</span>`;
     return `
-    <div class="stack" style="padding-top:8vh">
-      <div class="eyebrow">Antes de arrancar</div>
-      <h1>Creá tu<br>perfil de DT</h1>
-      <p style="max-width:42ch;color:var(--humo)">Esto se hace una sola vez: tu nombre, de dónde venís y qué club vas a dirigir. Después abrís tus tres sobres iniciales y arrancás la carrera.</p>
-      <div class="panel stack" style="max-width:440px">
-        <label class="eyebrow" for="ob-dt">Tu nombre</label>
-        <input id="ob-dt" maxlength="24" placeholder="Nombre del DT" value="${esc(ob.nombre)}" />
-        <label class="eyebrow">País de origen</label>
-        <div class="dropdown">
-          <button type="button" id="ob-pais" class="dd-btn${ob.pais ? '' : ' dd-placeholder'}" data-accion="ob-pais" aria-haspopup="listbox" aria-expanded="${ob.abierto === 'pais'}">
-            ${ob.pais ? `${banderaImg(ob.pais)} ${esc(ob.pais)}` : 'Elegí tu país'}
-            <span class="dd-caret">▾</span>
-          </button>
-          ${ob.abierto === 'pais' ? `<ul class="dd-opciones" role="listbox">
-            ${PAISES.map((p) => `<li role="option" data-accion="ob-pais" data-pais="${esc(p[0])}" class="dd-item${ob.pais === p[0] ? ' activo' : ''}">${banderaImg(p[0])} ${esc(p[0])}</li>`).join('')}
-          </ul>` : ''}
+    <div class="ob-wrap${anim}">
+      <header class="ob-hero">
+        <div class="eyebrow">Antes de arrancar</div>
+        <h1 class="ob-h1">Creá tu <span class="ob-h1-glow">perfil</span> de DT</h1>
+        <p class="ob-sub">Una sola vez: tu identidad, tu club y 3 sobres gratis para arrancar la carrera.</p>
+        <nav class="ob-steps" aria-label="Progreso del perfil">
+          ${paso('Identidad', !!(ob.nombre.trim() && ob.pais))}<span class="ob-step-arrow"></span>
+          ${paso('Club', !!(ob.liga && ob.clubId))}<span class="ob-step-arrow"></span>
+          ${paso('Contrato', !!ob.enviando)}
+        </nav>
+      </header>
+
+      <div class="ob-layout">
+        <div class="panel ob-form stack" role="form">
+          <label class="eyebrow" for="ob-dt">Tu nombre</label>
+          <input id="ob-dt" maxlength="24" placeholder="Nombre del DT" value="${esc(ob.nombre)}" autocomplete="off" />
+          <label class="eyebrow">País de origen</label>
+          <div class="dropdown">
+            <button type="button" id="ob-pais" class="dd-btn${ob.pais ? '' : ' dd-placeholder'}" data-accion="ob-pais" aria-haspopup="listbox" aria-expanded="${ob.abierto === 'pais'}">
+              ${ob.pais ? `${banderaImg(ob.pais)} ${esc(ob.pais)}` : 'Elegí tu país'}
+              <span class="dd-caret">▾</span>
+            </button>
+            ${ob.abierto === 'pais' ? `<ul class="dd-opciones" role="listbox">
+              ${PAISES.map((p) => `<li role="option" data-accion="ob-pais" data-pais="${esc(p[0])}" class="dd-item${ob.pais === p[0] ? ' activo' : ''}">${banderaImg(p[0])} ${esc(p[0])}</li>`).join('')}
+            </ul>` : ''}
+          </div>
+          <label class="eyebrow">Liga</label>
+          <div class="row">
+            ${LIGAS.map((l) => `
+            <button type="button" class="ob-liga${ob.liga === l.id ? ' activo' : ''}" data-accion="ob-liga" data-liga="${l.id}">
+              <img class="liga-logo" src="${l.logo}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()" />
+              ${l.label}
+            </button>`).join('')}
+          </div>
+          <label class="eyebrow">Club</label>
+          <div class="dropdown">
+            <button type="button" id="ob-club" class="dd-btn${clubSel ? '' : ' dd-placeholder'}" data-accion="ob-club" aria-haspopup="listbox" aria-expanded="${ob.abierto === 'club'}" ${!ob.liga || ob.cargando ? 'disabled' : ''}>
+              ${clubSel ? escudoDe(clubSel) : ''}${clubBtn}
+              <span class="dd-caret">▾</span>
+            </button>
+            ${ob.abierto === 'club' && ob.clubes.length > 0 ? `<ul class="dd-opciones" role="listbox">
+              ${ob.clubes.map((cl) => `<li role="option" data-accion="ob-club" data-id="${esc(cl.id)}" class="dd-item${ob.clubId === cl.id ? ' activo' : ''}">${escudoDe(cl)} ${esc(cl.name)}</li>`).join('')}
+            </ul>` : ''}
+          </div>
+          <label class="eyebrow">Dificultad</label>
+          <div class="ob-seg" role="group" aria-label="Dificultad">
+            <button type="button" class="ob-seg-btn${ob.modo === 'facil' ? ' activo' : ''}" data-accion="ob-modo" data-modo="facil">Accesible</button>
+            <button type="button" class="ob-seg-btn${ob.modo === 'dificil' ? ' activo' : ''}" data-accion="ob-modo" data-modo="dificil">Difícil</button>
+          </div>
+          <p class="hint">${ob.modo === 'dificil'
+            ? '⚠️ La presión escala fuerte en cada decisión. Sin épicas en el 11, el rendimiento tiene techo.'
+            : 'Ideal para conocer el juego. Margen de error generoso, presión suave.'
+          }</p>
+          ${ob.error ? `<p class="aviso">${esc(ob.error)}</p>` : ''}
+          <button class="btn ob-cta" data-accion="ob-confirmar" ${ob.enviando ? 'disabled' : ''}>${ob.enviando ? 'Creando perfil…' : 'Firmar contrato'}</button>
         </div>
-        <label class="eyebrow">Liga</label>
-        <div class="row">
-          ${LIGAS.map((l) => `
-          <button type="button" class="btn liga-btn ${ob.liga === l.id ? '' : 'ghost'}" data-accion="ob-liga" data-liga="${l.id}">
-            <img class="liga-logo" src="${l.logo}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()" />
-            ${l.label}
-          </button>`).join('')}
-        </div>
-        <label class="eyebrow">Club</label>
-        <div class="dropdown">
-          <button type="button" id="ob-club" class="dd-btn${clubSel ? '' : ' dd-placeholder'}" data-accion="ob-club" aria-haspopup="listbox" aria-expanded="${ob.abierto === 'club'}" ${!ob.liga || ob.cargando ? 'disabled' : ''}>
-            ${clubSel ? escudoDe(clubSel) : ''}${clubBtn}
-            <span class="dd-caret">▾</span>
-          </button>
-          ${ob.abierto === 'club' && ob.clubes.length > 0 ? `<ul class="dd-opciones" role="listbox">
-            ${ob.clubes.map((cl) => `<li role="option" data-accion="ob-club" data-id="${esc(cl.id)}" class="dd-item${ob.clubId === cl.id ? ' activo' : ''}">${escudoDe(cl)} ${esc(cl.name)}</li>`).join('')}
-          </ul>` : ''}
-        </div>
-        <label class="eyebrow">Dificultad</label>
-        <div class="row">
-          <button type="button" class="btn ${ob.modo === 'facil' ? '' : 'ghost'}" data-accion="ob-modo" data-modo="facil">Accesible</button>
-          <button type="button" class="btn ${ob.modo === 'dificil' ? '' : 'ghost'}" data-accion="ob-modo" data-modo="dificil">Difícil</button>
-        </div>
-        <p class="hint" style="margin-top:-4px">${ob.modo === 'dificil'
-          ? '⚠️ La presión escala fuerte en cada decisión. Sin épicas en el 11, el rendimiento tiene techo. Solo con épicas y aciertos un club chico puede ganar la liga.'
-          : 'Ideal para conocer el juego. Margen de error más generoso, presión más suave.'
-        }</p>
-        ${ob.error ? `<p class="aviso">${esc(ob.error)}</p>` : ''}
-        <button class="btn" data-accion="ob-confirmar" ${ob.enviando ? 'disabled' : ''}>${ob.enviando ? 'Creando perfil…' : 'Firmar contrato'}</button>
+
+        <aside class="ob-ficha${fichaCompleta ? ' lista' : ''}" aria-live="polite">
+          <div class="ob-ficha-id">
+            <div class="ob-ficha-avatar"><span id="ob-ficha-inicial">${inicial}</span></div>
+            <div class="ob-ficha-nombre-wrap">
+              <div class="eyebrow">Tu ficha</div>
+              <div class="ob-ficha-nombre" id="ob-ficha-nombre">${esc(nombre)}</div>
+            </div>
+          </div>
+          <div class="ob-ficha-fila"><span class="ob-ficha-lbl">País</span><span class="ob-ficha-val">${ob.pais ? `${banderaImg(ob.pais)} ${esc(ob.pais)}` : '—'}</span></div>
+          <div class="ob-ficha-fila"><span class="ob-ficha-lbl">Liga</span><span class="ob-ficha-val">${ligaSel ? `<img class="liga-logo" src="${ligaSel.logo}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()" />${esc(ligaSel.label)}` : '—'}</span></div>
+          <div class="ob-ficha-fila"><span class="ob-ficha-lbl">Club</span><span class="ob-ficha-val">${clubSel ? `${escudoDe(clubSel)}${esc(clubSel.name)}` : '—'}</span></div>
+          <div class="ob-ficha-fila"><span class="ob-ficha-lbl">Modo</span><span class="ob-ficha-val">${ob.modo === 'dificil' ? 'Difícil' : 'Accesible'}</span></div>
+          <div class="ob-ficha-pie"><span class="ob-ficha-sobre">×3 sobres gratis</span></div>
+        </aside>
       </div>
     </div>`;
   },
@@ -830,6 +867,18 @@ app.addEventListener('click', async (e) => {
   const r = fn(el);
   if (r instanceof Promise) await r;
   render();
+});
+
+// Ficha viva del onboarding: nombre e inicial se actualizan mientras se tipea,
+// SIN re-renderear (un render() ahí perdería el caret del input).
+app.addEventListener('input', (e) => {
+  if (e.target?.id !== 'ob-dt') return;
+  ui.onboarding.nombre = e.target.value;
+  const nombre = e.target.value.trim() || 'DT';
+  const elNombre = document.getElementById('ob-ficha-nombre');
+  const elInicial = document.getElementById('ob-ficha-inicial');
+  if (elNombre) elNombre.textContent = nombre;
+  if (elInicial) elInicial.textContent = (nombre[0] || 'D').toUpperCase();
 });
 
 // Foil que sigue al cursor en cartas oro_unico/epica. Delegado en `app` (no por

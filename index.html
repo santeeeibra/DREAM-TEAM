@@ -218,6 +218,72 @@ td.n{text-align:right;font-family:'Barlow Condensed';font-weight:700;font-varian
   .gauges{grid-template-columns:repeat(3,1fr)}
   .linea-f{grid-auto-flow:row;grid-template-columns:repeat(4,1fr)}
 }
+/* ── Onboarding v2: crear DT — noche de estadio, un solo foco de neón ── */
+.ob-wrap{padding-top:8vh}
+.ob-hero{max-width:34ch;margin-bottom:26px}
+.ob-h1{line-height:.92;margin:8px 0 10px}
+.ob-h1-glow{background:linear-gradient(100deg,var(--fluor) 10%,#ffb020 90%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 16px rgba(255,94,26,.4))}
+.ob-sub{color:var(--humo);font-size:14.5px;max-width:38ch;margin:0}
+.ob-steps{display:flex;align-items:center;gap:9px;margin-top:20px;flex-wrap:wrap}
+.ob-step{display:flex;align-items:center;gap:7px;font-family:'Barlow Condensed';font-weight:700;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--humo);transition:color .25s}
+.ob-step i{width:7px;height:7px;border-radius:99px;background:rgba(255,255,255,.14);transition:background .25s,box-shadow .25s}
+.ob-step.done{color:var(--fluor)}
+.ob-step.done i{background:var(--fluor);box-shadow:0 0 10px rgba(255,94,26,.7)}
+.ob-step-arrow{width:22px;height:1px;background:rgba(255,255,255,.12)}
+.ob-step-arrow::before{content:"";display:block;width:100%;height:100%;background:linear-gradient(90deg,rgba(255,94,26,0),rgba(255,94,26,.65));transform:scaleX(0);transform-origin:left;transition:transform .3s}
+.ob-step.done + .ob-step-arrow::before{transform:scaleX(1)}
+.ob-layout{display:grid;grid-template-columns:minmax(0,1fr) 288px;gap:20px;align-items:start}
+.ob-form{width:100%}
+.ob-liga{display:inline-flex;align-items:center;gap:9px;padding:11px 15px;border-radius:var(--r);background:var(--cancha);border:1px solid var(--linea);color:var(--tiza);font-family:'Barlow Condensed';font-weight:700;font-size:15px;letter-spacing:.05em;text-transform:uppercase;transition:transform .15s ease,border-color .15s,color .15s,box-shadow .15s}
+.ob-liga:hover{border-color:var(--fluor);color:var(--fluor);transform:translateY(-1px)}
+.ob-liga.activo{border-color:var(--fluor);background:rgba(255,94,26,.10);color:var(--fluor);box-shadow:0 0 0 1px rgba(255,94,26,.35),0 0 18px -4px rgba(255,94,26,.45)}
+.ob-liga.activo .liga-logo{filter:drop-shadow(0 0 6px rgba(255,94,26,.5))}
+.ob-seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border:1px solid var(--linea);border-radius:var(--r);background:rgba(0,0,0,.28)}
+.ob-seg-btn{padding:9px 10px;border-radius:2px;font-family:'Barlow Condensed';font-weight:700;font-size:14px;letter-spacing:.1em;text-transform:uppercase;color:var(--humo);transition:color .18s,background .18s,box-shadow .18s}
+.ob-seg-btn:hover{color:var(--tiza)}
+.ob-seg-btn.activo{background:var(--fluor);color:#0B0704;box-shadow:0 0 14px -2px rgba(255,94,26,.6)}
+.ob-cta{position:relative;overflow:hidden;justify-content:center;width:100%;margin-top:4px}
+.ob-cta::after{content:"";position:absolute;top:0;bottom:0;left:0;width:34%;pointer-events:none;background:linear-gradient(100deg,transparent,rgba(255,255,255,.5),transparent);transform:translateX(-170%) skewX(-18deg);animation:obShine 3.8s ease-in-out infinite}
+.ob-cta:disabled::after{display:none}
+@keyframes obShine{0%{transform:translateX(-170%) skewX(-18deg)}55%,100%{transform:translateX(430%) skewX(-18deg)}}
+/* ficha viva del DT */
+.ob-ficha{position:sticky;top:18px;display:flex;flex-direction:column;padding:18px;overflow:hidden;
+  background:radial-gradient(120% 90% at 85% -10%,rgba(255,94,26,.14),transparent 55%),var(--panel);
+  border:1px solid var(--linea);border-radius:var(--r)}
+.ob-ficha::before{content:"";position:absolute;top:0;left:0;right:0;height:1px;opacity:.4;
+  background:linear-gradient(90deg,transparent,var(--fluor),transparent);transition:opacity .5s}
+.ob-ficha.lista::before{opacity:.95;animation:obPulse 2.6s ease-in-out infinite}
+@keyframes obPulse{0%,100%{opacity:.45}50%{opacity:1}}
+.ob-ficha-id{display:flex;align-items:center;gap:12px;padding-bottom:14px}
+.ob-ficha-avatar{position:relative;width:58px;height:58px;flex:none;border-radius:99px;display:flex;align-items:center;justify-content:center;
+  background:var(--cancha);border:1px solid var(--linea);transition:border-color .3s,box-shadow .3s}
+.ob-ficha-avatar span{font-family:'Anton';font-size:26px;line-height:1;color:var(--humo);transition:color .3s,text-shadow .3s}
+.ob-ficha.lista .ob-ficha-avatar{border-color:rgba(255,94,26,.6);box-shadow:0 0 18px -2px rgba(255,94,26,.4)}
+.ob-ficha.lista .ob-ficha-avatar span{color:var(--fluor);text-shadow:0 0 10px rgba(255,94,26,.55)}
+.ob-ficha-nombre-wrap{min-width:0}
+.ob-ficha-nombre{font-family:'Anton';font-size:22px;line-height:1.05;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ob-ficha-fila{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid rgba(255,255,255,.05);font-size:14px}
+.ob-ficha-lbl{font-family:'Barlow Condensed';font-weight:700;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--humo);flex:none}
+.ob-ficha-val{display:flex;align-items:center;gap:6px;font-weight:600;text-align:right;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ob-ficha-val .flag{width:26px;height:18px}
+.ob-ficha-val .escudo{width:24px;height:24px}
+.ob-ficha-pie{margin-top:10px;padding-top:12px;border-top:1px solid var(--linea)}
+.ob-ficha-sobre{display:inline-flex;align-items:center;gap:6px;font-family:'Barlow Condensed';font-weight:700;font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--led);border:1px solid rgba(111,227,154,.35);border-radius:99px;padding:4px 10px;background:rgba(111,227,154,.08)}
+/* entrada única (se dispara una vez por carga de página, no en cada render) */
+.ob-anim .ob-hero{animation:obEnt .55s cubic-bezier(.2,.75,.25,1) both}
+.ob-anim .ob-form{animation:obEnt .55s cubic-bezier(.2,.75,.25,1) .08s both}
+.ob-anim .ob-ficha{animation:obEnt .55s cubic-bezier(.2,.75,.25,1) .16s both}
+@keyframes obEnt{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+
+@media (max-width:860px){
+  .ob-layout{grid-template-columns:1fr}
+  .ob-ficha{position:static}
+}
+@media (max-width:560px){
+  .ob-wrap{padding-top:4vh}
+  .ob-cta::after{display:none}
+}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>

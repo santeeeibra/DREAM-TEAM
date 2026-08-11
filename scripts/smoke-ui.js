@@ -10,6 +10,9 @@ const html = readFileSync('index.html', 'utf8');
 const dom = new JSDOM(html, { url: 'http://localhost/', pretendToBeVisual: true });
 global.window = dom.window; global.document = dom.window.document;
 dom.window.scrollTo = () => {};
+// jsdom expone el constructor Image pero Node no lo exporta al global: sin esto
+// el preload de escudos/cartas (new Image()) en ob-liga rompe el harness.
+global.Image = dom.window.Image ?? global.Image;
 
 // localStorage no existe en Node (el juego lo usa para guardar manager_id).
 const STORE = new Map();
