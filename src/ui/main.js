@@ -529,7 +529,13 @@ const PANTALLAS = {
       </div>`;
     };
     const slotElegido = ui.slot !== null ? FORMACION[ui.slot] : null;
-    const candidatos = ui.slot === null ? [] : [...banco, ...c.once.map((id) => porId.get(id))].filter(Boolean);
+    // Recomendación por puesto: primero los naturales al slot (penalidad 0), después
+    // línea vecina (2), al final fuera de posición (6); dentro de cada grupo, el mejor
+    // rating efectivo para ese slot primero. Mismo criterio que usa autoOnce.
+    const candidatos = ui.slot === null ? [] : [...banco, ...c.once.map((id) => porId.get(id))].filter(Boolean)
+      .sort((a, b) =>
+        penalidad(a.pos, slotElegido) - penalidad(b.pos, slotElegido) ||
+        ratingEnSlot(b, slotElegido) - ratingEnSlot(a, slotElegido));
     return `<div class="stack">
       <div class="eyebrow">${c.temporada === 1 ? 'Paso 2 de 2 · ' : `Temporada ${c.temporada} · `}Once titular · 4-3-3</div>
       <h2>Rating del 11: <span style="color:var(--fluor)">${ratingActual(c)}</span></h2>
