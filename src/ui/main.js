@@ -24,6 +24,10 @@ let ui = {
 // acción (p. ej. abrir un dropdown) re-renderiza el DOM completo y no queremos
 // que la pantalla "parpadee" en cada interacción.
 let obPrimeraVezOnboarding = true;
+// Las pantallas de temporada animan UNA vez por cambio de vista: el toggle de
+// la tabla re-renderiza la misma vista y no debe volver a abrir la cortina.
+let tsEntra = false;
+let tsVistaAnterior = null;
 
 // ───────────────────────── helpers de vista ─────────────────────────
 const esc = (s) => String(s).replace(/[&<>"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
@@ -273,9 +277,13 @@ function marcador() {
   return `<div class="marcador">
     <div class="top">
       <div class="club">${escudoClub(c.club)}<span>${esc(c.club)}</span></div>
-      <div class="row" style="gap:10px">
-        <div class="eyebrow">T${c.temporada}/${CARRERA.TEMPORADAS} · Fecha ${Math.min(c.partidosTemporada.length + 1, LIGA.FECHAS)} · ${pos ? `${pos}°` : '—'} · Objetivo ${c.objetivo}°</div>
-        <button class="btn ghost" style="padding:2px 9px;font-size:13px" data-accion="ver-guia" title="Cómo funcionan las variables">?</button>
+      <div class="ts-meta">
+        <div class="ts-steps" title="Temporadas: ${c.temporada} de ${CARRERA.TEMPORADAS}">${Array.from({ length: CARRERA.TEMPORADAS }, (_, i) => `<i class="${i + 1 < c.temporada ? 'done' : i + 1 === c.temporada ? 'on' : ''}"></i>`).join('')}</div>
+        <span class="ts-chip">Tramo <b>${Math.min(c.tramo + 1, LIGA.TRAMOS.length)}/${LIGA.TRAMOS.length}</b></span>
+        <span class="ts-chip">Fecha <b>${Math.min(c.partidosTemporada.length + 1, LIGA.FECHAS)}</b></span>
+        <span class="ts-chip">Puesto <b>${pos ? `${pos}°` : '—'}</b></span>
+        <span class="ts-chip">Objetivo <b>${c.objetivo}°</b></span>
+        <button class="btn ghost ts-guia" data-accion="ver-guia" title="Cómo funcionan las variables">?</button>
       </div>
     </div>
     <div class="gauges">${['money', 'moral', 'fatiga', 'presion', 'ratingDelta'].map(g).join('')}</div>
@@ -286,12 +294,12 @@ function marcador() {
 function tablaPosiciones() {
   if (!c.liga) return '';
   const t = posiciones(c.liga);
-  return `<div class="panel stack">
+  return `<div class="panel stack ts-panel">
     <div class="row" style="justify-content:space-between">
       <div class="eyebrow">Tabla de posiciones</div>
       <button class="btn ghost" data-accion="tabla">${ui.tabla ? 'Ocultar' : 'Ver tabla'}</button>
     </div>
-    ${ui.tabla ? `<table><thead><tr><th>#</th><th>Equipo</th><th class="n">PJ</th><th class="n">DG</th><th class="n">Pts</th></tr></thead>
+    ${ui.tabla ? `<table class="ts-tabla"><thead><tr><th>#</th><th>Equipo</th><th class="n">PJ</th><th class="n">DG</th><th class="n">Pts</th></tr></thead>
       <tbody>${t.map((e, i) => `<tr class="${e.id === 0 ? 'mio' : ''}"><td class="n">${i + 1}</td><td class="eq">${escudoClub(e.nombre)}<span>${esc(e.nombre)}</span></td><td class="n">${e.pj}</td><td class="n">${e.dg > 0 ? '+' : ''}${e.dg}</td><td class="n">${e.pts}</td></tr>`).join('')}</tbody></table>` : ''}
   </div>`;
 }
@@ -317,7 +325,7 @@ function tablaGoleadores(estadisticas) {
       ? `<table><tbody>${lista.map((x, i) => `<tr><td class="n">${i + 1}</td><td>${esc(x.jugador.nombre)}</td><td class="n">${x.n}</td></tr>`).join('')}</tbody></table>`
       : `<p class="hint">Todavía nadie.</p>`}
   </div>`;
-  return `<div class="panel stack">
+  return `<div class="panel stack ts-panel">
     <div class="eyebrow">Goleadores y asistencias · ${esc(c.club)}</div>
     <div class="row goleadores-row">${col('⚽', 'Goleadores', goleadores)}${col('🅰️', 'Asistencias', asistencias)}</div>
   </div>`;
@@ -541,14 +549,14 @@ const PANTALLAS = {
 
   previa: () => {
     const desde = c.partidosTemporada.length + 1;
-    return `<div class="stack">
+    return `<div class="stack${tsEntra ? ' ts-anim' : ''}">
       ${marcador()}
-      <div class="panel stack">
-        <div class="eyebrow">Tramo ${c.tramo + 1} de ${LIGA.TRAMOS.length}</div>
-        <h2>Fechas ${desde} a ${desde + LIGA.TRAMOS[c.tramo] - 1}</h2>
+      <div class="panel stack ts-tramo">
+        <div class="ts-tramo-tag"><i></i>Tramo ${c.tramo + 1} de ${LIGA.TRAMOS.length}</div>
+        <h2>Fechas <span class="ts-glow">${desde} a ${desde + LIGA.TRAMOS[c.tramo] - 1}</span></h2>
         <p class="hint">Se juegan ${LIGA.TRAMOS[c.tramo]} partidos de corrido. Después vas a tener que tomar una decisión.</p>
         <div class="row">
-          <button class="btn" data-accion="jugar">Jugar el tramo</button>
+          <button class="btn ts-cta" data-accion="jugar">Jugar el tramo</button>
           <button class="btn ghost" data-accion="ir-once">Cambiar el 11</button>
         </div>
       </div>
@@ -559,7 +567,7 @@ const PANTALLAS = {
 
   resultados: () => {
     const t = c.ultimoTramo;
-    return `<div class="stack">
+    return `<div class="stack${tsEntra ? ' ts-anim' : ''}">
       ${marcador()}
       <div class="panel stack">
         <div class="eyebrow">Resultados del tramo · ${t.pts} de ${t.partidos.length * 3} puntos</div>
@@ -576,7 +584,7 @@ const PANTALLAS = {
 
   evento: () => {
     if (ui.cargando) {
-      return `<div class="stack">${marcador()}
+      return `<div class="stack${tsEntra ? ' ts-anim' : ''}">${marcador()}
         <div class="panel evento stack"><div class="eyebrow">Punto de decisión</div>
         <h2 style="opacity:.4">Pasa algo en el club…</h2><p class="hint">Un segundo.</p></div></div>`;
     }
@@ -586,7 +594,7 @@ const PANTALLAS = {
     // Evento grave: notificación forzada sin elección A/B
     if (p.grave) {
       const opcionCat = p.opciones[0];
-      return `<div class="stack">
+      return `<div class="stack${tsEntra ? ' ts-anim' : ''}">
         ${marcador()}
         <div class="panel evento stack" style="border-color:rgba(255,91,30,.35)">
           <div class="eyebrow" style="color:#ff5b1e">⚠️ Notificación — Temporada ${c.temporada}</div>
@@ -599,7 +607,7 @@ const PANTALLAS = {
       </div>`;
     }
 
-    return `<div class="stack">
+    return `<div class="stack${tsEntra ? ' ts-anim' : ''}">
       ${marcador()}
       <div class="panel evento stack">
         <div class="eyebrow">Temporada ${c.temporada} · Decisión ${c.tramo + 1}</div>
@@ -635,7 +643,7 @@ const PANTALLAS = {
 
   resumen: () => {
     const t = c.ultimaTemporada;
-    return `<div class="stack">
+    return `<div class="stack${tsEntra ? ' ts-anim' : ''}">
       ${marcador()}
       <div class="panel stack">
         <div class="eyebrow">Fin de la temporada ${t.temporada}</div>
@@ -653,7 +661,7 @@ const PANTALLAS = {
     const exceso = Math.max(0, c.plantel.length + entran.length - CARRERA.PLANTEL_MAX);
     const faltan = Math.max(0, exceso - ui.salen.size);
     const ingreso = c.plantel.filter((x) => ui.salen.has(x.id)).reduce((s, x) => s + valorDeVenta(x), 0);
-    return `<div class="stack">
+    return `<div class="stack${tsEntra ? ' ts-anim' : ''}">
       ${marcador()}
       <div class="panel stack">
         <div class="eyebrow">Sobre de refuerzo · terminaste ${c.ultimaTemporada.posicion}°</div>
@@ -696,6 +704,8 @@ const PANTALLAS = {
 };
 
 function render() {
+  tsEntra = tsVistaAnterior !== ui.vista;
+  tsVistaAnterior = ui.vista;
   app.innerHTML = PANTALLAS[ui.vista]();
   window.scrollTo({ top: 0, behavior: 'instant' });
   setTimeout(() => { ui.deltas = null; }, 1800);

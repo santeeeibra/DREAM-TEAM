@@ -83,12 +83,28 @@ input:focus,select:focus,button:focus-visible{outline:2px solid var(--fluor);out
 /* ── SIGNATURE: el marcador ── */
 .marcador{
   position:sticky;top:0;z-index:20;margin:-20px -18px 18px;padding:10px 18px;
-  background:linear-gradient(180deg,rgba(8,11,9,.97),rgba(8,11,9,.86));
+  background:
+    radial-gradient(120% 110% at 85% -30%,rgba(255,94,26,.16),transparent 55%),
+    linear-gradient(180deg,rgba(8,11,9,.97),rgba(8,11,9,.86));
   border-bottom:1px solid var(--linea);backdrop-filter:blur(8px);
 }
-.marcador .top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
-.marcador .club{font-family:'Anton';font-size:17px;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.marcador::before{content:"";position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--fluor),transparent);opacity:.55}
+.marcador .top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.marcador .club{font-family:'Anton';font-size:17px;text-transform:uppercase;display:flex;align-items:center;gap:8px;text-shadow:0 0 16px rgba(255,94,26,.28)}
 .marcador .club .escudo{width:24px;height:24px}
+/* meta chips + stepper de temporadas del marcador */
+.ts-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.ts-steps{display:flex;gap:3px}
+.ts-steps i{width:6px;height:6px;border-radius:99px;background:rgba(255,255,255,.14);transition:background .25s,box-shadow .25s}
+.ts-steps i.done{background:var(--fluor);box-shadow:0 0 8px rgba(255,94,26,.55)}
+.ts-steps i.on{background:var(--fluor);box-shadow:0 0 0 1px var(--fluor),0 0 12px rgba(255,94,26,.85);animation:tsPulso 2.2s ease-in-out infinite}
+@keyframes tsPulso{0%,100%{opacity:1}50%{opacity:.5}}
+.ts-chip{font-family:'Barlow Condensed';font-weight:700;font-size:11px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--humo);border:1px solid rgba(233,255,240,.10);
+  border-radius:99px;padding:2px 8px;white-space:nowrap}
+.ts-chip b{color:var(--tiza);font-weight:700}
+.ts-guia{padding:2px 9px;font-size:13px;flex:none}
 .gauges{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:8px}
 .gauge{position:relative}
 .gauge-head{display:flex;justify-content:space-between;align-items:baseline;gap:4px}
@@ -109,7 +125,7 @@ input:focus,select:focus,button:focus-visible{outline:2px solid var(--fluor);out
 .cinta{display:flex;gap:2px;margin-top:10px}
 .cinta i{flex:1;height:6px;background:rgba(255,255,255,.07);border-radius:1px;transition:background .3s}
 .cinta i.G{background:var(--led)} .cinta i.E{background:var(--humo)} .cinta i.P{background:var(--rojo)}
-.cinta i.hoy{box-shadow:0 0 0 1px var(--fluor)}
+.cinta i.hoy{box-shadow:0 0 0 1px var(--fluor),0 0 10px rgba(255,94,26,.5)}
 
 /* cartas: estilos del componente en src/ui/cartas.css (importado desde main.js) */
 .pen-vecino-tx{color:var(--ambar)}
@@ -283,6 +299,37 @@ td.n{text-align:right;font-family:'Barlow Condensed';font-weight:700;font-varian
 @media (max-width:560px){
   .ob-wrap{padding-top:4vh}
   .ob-cta::after{display:none}
+}
+/* ── Temporada v2: noche de estadio — el mismo foco de neón que el onboarding ── */
+.ts-anim .marcador{animation:tsEnt .55s cubic-bezier(.2,.75,.25,1) both}
+.ts-anim .ts-tramo{animation:tsEnt .55s cubic-bezier(.2,.75,.25,1) .06s both}
+.ts-anim .ts-panel{animation:tsEnt .55s cubic-bezier(.2,.75,.25,1) .12s both}
+@keyframes tsEnt{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+.ts-tramo{position:relative;overflow:hidden;
+  background:radial-gradient(120% 90% at 85% -10%,rgba(255,94,26,.12),transparent 55%),var(--panel)}
+.ts-tramo::before{content:"";position:absolute;top:0;left:0;right:0;height:1px;opacity:.5;
+  background:linear-gradient(90deg,transparent,var(--fluor),transparent)}
+.ts-tramo-tag{display:inline-flex;align-items:center;gap:8px;font-family:'Barlow Condensed';
+  font-weight:700;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--fluor)}
+.ts-tramo-tag i{width:7px;height:7px;border-radius:99px;background:var(--fluor);
+  box-shadow:0 0 10px rgba(255,94,26,.8);animation:tsPulso 2.2s ease-in-out infinite}
+.ts-glow{background:linear-gradient(100deg,var(--fluor) 10%,#FFB020 90%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 14px rgba(255,94,26,.35))}
+.ts-panel{position:relative;overflow:hidden;
+  background:radial-gradient(120% 90% at 85% -10%,rgba(255,94,26,.07),transparent 55%),var(--panel)}
+.ts-panel::before{content:"";position:absolute;top:0;left:0;right:0;height:1px;opacity:.45;
+  background:linear-gradient(90deg,transparent,var(--fluor),transparent)}
+.ts-tabla{animation:tsEnt .4s cubic-bezier(.2,.75,.25,1) both}
+.ts-panel tr.mio td{background:rgba(255,94,26,.10);box-shadow:inset 2px 0 0 var(--fluor)}
+.ts-panel .goleadores-col tbody tr:first-child td.n{color:var(--fluor);text-shadow:0 0 8px rgba(255,94,26,.65)}
+.ts-cta{position:relative;overflow:hidden}
+.ts-cta::after{content:"";position:absolute;top:0;bottom:0;left:0;width:34%;pointer-events:none;
+  background:linear-gradient(100deg,transparent,rgba(255,255,255,.5),transparent);
+  transform:translateX(-170%) skewX(-18deg);animation:obShine 3.8s ease-in-out infinite}
+.ts-cta:disabled::after{display:none}
+@media (max-width:560px){
+  .ts-cta::after{display:none}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
