@@ -109,13 +109,26 @@
   filter:drop-shadow(0 0 10px var(--glow))}
 .ovr .pos{font-family:'Barlow Condensed';font-weight:700;font-size:12px;letter-spacing:.12em;color:#d3d6dc;margin-top:-2px}
 
-/* rating real → rating en el puesto elegido (penalidad de posición) */
-.ovr .num-cambio{display:flex;align-items:baseline;gap:4px;font-size:0}
-.ovr .num-cambio .orig{font-family:'Anton';font-size:16px;color:#8b909a;text-decoration:line-through;font-variant-numeric:tabular-nums}
-.ovr .num-cambio .flecha{font-size:11px;color:#8b909a}
-.ovr .num-cambio .efectivo{font-family:'Anton';font-size:28px;font-variant-numeric:tabular-nums}
+/* rating real → rating en el puesto elegido (penalidad de posición).
+   El efectivo es el número grande; el original va como badge tachado en la
+   esquina superscript (idioma card-game). Altura contenida + línea visible:
+   la tinta de Anton (ascendente > 1em) desborda su caja y encimaba los
+   números contra la flecha y el label .pos. */
+.ovr .num-cambio{position:relative;display:inline-block;font-size:0;line-height:1;white-space:nowrap}
+.ovr .num-cambio .efectivo{display:inline-block;font-family:'Anton';font-size:28px;line-height:1;font-variant-numeric:tabular-nums}
+.ovr .num-cambio .orig{
+  position:absolute;top:-3px;right:-2px;
+  font-family:'Anton';font-size:13px;line-height:1;
+  color:#a8adb6;text-decoration:line-through;text-decoration-thickness:1px;
+  background:rgba(13,15,19,.85);border-radius:4px;padding:1px 3px;
+  box-shadow:0 1px 4px rgba(0,0,0,.45);font-variant-numeric:tabular-nums
+}
+.ovr .num-cambio .flecha{display:none}
 .card.pen-vecino .ovr .num, .card.pen-vecino .ovr .num-cambio .efectivo{background:none;-webkit-background-clip:initial;background-clip:initial;filter:none;color:var(--ambar)}
 .card.pen-fuera .ovr .num, .card.pen-fuera .ovr .num-cambio .efectivo{background:none;-webkit-background-clip:initial;background-clip:initial;filter:none;color:#D6402E}
+.card.pen-vecino .ovr .num-cambio .orig{color:var(--ambar)}
+.card.pen-fuera .ovr .num-cambio .orig{color:#D6402E}
+.ovr .num-cambio + .pos{margin-top:6px}
 
 /* ---- pie ---- */
 .foot{position:relative;z-index:3;padding:2px 10px 10px}
