@@ -52,6 +52,12 @@ export function construirPrompt(candidatos, ctx) {
   const resumen = candidatos.map((c) => ({
     id: c.id,
     tags: c.tags,
+    // La figura es POR CANDIDATO (sorteada en candidatosEvento sobre el plantel
+    // completo). Solo se expone a la IA en eventos con tag 'individual': ahí sí
+    // puede nombrar al jugador. Para el resto queda null y el guardrail aplica igual.
+    figura: c.tags?.includes('individual') && c.figura
+      ? { nombre: c.figura.nombre, pos: c.figura.pos }
+      : null,
     opciones: c.opciones.map((o) => ({
       id: o.id,
       consecuencia_a_justificar: traducirEfectosParaIA(o),
@@ -78,8 +84,8 @@ export function construirPrompt(candidatos, ctx) {
     contexto: {
       dt: ctx.dt, club: ctx.club, temporada: ctx.temporada, tramo: ctx.tramo + 1,
       posicion: ctx.posicion, racha: ctx.racha,
-      // Se omite mandar los stats crudos del equipo al prompt para forzar foco narrativo
-      figura: ctx.figura ? { nombre: ctx.figura.nombre, pos: ctx.figura.pos } : null,
+      // La figura NO es global: cada candidato_para_elegir trae la suya (o null).
+      // Se omite mandar los stats crudos del equipo al prompt para forzar foco narrativo.
       proximoRival: ctx.rival ? { nombre: ctx.rival.nombre, localia: ctx.rival.localia } : null,
     },
     candidatos_para_elegir: resumen,
@@ -96,7 +102,9 @@ export function construirPrompt(candidatos, ctx) {
  */
 function nombrePropioFiltrado(paquete, texto, ctx) {
   if (paquete.tags?.includes('individual')) return false;
-  const nombres = [ctx?.figura?.nombre, ctx?.rival?.nombre].filter(Boolean);
+  // La figura del candidato elegido manda (paquete.figura). El ctx es el fallback
+  // por si el candidato no trae figura (graves, tags 'dt', plantel vacío).
+  const nombres = [paquete.figura?.nombre, ctx?.figura?.nombre, ctx?.rival?.nombre].filter(Boolean);
   return nombres.some((n) => texto.toLowerCase().includes(n.toLowerCase()));
 }
 

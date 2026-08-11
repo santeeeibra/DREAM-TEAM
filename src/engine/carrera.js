@@ -7,7 +7,7 @@ import { crearLiga, simularTramo, miPosicion, posiciones, fuerzaDeEquipo, getEst
 import { ratingOnce, autoOnce, onceCompleto } from './once.js';
 import { sobresIniciales, sobreRefuerzo } from './sobresLocal.js';
 import { cargarCartasDB, envejecerPlantel, valorDeVenta } from './cartas.js';
-import { candidatosEvento, efectosDeOpcion, elegirPorSorteo } from './candidatosEvento.js';
+import { candidatosEvento, efectosDeOpcion, elegirPorSorteo, figuraConRotacion, figurasRecientes } from './candidatosEvento.js';
 import { paquete, CATALOGO_GRAVES } from './catalogoEventos.js';
 
 export const FASES = {
@@ -130,6 +130,7 @@ export function contexto(c) {
     plantel: c.plantel,
     once: c.once,
     figura: figuraDelPlantel(c),
+    figurasRecientes: figurasRecientes(c.historialEventos),
     rival: proximoRival(c),
     ...c.estado,
     modificadorTramo: c.modificadorTramo || null,
@@ -250,10 +251,21 @@ export function candidatosDelTramo(c) {
     });
     if (elegiblesGraves.length && c.rng.next() < DIFICULTAD.PROB_GRAVE_POR_TRAMO) {
       const graveEvento = c.rng.weighted(elegiblesGraves);
+      // Los graves individuales (lesión/suspensión de la figura) apuntaban SIEMPRE
+      // a la misma estrella (ctx.figura). Rotación sobre el XI: el objetivo se
+      // sortea evitando las últimas figuras nombradas, así la baja no recae
+      // siempre en el mismo jugador. Ver figuraConRotacion + figurasRecientes.
+      let candidatoGrave = graveEvento;
+      if (graveEvento.tags?.includes('individual')) {
+        const porId = new Map(c.plantel.map((x) => [x.id, x]));
+        const onceCards = c.once.map((id) => porId.get(id)).filter(Boolean);
+        const objetivo = figuraConRotacion(c.rng, onceCards, figurasRecientes(c.historialEventos));
+        candidatoGrave = { ...graveEvento, figura: objetivo };
+      }
       // Narración fijada desde el catálogo — no pasa por IA
-      const narracion = elegirPorSorteo(c.rng, [graveEvento], ctx);
-      c.eventoActual = { candidatos: [graveEvento], narracion };
-      return [graveEvento];
+      const narracion = elegirPorSorteo(c.rng, [candidatoGrave], ctx);
+      c.eventoActual = { candidatos: [candidatoGrave], narracion };
+      return [candidatoGrave];
     }
   }
 
@@ -292,7 +304,14 @@ export function resolverEvento(c, opcionId) {
   c.estado = r.estado;
   // Efectos que no son del estado global sino del PRÓXIMO tramo únicamente (§ táctica pre-partido).
   c.modificadorTramo = opcion.tramo ? { ...opcion.tramo } : null;
-  c.historialEventos.push({ id: n.paqueteId, temporada: c.temporada });
+  // Memoria de rotación de figuras: guardamos el id de la figura nombrada en
+  // eventos VISIBLES (individuales y graves). Retrocompatible: los eventos
+  // viejos de la DB no traen `figura` y se ignoran en figurasRecientes.
+  const elegido = c.eventoActual.candidatos.find((x) => x.id === n.paqueteId);
+  const figuraDelEventoResuelto = elegido?.tags?.includes('individual')
+    ? (elegido.figura?.id ?? null)
+    : null;
+  c.historialEventos.push({ id: n.paqueteId, temporada: c.temporada, figura: figuraDelEventoResuelto });
   c.eventoActual = null;
 
   if (c.estado.presion >= DESPIDO.PRESION) return { carrera: terminarCarrera(c, 'despedido'), deltas: r.deltas };

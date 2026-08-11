@@ -1,5 +1,5 @@
 // PURA. Resolución de temporada por tramos (§2.2): sin motor de partido en vivo.
-import { LIGA, FUERZA, ESCALADA_LIGA, ESTILOS_CLUB } from './balance.js';
+import { LIGA, FUERZA, ESCALADA_LIGA, ESTILOS_CLUB, TIER_LIGA, TIER_LIGA_DEFAULT, FUERZA_POR_TIER } from './balance.js';
 import { CLUBES_RIVALES } from '../data/nombres.js';
 
 export const MI_EQUIPO = 0;
@@ -12,13 +12,20 @@ export function crearLiga(rng, nombreClub, { temporada = 1, posAnterior = null }
   const rivales = rng.shuffle(CLUBES_RIVALES).slice(0, LIGA.EQUIPOS - 1);
   const equipos = [
     { id: 0, nombre: nombreClub, fuerza: 0, esMio: true },
-    ...rivales.map((nombre, i) => ({
-      id: i + 1,
-      nombre,
-      // Distribución: 3 grandes, 6 candidatos, resto medio/bajo.
-      fuerza: Math.round(clampNum(gauss(rng, media, ESCALADA_LIGA.SD), 54, 90) * 10) / 10,
-      esMio: false,
-    })),
+    ...rivales.map((nombre, i) => {
+      // Jerarquía real por club: cada rival saca su fuerza de la banda de su
+      // tier (TIER_LIGA → FUERZA_POR_TIER). Las bandas son separadas a
+      // propósito: los grandes pelean el título, los medios la mitad de la
+      // tabla, los bajos el descenso. Antes todos sacaban de la misma gauss
+      // y un equipo de mitad/baja tabla podía salir campeón.
+      const cfg = FUERZA_POR_TIER[TIER_LIGA[nombre] ?? TIER_LIGA_DEFAULT];
+      return {
+        id: i + 1,
+        nombre,
+        fuerza: Math.round(clampNum(gauss(rng, media + cfg.off, cfg.sd), 54, 90) * 10) / 10,
+        esMio: false,
+      };
+    }),
   ];
   return { equipos, fixture: generarFixture(rng, LIGA.EQUIPOS), tabla: tablaVacia(equipos) };
 }

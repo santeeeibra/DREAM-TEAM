@@ -3,12 +3,15 @@
 import {
   iniciarCarrera, confirmarOnce, jugarTramo, candidatosDelTramo, fijarNarracion,
   resolverEvento, abrirRefuerzo, aplicarRefuerzo, resumenCarrera, FASES,
-  autoOnce, CATALOGO, BALANCE_VERSION, RANGOS,
+  autoOnce, CATALOGO, BALANCE_VERSION, RANGOS, TIER_LIGA, TIER_LIGA_DEFAULT,
   FORMACION, penalidad, SLOTS_POR_PUESTO_ANCHO,
 } from '../src/engine/index.js';
 
 const N = Number(process.argv[2]) || 200;
 const politica = (process.argv.find((a) => a.startsWith('--politica=')) || '--politica=equilibrada').split('=')[1];
+// Default dificil: es donde viven los graves (rotación de figuras) — el modo
+// fácil no los ejercita y el invariante de rotación no tendría qué medir.
+const modo = (process.argv.find((a) => a.startsWith('--modo=')) || '--modo=dificil').split('=')[1];
 
 function decidir(narracion, carrera, rng) {
   const ops = narracion.opciones;
@@ -25,6 +28,7 @@ function decidir(narracion, carrera, rng) {
 const stats = {
   finales: {}, titulos: 0, campeonAlMenosUna: 0, temporadas: [], posiciones: [],
   moralFinal: [], moneyFinal: [], presionFinal: [], usoPaquetes: {}, clamps: {}, decisiones: 0,
+  campeonTier: {}, concentracionFiguras: [],
 };
 
 for (const p of CATALOGO) stats.usoPaquetes[p.id] = 0;
@@ -69,7 +73,7 @@ function autoOnceVerificado(plantel) {
 
 console.time('simulacion');
 for (let i = 0; i < N; i++) {
-  const c = iniciarCarrera({ seed: 1000 + i, dt: 'Harness', club: 'Club Atlético Viedma' });
+  const c = iniciarCarrera({ seed: 1000 + i, dt: 'Harness', club: 'Club Atlético Viedma', modo });
   confirmarOnce(c, autoOnceVerificado(c.plantel));
 
   let guardia = 0;
@@ -82,6 +86,14 @@ for (let i = 0; i < N; i++) {
       stats.usoPaquetes[n.paqueteId]++;
       stats.decisiones++;
       resolverEvento(c, decidir(n, c, c.rng));
+      // Invariante de rotación (§ eventos): ningún jugador es el objetivo de dos
+      // eventos VISIBLES seguidos (solo cuentan los que nombran figura:
+      // individuales y graves). Lo garantiza figuraConRotacion + figurasRecientes.
+      const visibles = c.historialEventos.filter((h) => h.figura != null);
+      const ult = visibles[visibles.length - 1], ant = visibles[visibles.length - 2];
+      if (ult && ant && ult.figura === ant.figura) {
+        throw new Error(`Rotación rota: ${n.paqueteId} nombró dos veces seguidas la figura ${ult.figura}`);
+      }
       continue;
     }
     if (c.fase === FASES.RESUMEN) {
@@ -106,17 +118,39 @@ for (let i = 0; i < N; i++) {
   stats.moneyFinal.push(r.estadoFinal.money);
   stats.presionFinal.push(r.estadoFinal.presion);
   for (const h of c.historial) for (const k of h.clamped) stats.clamps[k] = (stats.clamps[k] || 0) + 1;
+
+  // Tier del campeón de cada temporada cerrada: los rivales sacan fuerza de su
+  // banda (TIER_LIGA → FUERZA_POR_TIER), así un bajo jamás debería ser campeón
+  // y un medio casi nunca.
+  for (const t of c.temporadas) {
+    const lider = t.tablaTop5[0];
+    if (!lider) continue;
+    const tier = lider.nombre === c.club ? 'mio' : TIER_LIGA[lider.nombre] ?? TIER_LIGA_DEFAULT;
+    stats.campeonTier[tier] = (stats.campeonTier[tier] || 0) + 1;
+  }
+
+  // Concentración de la figura más nombrada (share), solo en carreras con ≥ 8
+  // eventos visibles, para que la rotación tenga carrera para medirse.
+  const visiblesCarrera = c.historialEventos.filter((h) => h.figura != null);
+  if (visiblesCarrera.length >= 8) {
+    const porJugador = {};
+    for (const h of visiblesCarrera) porJugador[h.figura] = (porJugador[h.figura] || 0) + 1;
+    stats.concentracionFiguras.push(Math.max(...Object.values(porJugador)) / visiblesCarrera.length);
+  }
 }
 console.timeEnd('simulacion');
 
 const prom = (a) => Math.round((a.reduce((s, x) => s + x, 0) / a.length) * 100) / 100;
 const pct = (n) => `${Math.round((n / N) * 1000) / 10}%`;
 
-console.log(`\n── Balance v${BALANCE_VERSION} · ${N} carreras · política "${politica}" ──`);
+console.log(`\n── Balance v${BALANCE_VERSION} · ${N} carreras · política "${politica}" · modo "${modo}" ──`);
 console.log('Finales           :', Object.entries(stats.finales).map(([k, v]) => `${k} ${pct(v)}`).join('  '));
 console.log('Temporadas jugadas:', prom(stats.temporadas), '/ 8');
 console.log('Posición promedio :', prom(stats.posiciones));
 console.log('Campeón ≥1 vez    :', pct(stats.campeonAlMenosUna), `(${stats.titulos} títulos totales)`);
+const temporadasTotales = stats.temporadas.reduce((s, x) => s + x, 0) || 1;
+const pctTemp = (n) => `${Math.round((n / temporadasTotales) * 1000) / 10}%`;
+console.log('Campeón por tier  :', Object.entries(stats.campeonTier).map(([k, v]) => `${k} ${pctTemp(v)}`).join('  '));
 console.log('Moral final       :', prom(stats.moralFinal), '| Presión final:', prom(stats.presionFinal), '| Plata final:', prom(stats.moneyFinal));
 console.log('Decisiones/carrera:', Math.round((stats.decisiones / N) * 10) / 10);
 
@@ -132,3 +166,26 @@ for (const k of Object.keys(RANGOS)) {
 }
 
 console.log('\nFase D (§D.2): ARQ siempre POR —', `${faseD.arqConPor} ok, ${faseD.arqVacio} vacío sin POR`, '| fuera de posición solo con slot exacto ocupado —', faseD.fueraDePosicion, '✔');
+
+const conc = stats.concentracionFiguras;
+if (conc.length) {
+  const shareMax = Math.max(...conc);
+  const shareProm = Math.round((conc.reduce((s, x) => s + x, 0) / conc.length) * 1000) / 10;
+  console.log('Rotación de figuras: sin repetir objetivo en eventos visibles seguidos ✔ | top share por carrera (≥8 visibles):',
+    `prom ${shareProm}%`, `| peor ${Math.round(shareMax * 1000) / 10}% (${conc.length} carreras medidas)`);
+} else {
+  console.log('Rotación de figuras: sin medición (ninguna carrera llegó a 8 eventos visibles)');
+}
+
+// — Invariantes duros v1.3.0 (§ jerarquía de liga y rotación) —
+const bajosCampeones = stats.campeonTier['bajo'] || 0;
+const mediosCampeones = stats.campeonTier['medio'] || 0;
+if (bajosCampeones > 0) {
+  throw new Error(`Jerarquía rota: un club de tier bajo salió campeón ${bajosCampeones}/${temporadasTotales} temporadas`);
+}
+if (mediosCampeones > Math.max(2, Math.round(temporadasTotales * 0.01))) {
+  throw new Error(`Jerarquía rota: clubs de tier medio campeones ${mediosCampeones}/${temporadasTotales} (>1%)`);
+}
+if (conc.length && Math.max(...conc) > 0.35) {
+  throw new Error(`Rotación rota: la figura más nombrada concentró ${Math.round(Math.max(...conc) * 1000) / 10}% en una carrera`);
+}

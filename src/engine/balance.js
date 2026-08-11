@@ -1,6 +1,6 @@
 // PURA. Único lugar donde viven los números de balance.
 // Versionado: si cambiás algo acá, subí BALANCE_VERSION y volvé a correr el harness.
-export const BALANCE_VERSION = '1.2.0';
+export const BALANCE_VERSION = '1.3.0';
 
 export const LIGA = {
   EQUIPOS: 20,
@@ -79,7 +79,6 @@ export const ESCALADA_LIGA = {
   POR_TEMPORADA: 1.2,
   CASTIGO_AL_LIDER: 2.0,   // si terminaste top 5, los rivales suben más
   ALIVIO_AL_ULTIMO: -1.0,  // si peleaste el descenso, la liga te da aire
-  SD: 5.5,
 };
 
 export const RAREZAS = {
@@ -167,4 +166,34 @@ export const ESTILOS_CLUB = {
   'Luton Town':         { goles_mod: -0.10, concedidos_mod: +0.15, presion_extra: 0 },
   'Brentford':          { goles_mod: +0.04, concedidos_mod: +0.10, presion_extra: 1 },
   // Default implícito (si el club no aparece acá): { goles_mod: 0, concedidos_mod: 0, presion_extra: 1 }
+};
+
+// Jerarquía de poder real por club (los 19 rivales de CLUBES_RIVALES).
+// grande = pelea el título, medio = pelea la mitad de la tabla, bajo = candidato al descenso.
+// Si un club no aparece acá (p. ej. un club creado en otra liga) cae a TIER_LIGA_DEFAULT.
+export const TIER_LIGA = {
+  // Premier League — Top 6
+  'Manchester City': 'grande', 'Arsenal': 'grande', 'Liverpool': 'grande',
+  'Chelsea': 'grande', 'Manchester United': 'grande', 'Tottenham': 'grande',
+  // Media tabla
+  'Aston Villa': 'medio', 'Newcastle': 'medio', 'West Ham': 'medio',
+  'Brighton': 'medio', 'Everton': 'medio', 'Crystal Palace': 'medio',
+  'Fulham': 'medio', 'Wolverhampton': 'medio', 'Nottingham Forest': 'medio',
+  // Candidatos al descenso
+  'Burnley': 'bajo', 'Sheffield United': 'bajo', 'Luton Town': 'bajo',
+  'Brentford': 'bajo',
+};
+export const TIER_LIGA_DEFAULT = 'medio';
+
+// Banda de fuerza por tier: desvío sobre la media de ESCALADA_LIGA.
+// ±7 con sd 2 deja las bandas SEPARADAS (sin solape realista): un club medio o
+// bajo no puede generar fuerza de campeonato en un full season (medido: 0-0.5%
+// de temporadas ganadas por un medio, 0% por un bajo) y un grande nunca cae
+// tan bajo como para pelear el descenso. Antes todos los rivales sacaban de la
+// misma gauss(media, 5.5) y clubs de mitad/baja tabla ganaban la liga ~68% de
+// las sims.
+export const FUERZA_POR_TIER = {
+  grande: { off: +7, sd: 2 },
+  medio:  { off: 0, sd: 2 },
+  bajo:   { off: -7, sd: 2 },
 };

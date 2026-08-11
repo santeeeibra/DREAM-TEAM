@@ -10,6 +10,40 @@ export const MAX_CANDIDATOS = 6;
 // por temporada. `historial` es la lista { id, temporada } de eventos narrados.
 export const BAJA_MAX_POR_TEMPORADA = 3;
 
+// Ventana de rotación de figuras: un jugador no vuelve a ser el objetivo de un
+// evento visible hasta que pasaron ROTACION_VENTANA eventos visibles por el medio.
+export const ROTACION_VENTANA = 6;
+
+/**
+ * Últimos ids de figura nombrados en eventos VISIBLES (individuales y graves).
+ * Es la memoria de rotación y vive en historialEventos (persistido en la DB),
+ * así que tras un save/load es idéntica → los sorteos siguen siendo
+ * deterministas con el rng de la carrera. Los eventos viejos (sin key `figura`)
+ * se ignoran: retrocompatible.
+ */
+export function figurasRecientes(historial) {
+  return historial
+    .filter((h) => h.figura != null)
+    .slice(-ROTACION_VENTANA)
+    .map((h) => h.figura);
+}
+
+/**
+ * Sortea una figura evitando las recientes (rotación entre decisiones) y la del
+ * candidato anterior (adyacencia dentro del mismo lote). Gasta EXACTAMENTE un
+ * draw de rng: cambia el tamaño del pool, nunca la cantidad de draws. Si las
+ * exclusiones vacían el pool (plantel chico), cae al sorteo uniforme.
+ */
+export function figuraConRotacion(rng, plantel, recientes = [], evitarId = null) {
+  if (!plantel.length) return null;
+  const excluidos = new Set(recientes);
+  if (evitarId != null) excluidos.add(evitarId);
+  let pool = plantel.filter((x) => !excluidos.has(x.id));
+  if (!pool.length) pool = plantel.filter((x) => x.id !== evitarId);
+  if (!pool.length) pool = plantel;
+  return pool[Math.floor(rng.next() * pool.length)];
+}
+
 function usadoAlgunaVez(historial, id) {
   return historial.some((h) => h.id === id);
 }
@@ -48,27 +82,48 @@ export function candidatosEvento(rng, ctx, historial = []) {
   const n = Math.min(MAX_CANDIDATOS, Math.max(MIN_CANDIDATOS, 5), elegibles.length);
   const out = [];
   const pool = elegibles.slice();
+  let lastFiguraId = null;
   while (out.length < n && pool.length) {
     const elegido = rng.weighted(pool);
-    out.push(elegido);
+    // Cada candidato lleva su propia figura: sorteo uniforme del plantel completo,
+    // sin repetir la del candidato anterior. Se clona con spread para no mutar el
+    // catálogo compartido (los candidatos siguen siendo objetos del CATALOGO + figura).
+    const figura = figuraParaCandidato(rng, elegido, ctx, lastFiguraId);
+    out.push({ ...elegido, figura });
+    lastFiguraId = figura?.id ?? null;
     pool.splice(pool.indexOf(elegido), 1);
   }
   return out;
 }
 
+/**
+ * Figura de un candidato: sorteo con rotación sobre el PLANTEL COMPLETO
+ * (no solo el once). Evita las figuras recientes (figurasRecientes → la memoria
+ * visible individual/grave de la carrera) y no repite la del candidato anterior
+ * del lote (lastFiguraId). Los eventos con tag 'dt' (historias del DT) no
+ * llevan figura: devuelve null.
+ */
+function figuraParaCandidato(rng, e, ctx, lastFiguraId) {
+  if (e.tags?.includes('dt')) return null;
+  return figuraConRotacion(rng, ctx.plantel || [], ctx.figurasRecientes || [], lastFiguraId);
+}
+
 /** Fallback silencioso hacia el jugador: sorteo ponderado + texto fijo del catálogo. */
 export function elegirPorSorteo(rng, candidatos, ctx = {}) {
   const p = rng.weighted(candidatos);
-  return narracionDeRespaldo(p.id, ctx);
+  return narracionDeRespaldo(p, ctx);
 }
 
-function narracionDeRespaldo(id, ctx = {}) {
-  const p = paquete(id);
+function narracionDeRespaldo(candidato, ctx = {}) {
+  const p = paquete(candidato.id);
+  // La figura del candidato elegido manda. Si el candidato no trae figura (tag 'dt'
+  // o plantel vacío), cae a la del contexto — comportamiento histórico de los graves.
+  const ctxFigura = { ...ctx, figura: candidato.figura || ctx.figura };
   return {
     paqueteId: p.id,
-    titulo: interpolar(p.titulo, ctx),
-    texto: interpolar(p.texto, ctx),
-    opciones: p.opciones.map((o) => ({ id: o.id, label: interpolar(o.label, ctx) })),
+    titulo: interpolar(p.titulo, ctxFigura),
+    texto: interpolar(p.texto, ctxFigura),
+    opciones: p.opciones.map((o) => ({ id: o.id, label: interpolar(o.label, ctxFigura) })),
     fuente: 'catalogo',
   };
 }

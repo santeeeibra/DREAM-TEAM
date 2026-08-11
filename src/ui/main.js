@@ -6,6 +6,7 @@ import {
   paquete, valorDeVenta, CARRERA, LIGA, RANGOS,
 } from '../engine/index.js';
 import { CLUBES_JUGABLES } from '../data/nombres.js';
+import { escudoDeNombre } from '../data/escudoteca.js';
 import { pedirNarracion } from '../net/evento.js';
 import { generateClubBadgeDataURI } from '../utils/badgeGenerator.js';
 
@@ -66,48 +67,26 @@ const LIGAS = [
   { id: 'laliga', label: 'LaLiga', logo: 'https://media.api-sports.io/football/leagues/140.png' },
 ];
 
-// Escudo del club: sale de la fila de `clubs` si trae columna de escudo
-// (badge_url / club_badge_url / badge). Si no viene o el CDN falla, cae al
-// escudo generado por nombre (badgeGenerator.js) — el escudo SIEMPRE se ve,
-// nunca queda un hueco vacío.
+// Escudo del club: badge real de la fila de `clubs` (badge_url /
+// club_badge_url / badge) → si no viene, la teca local por nombre
+// (data/escudoteca.js: Paladar Negro + api-sports) → si tampoco, SVG
+// generado por nombre (badgeGenerator.js). El escudo SIEMPRE se ve.
 const escudoDe = (cl) => {
   const badge = cl.badge_url || cl.club_badge_url || cl.badge || '';
+  const src = badge || escudoDeNombre(cl.name) || '';
   const fallback = generateClubBadgeDataURI(cl.name);
-  return badge
-    ? `<img class="escudo" src="${esc(badge)}" alt="" referrerpolicy="no-referrer" onerror="this.src='${fallback}'" />`
+  return src
+    ? `<img class="escudo" src="${esc(src)}" alt="" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='${fallback}'" />`
     : `<img class="escudo" src="${fallback}" alt="" />`;
 };
 
-// Escudos de los 19 rivales de la liga (la fila `clubs` del DT no los cubre).
-// Fuente: Escudoteca Paladar Negro, PNGs hotlinkeables. Si la URL falla o el
-// club no está (Luton Town), el onerror cae al SVG generado por nombre
-// (badgeGenerator.js) — mismo patrón de fallback que las fotos de carta.
-const ESCUDOS_RIVALES = {
-  'Manchester City': 'https://paladarnegro.net/escudoteca/inglaterra/premier/png/manchestercity.png',
-  'Arsenal': 'https://paladarnegro.net/escudoteca/inglaterra/premier/png/arsenal.png',
-  'Liverpool': 'https://paladarnegro.net/escudoteca/inglaterra/premier/png/liverpool.png',
-  'Chelsea': 'https://paladarnegro.net/escudoteca/inglaterra/premier/png/chelsea.png',
-  'Manchester United': 'https://paladarnegro.net/escudoteca/inglaterra/premier/png/manchesterunited.png',
-  'Tottenham': 'https://paladarnegro.net/escudoteca/inglaterra/premier/png/tottenham.png',
-  'Aston Villa': 'https://paladarnegro.net/escudoteca/inglaterra/premier/png/astonvilla.png',
-  'Newcastle': 'https://paladarnegro.net/escudoteca/inglaterra/premier/png/newcastle.png',
-  'West Ham': 'https://paladarnegro.net/escudoteca/inglaterra/premier/png/westham.png',
-  'Brighton': 'https://paladarnegro.net/escudoteca/inglaterra/premier/png/brighton.png',
-  'Burnley': 'https://paladarnegro.net/escudoteca/inglaterra/premier/png/burnley.png',
-  'Sheffield United': 'https://paladarnegro.net/escudoteca/inglaterra/championship/png/sheffield.png',
-  'Luton Town': '',
-  'Brentford': 'https://paladarnegro.net/escudoteca/inglaterra/premier/png/brentford.png',
-  'Everton': 'https://paladarnegro.net/escudoteca/inglaterra/premier/png/everton.png',
-  'Crystal Palace': 'https://paladarnegro.net/escudoteca/inglaterra/premier/png/crystalpalace.png',
-  'Fulham': 'https://paladarnegro.net/escudoteca/inglaterra/premier/png/fulham.png',
-  'Wolverhampton': 'https://paladarnegro.net/escudoteca/inglaterra/premier/png/wolves.png',
-  'Nottingham Forest': 'https://paladarnegro.net/escudoteca/inglaterra/premier/png/nottingham_forest.png',
-};
+// Escudo de cualquier equipo de la liga (rivales y el propio cuando no hay
+// badge de Supabase): misma teca local y mismo fallback que escudoDe.
 const escudoRival = (nombre) => {
-  const url = ESCUDOS_RIVALES[nombre] || '';
+  const src = escudoDeNombre(nombre) || '';
   const fallback = generateClubBadgeDataURI(nombre);
-  return url
-    ? `<img class="escudo" src="${esc(url)}" alt="" referrerpolicy="no-referrer" onerror="this.src='${fallback}'" />`
+  return src
+    ? `<img class="escudo" src="${esc(src)}" alt="" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='${fallback}'" />`
     : `<img class="escudo" src="${fallback}" alt="" />`;
 };
 
@@ -719,6 +698,8 @@ const acciones = {
       clubes.forEach(cl => {
         const badge = cl.badge_url || cl.club_badge_url || cl.badge;
         if (badge) { const img = new Image(); img.src = badge; }
+        const teca = escudoDeNombre(cl.name);
+        if (teca) { const img = new Image(); img.src = teca; }
       });
       ob.clubes = clubes;
       ob.clubId = clubes[0]?.id || '';
