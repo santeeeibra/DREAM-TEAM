@@ -1,7 +1,7 @@
 // PURA. Orquestador del loop completo. Es la única memoria entre tramos.
 // Máquina de fases: sobres → armar11 → tramo → evento → (…) → resumen → refuerzo → … → fin
 import { createRng } from './rng.js';
-import { CARRERA, TRAMO, TEMPORADA, LIGA, FUERZA_POR_TIER, TIER_LIGA, TIER_LIGA_DEFAULT, DESPIDO, MODO, MODO_JUEGO, BUDGET, DIFICULTAD, PRESION_DIFICIL, EPICAS_DIFICIL, PRESION_INICIAL_TIER, PRESION_INICIAL_DIFICIL_DEFAULT } from './balance.js';
+import { CARRERA, TRAMO, TEMPORADA, LIGA, FUERZA_POR_TIER, TIER_LIGA, TIER_LIGA_DEFAULT, DESPIDO, MODO, MODO_JUEGO, BUDGET, DIFICULTAD, PRESION_DIFICIL, EPICAS_DIFICIL, PRESION_INICIAL_TIER, PRESION_INICIAL_DIFICIL_DEFAULT, ROTACION_PLANTEL } from './balance.js';
 import { createEstado, aplicarEfectos, resetRatingDelta } from './state.js';
 import { crearLiga, simularTramo, miPosicion, posiciones, fuerzaDeEquipo, getEstiloRival } from './liga.js';
 import { ratingOnce, autoOnce, onceCompleto } from './once.js';
@@ -510,6 +510,46 @@ export function aplicarRefuerzo(c, idsEntran = [], idsSalen = []) {
   c.fase = FASES.ONCE;
   
   return c;
+}
+
+/** Calcula qué jugadores del plantel reciben oferta del exterior. Llama antes de abrir el sobre. */
+export function calcularOfertasPlantel(c) {
+  const { PROB_OFERTA_JUGADOR_GRANDE, PROB_OFERTA_JUGADOR_MEDIO, MAX_SALIDAS_POR_TEMPORADA, MONEY_VENTA_BASE, MONEY_VENTA_POR_OVR } = ROTACION_PLANTEL;
+  const conOferta = c.plantel
+    .filter(j => {
+      const esGrande = j.rating >= 82 && j.edad >= 28;
+      const esMedio  = j.rating >= 74 && j.rating < 82;
+      const prob = esGrande ? PROB_OFERTA_JUGADOR_GRANDE : esMedio ? PROB_OFERTA_JUGADOR_MEDIO : 0;
+      return c.rng.next() < prob;
+    })
+    .slice(0, MAX_SALIDAS_POR_TEMPORADA)
+    .map(j => ({ ...j, moneyOferta: Math.round(MONEY_VENTA_BASE + MONEY_VENTA_POR_OVR * Math.max(0, j.rating - 74)) }));
+  c.jugadoresConOferta = conOferta.length ? conOferta : null;
+  c.sobreExtraRotacion = 0;
+}
+
+/** Resuelve una oferta de venta o rechazo para un jugador con oferta del exterior. */
+export function resolverOferta(c, id, vender) {
+  const j = (c.jugadoresConOferta || []).find(x => x.id === id);
+  if (!j) return;
+  c.jugadoresConOferta = c.jugadoresConOferta.filter(x => x.id !== id);
+  if (vender) {
+    c.plantel = c.plantel.filter(x => x.id !== id);
+    const r = aplicarEfectos(c.estado, { money: j.moneyOferta }, 'venta-rotacion', c.historial);
+    c.estado = r.estado;
+    c.sobreExtraRotacion = (c.sobreExtraRotacion || 0) + 1;
+  } else {
+    const r = aplicarEfectos(c.estado, { moral: 5 }, 'rechazo-oferta', c.historial);
+    c.estado = r.estado;
+  }
+}
+
+/** Genera N cartas extra de refuerzo (local, sin Supabase) para compensar ventas de rotación. */
+export function cartasExtraRefuerzo(c, n) {
+  const pos = c.ultimaTemporada?.posicion ?? 10;
+  const extra = [];
+  for (let i = 0; i < n; i++) extra.push(...cargarCartasDB(sobreRefuerzo(c.rng, pos)));
+  return extra;
 }
 
 function terminarCarrera(c, motivo) {

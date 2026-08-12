@@ -2,7 +2,7 @@
 import {
   iniciarCarrera, confirmarOnce, jugarTramo, candidatosDelTramo, fijarNarracion,
   resolverEvento, abrirRefuerzo, registrarRefuerzo, aplicarRefuerzo, resumenCarrera, ratingActual,
-  elegirReemplazoLesion,
+  elegirReemplazoLesion, calcularOfertasPlantel, resolverOferta, cartasExtraRefuerzo,
   contexto, FASES, autoOnce, FORMACION, ratingEnSlot, penalidad, slotsVacios, posiciones, miPosicion,
   paquete, valorDeVenta, CARRERA, LIGA, RANGOS, FUERZA,
 } from '../engine/index.js';
@@ -800,6 +800,34 @@ const PANTALLAS = {
     </div>`;
   },
 
+  ofertas: () => {
+    const ofertas = c.jugadoresConOferta || [];
+    return `<div class="stack${tsEntra ? ' ts-anim' : ''}">
+      ${marcador()}
+      <div class="panel stack">
+        <div class="eyebrow">Mercado de pases — entre temporadas</div>
+        <h2>Ofertas del exterior</h2>
+        <p class="hint">Estos jugadores recibieron propuestas. Decidí si los vendés o los retenés.</p>
+        ${ofertas.map(j => `
+          <div class="panel stack" style="gap:0.5rem">
+            <div style="display:flex;align-items:center;gap:0.75rem">
+              ${carta(j, {})}
+              <div class="stack" style="gap:0.25rem;flex:1">
+                <div><strong>${esc(j.nombre)}</strong> · ${j.pos} · OVR ${j.rating} · ${j.edad} años</div>
+                <div class="hint">Oferta: <strong>${fmtMoney(j.moneyOferta)}</strong> + 1 carta de refuerzo extra</div>
+              </div>
+            </div>
+            <div class="row">
+              <button class="btn btn-secondary" data-accion="rechazar-oferta" data-id="${j.id}">Rechazar — moral del plantel +5</button>
+              <button class="btn" data-accion="vender-oferta" data-id="${j.id}">Vender — +${fmtMoney(j.moneyOferta)}</button>
+            </div>
+          </div>`).join('')}
+        <div class="sep"></div>
+        <div class="row"><button class="btn btn-secondary" data-accion="confirmar-ofertas">Continuar al sobre de refuerzo</button></div>
+      </div>
+    </div>`;
+  },
+
   refuerzo: () => {
     const entran = c.refuerzo.filter((x) => ui.sel.has(x.id));
     const exceso = Math.max(0, c.plantel.length + entran.length - CARRERA.PLANTEL_MAX);
@@ -1097,11 +1125,23 @@ const acciones = {
     ui.vista = c.fase === FASES.FIN ? 'fin' : c.fase === FASES.LESION ? 'lesion' : c.fase === FASES.RESUMEN ? 'resumen' : 'previa';
   },
   async 'abrir-refuerzo'() {
+    calcularOfertasPlantel(c);
+    if (c.jugadoresConOferta?.length) {
+      ui.vista = 'ofertas';
+      return;
+    }
+    await ACCIONES['confirmar-ofertas']();
+  },
+  'vender-oferta'(el) {
+    resolverOferta(c, el.dataset.id, true);
+    if (!c.jugadoresConOferta?.length) return; // quedan más — re-render automático
+  },
+  'rechazar-oferta'(el) {
+    resolverOferta(c, el.dataset.id, false);
+  },
+  async 'confirmar-ofertas'() {
     // Capa exterior: pedimos el sobre a Supabase. Si falla (devuelve null),
     // el motor genera el sobre local síncrono — la carrera nunca se traba.
-    // Import dinámico: el cliente Supabase (y su dependencia del paquete npm)
-    // no se carga al arrancar el juego, y si no se puede resolver, el fallback
-    // local del motor igual funciona.
     const { fetchAbrirSobre } = await import('../net/supabaseClient.js');
     const managerId = localStorage.getItem('manager_id');
     const cartasDB = managerId
@@ -1109,6 +1149,11 @@ const acciones = {
       : null;
     if (cartasDB) registrarRefuerzo(c, cartasDB);
     else abrirRefuerzo(c);
+    if (c.sobreExtraRotacion > 0) {
+      const extra = cartasExtraRefuerzo(c, c.sobreExtraRotacion);
+      c.refuerzo = [...(c.refuerzo || []), ...extra];
+      c.sobreExtraRotacion = 0;
+    }
     ui.sel = new Set(); ui.salen = new Set(); ui.vista = 'refuerzo';
   },
   'sel-refuerzo'(el) { const id = el.dataset.id; ui.sel.has(id) ? ui.sel.delete(id) : ui.sel.add(id); },

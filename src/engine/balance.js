@@ -1,6 +1,6 @@
 // PURA. Único lugar donde viven los números de balance.
 // Versionado: si cambiás algo acá, subí BALANCE_VERSION y volvé a correr el harness.
-export const BALANCE_VERSION = '1.7.0';
+export const BALANCE_VERSION = '1.8.0';
 
 export const LIGA = {
   EQUIPOS: 20,
@@ -74,6 +74,14 @@ export const TEMPORADA = {
 };
 
 export const DESPIDO = { PRESION: 80 };
+
+export const ROTACION_PLANTEL = {
+  PROB_OFERTA_JUGADOR_GRANDE: 0.60,  // OVR >= 82 + edad >= 28 → 60% de recibir oferta
+  PROB_OFERTA_JUGADOR_MEDIO:  0.25,  // OVR 74-81 → 25%
+  MAX_SALIDAS_POR_TEMPORADA:  2,
+  MONEY_VENTA_BASE:           8,     // dinero base que entra al vender
+  MONEY_VENTA_POR_OVR:        0.3,   // extra por cada punto de OVR sobre 74
+};
 
 // Rarezas de cartas. Los rangos de rating son el shape REAL (no hay mocks paralelos).
 // La liga se refuerza a medida que avanzás: sin esto, la carrera se vuelve un paseo.
