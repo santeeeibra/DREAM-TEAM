@@ -2,6 +2,7 @@
 import {
   iniciarCarrera, confirmarOnce, jugarTramo, candidatosDelTramo, fijarNarracion,
   resolverEvento, abrirRefuerzo, registrarRefuerzo, aplicarRefuerzo, resumenCarrera, ratingActual,
+  elegirReemplazoLesion,
   contexto, FASES, autoOnce, FORMACION, ratingEnSlot, penalidad, slotsVacios, posiciones, miPosicion,
   paquete, valorDeVenta, CARRERA, LIGA, RANGOS, FUERZA,
 } from '../engine/index.js';
@@ -758,6 +759,32 @@ const PANTALLAS = {
     </div>`;
   },
 
+  lesion: () => {
+    const porId = new Map(c.plantel.map((x) => [x.id, x]));
+    const lesionado = porId.get(c.lesionadoId);
+    const onceSet = new Set(c.once);
+    const suplentes = c.plantel.filter((j) => !onceSet.has(j.id));
+    return `<div class="stack${tsEntra ? ' ts-anim' : ''}">
+      ${marcador()}
+      <div class="panel stack" style="border-color:rgba(255,91,30,.35)">
+        <div class="eyebrow" style="color:#ff5b1e">⚠️ Baja obligatoria — Temporada ${c.temporada}</div>
+        <h2>🚑 Lesión de 3 semanas</h2>
+        ${lesionado ? `<p><strong>${esc(lesionado.nombre)}</strong> (${esc(lesionado.pos)} · ${lesionado.rating}) estará fuera el próximo tramo.</p>` : ''}
+        ${suplentes.length === 0
+          ? `<p class="hint">No hay suplentes disponibles. El equipo juega con el plantel corto.</p>
+             <p style="color:#ff5b1e">−2 ratingDelta automático.</p>
+             <button class="btn" data-accion="elegir-reemplazo" data-id="">Continuar</button>`
+          : `<p class="hint">Elegí quién entra al once en su lugar:</p>
+             <div class="stack">${suplentes.map((j) => `
+               <button class="opcion-main" data-accion="elegir-reemplazo" data-id="${j.id}">
+                 <span>${esc(j.nombre)}</span>
+                 <span class="muted">${esc(j.pos)} · ${j.rating}</span>
+               </button>`).join('')}
+             </div>`}
+      </div>
+    </div>`;
+  },
+
   resumen: () => {
     const t = c.ultimaTemporada;
     return `<div class="stack${tsEntra ? ' ts-anim' : ''}">
@@ -1067,7 +1094,7 @@ const acciones = {
   elegir(el) {
     const { deltas } = resolverEvento(c, el.dataset.op);
     ui.deltas = deltas;
-    ui.vista = c.fase === FASES.FIN ? 'fin' : c.fase === FASES.RESUMEN ? 'resumen' : 'previa';
+    ui.vista = c.fase === FASES.FIN ? 'fin' : c.fase === FASES.LESION ? 'lesion' : c.fase === FASES.RESUMEN ? 'resumen' : 'previa';
   },
   async 'abrir-refuerzo'() {
     // Capa exterior: pedimos el sobre a Supabase. Si falla (devuelve null),
@@ -1089,6 +1116,11 @@ const acciones = {
   'confirmar-refuerzo'() {
     aplicarRefuerzo(c, [...ui.sel], [...ui.salen]);
     ui.vista = 'once'; ui.slot = null;
+  },
+  'elegir-reemplazo'(el) {
+    const { deltas } = elegirReemplazoLesion(c, el.dataset.id || null);
+    ui.deltas = deltas;
+    ui.vista = 'previa';
   },
   tabla() { ui.tabla = !ui.tabla; },
   reiniciar() {

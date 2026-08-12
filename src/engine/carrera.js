@@ -7,13 +7,13 @@ import { crearLiga, simularTramo, miPosicion, posiciones, fuerzaDeEquipo, getEst
 import { ratingOnce, autoOnce, onceCompleto } from './once.js';
 import { sobresIniciales, sobreRefuerzo } from './sobresLocal.js';
 import { cargarCartasDB, envejecerPlantel, valorDeVenta } from './cartas.js';
-import { candidatosEvento, efectosDeOpcion, elegirPorSorteo, figuraConRotacion, figurasRecientes } from './candidatosEvento.js';
+import { candidatosEvento, efectosDeOpcion, elegirPorSorteo, figuraConRotacion, figurasRecientes, jugadorAleatorioDelOnce } from './candidatosEvento.js';
 import { paquete, CATALOGO_GRAVES } from './catalogoEventos.js';
 import { getClubById, findClubIdByName, getLeagueByClubName } from '../data/leagues.js';
 
 export const FASES = {
   SOBRES: 'sobres', ONCE: 'once', TRAMO: 'tramo', EVENTO: 'evento',
-  RESUMEN: 'resumen', REFUERZO: 'refuerzo', FIN: 'fin',
+  LESION: 'lesion', RESUMEN: 'resumen', REFUERZO: 'refuerzo', FIN: 'fin',
 };
 
 const limitesTramo = (() => {
@@ -293,11 +293,18 @@ export function candidatosDelTramo(c) {
       // a la misma estrella (ctx.figura). Rotación sobre el XI: el objetivo se
       // sortea evitando las últimas figuras nombradas, así la baja no recae
       // siempre en el mismo jugador. Ver figuraConRotacion + figurasRecientes.
+      // EXCEPCIÓN: lesion_figura_prePartido usa sorteo UNIFORME sobre el XI (sin rotación),
+      // y solo dispara si fatiga >= 65 (ver filtro en catalogoEventos.js).
       let candidatoGrave = graveEvento;
       if (graveEvento.tags?.includes('individual')) {
         const porId = new Map(c.plantel.map((x) => [x.id, x]));
         const onceCards = c.once.map((id) => porId.get(id)).filter(Boolean);
-        const objetivo = figuraConRotacion(c.rng, onceCards, figurasRecientes(c.historialEventos));
+        let objetivo;
+        if (graveEvento.id === 'lesion_figura_prePartido') {
+          objetivo = jugadorAleatorioDelOnce(c.rng, onceCards);
+        } else {
+          objetivo = figuraConRotacion(c.rng, onceCards, figurasRecientes(c.historialEventos));
+        }
         candidatoGrave = { ...graveEvento, figura: objetivo };
       }
       // Narración fijada desde el catálogo — no pasa por IA
@@ -350,6 +357,16 @@ export function resolverEvento(c, opcionId) {
     ? (elegido.figura?.id ?? null)
     : null;
   c.historialEventos.push({ id: n.paqueteId, temporada: c.temporada, figura: figuraDelEventoResuelto });
+
+  // Si el evento grave requiere reemplazo (lesion_figura_prePartido), ir a fase LESION
+  const paqueteEvento = paquete(n.paqueteId);
+  if (paqueteEvento.requiereReemplazo && elegido?.figura?.id) {
+    c.lesionadoId = elegido.figura.id;
+    c.eventoActual = null;
+    c.fase = FASES.LESION;
+    return { carrera: c, deltas: r.deltas };
+  }
+
   c.eventoActual = null;
 
   if (c.estado.presion >= DESPIDO.PRESION) return { carrera: terminarCarrera(c, 'despedido'), deltas: r.deltas };
@@ -358,6 +375,44 @@ export function resolverEvento(c, opcionId) {
   if (c.tramo >= LIGA.TRAMOS.length) cerrarTemporada(c);
   else c.fase = FASES.TRAMO;
   return { carrera: c, deltas: r.deltas };
+}
+
+/**
+ * Elige el reemplazo para un lesionado (fase LESION).
+ * reemplazoId: id de la carta del banco que entra al 11.
+ * Si no hay suplente (reemplazoId null/undefined o no válido), aplica ratingDelta -= 2.
+ */
+export function elegirReemplazoLesion(c, reemplazoId) {
+  const lesionadoId = c.lesionadoId;
+  if (!lesionadoId) {
+    c.fase = FASES.TRAMO;
+    return { carrera: c, deltas: {} };
+  }
+
+  const porId = new Map(c.plantel.map((x) => [x.id, x]));
+  const lesionado = porId.get(lesionadoId);
+  const onceSet = new Set(c.once);
+
+  // Buscar suplentes válidos (plantel - titulares)
+  const suplentes = c.plantel.filter((j) => !onceSet.has(j.id));
+
+  let deltas = {};
+  if (reemplazoId && suplentes.some((s) => s.id === reemplazoId)) {
+    // Hacer el swap en el 11
+    const idx = c.once.indexOf(lesionadoId);
+    if (idx >= 0) {
+      c.once[idx] = reemplazoId;
+    }
+  } else {
+    // No hay suplente disponible o no se eligió uno válido: penalidad automática
+    const r = aplicarEfectos(c.estado, { ratingDelta: -2 }, 'lesion-sin-suplente', c.historial);
+    c.estado = r.estado;
+    deltas = r.deltas;
+  }
+
+  c.lesionadoId = null;
+  c.fase = FASES.TRAMO;
+  return { carrera: c, deltas };
 }
 
 function cerrarTemporada(c) {

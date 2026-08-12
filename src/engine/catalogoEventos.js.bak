@@ -603,24 +603,13 @@ export const CATALOGO = [
   // Eventos forzados sin elección A/B: el DT solo puede confirmar.
   // No pasan por IA ni por sorteo con candidatos — el motor los fija directo.
   // Los efectos son fijos (no se escalan por PRESION_DIFICIL).
-  p('lesion_grave', {
-    tags: ['individual'],
-    grave: true,
-    requiereReemplazo: true,
-    intensidad: INTENSIDAD.MEDIA,
-    filtro: () => true,
-    titulo: 'Lesión de 3 semanas',
-    texto: 'El cuerpo médico confirmó lo peor: entre 3 y 4 semanas fuera. Es una baja segura para el próximo tramo y no hay forma de acelerarlo. Tenés que reorganizar el once.',
-    opciones: [{ id: 'continuar', label: 'Reorganizar el once', efectos: { moral: -4, fatiga: 2 } }],
-  }),
   p('lesion_figura_prePartido', {
     tags: ['individual'],
     grave: true,
-    requiereReemplazo: true,
     intensidad: INTENSIDAD.MEDIA,
-    filtro: (c) => c.fatiga >= 65,
+    filtro: (c) => !!c.figura,
     titulo: 'Baja de último momento',
-    texto: 'Un titular se resintió de una sobrecarga muscular en el entrenamiento de la mañana. El cuerpo médico lo descartó para el próximo partido. No hay vuelta atrás: tenés que cubrir la baja.',
+    texto: '{figura} se resintió de una sobrecarga muscular en el entrenamiento de la mañana. El cuerpo médico lo descartó para el próximo partido. No hay vuelta atrás.',
     opciones: [{ id: 'continuar', label: 'Continuar', efectos: { moral: -30 } }],
   }),
   p('suspension_figura_prePartido', {
@@ -661,5 +650,3 @@ export function paquete(id) {
   if (!p) throw new Error(`Paquete de evento "${id}" no existe en el catálogo`);
   return p;
 }
-
-

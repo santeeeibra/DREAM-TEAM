@@ -165,13 +165,3 @@ function sortearRama(rng, ramas, paqueteId, opcionId) {
   }
   return ramas[ramas.length - 1];
 }
-
-
-/**
- * Selecciona un titular aleatorio con peso uniforme (sin rotación de figura).
- * Usado para lesion_figura_prePartido cuando fatiga >= 65.
- */
-export function jugadorAleatorioDelOnce(rng, onceCards) {
-  if (!onceCards.length) return null;
-  return onceCards[Math.floor(rng.next() * onceCards.length)];
-}
