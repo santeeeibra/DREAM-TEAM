@@ -124,6 +124,19 @@ async function saveSquad(managerId, cards) {
 // Modo Draft Puro: devuelve `slots` grupos de `opcionesPorSlot` cartas cada uno
 // para que el usuario elija 1 por grupo. NO guarda nada en user_cards — eso
 // lo hace saveDraftChoices() cuando el usuario termina de elegir.
+// Normaliza columnas DB al shape del motor/UI (mismo mapeo que cargarCartasDB en cartas.js).
+function normalizarParaUI(c) {
+  return {
+    ...c,
+    rating:      c.overall_rating ?? c.rating ?? 0,
+    nombre:      c.name ?? c.nombre ?? '',
+    pos:         c.position ?? c.pos ?? '',
+    foto:        c.photo_url ?? c.foto ?? null,
+    rareza:      c.rarity ?? c.rareza ?? 'bronce',
+    ultimoDelta: 0,
+  };
+}
+
 export async function openDraftPool(managerId, leagueId = null, slots = 15, opcionesPorSlot = 4) {
   const [pool, idsUsados] = await Promise.all([fetchCardPool(leagueId), fetchOwnedCardIds(managerId)]);
   const disponibles = pool.filter((c) => !idsUsados.has(c.id));
@@ -135,7 +148,7 @@ export async function openDraftPool(managerId, leagueId = null, slots = 15, opci
   const grupos = [];
   for (let i = 0; i < slots; i++) {
     const opciones = disponibles.slice(i * opcionesPorSlot, (i + 1) * opcionesPorSlot);
-    if (opciones.length >= opcionesPorSlot) grupos.push(opciones);
+    if (opciones.length >= opcionesPorSlot) grupos.push(opciones.map(normalizarParaUI));
   }
   return grupos;
 }

@@ -18,7 +18,8 @@ let c = null;
 let ui = {
   vista: 'intro', vistaAnterior: 'intro', slot: null, sobresAbiertos: [], deltas: null, tabla: false,
   sel: new Set(), salen: new Set(), fuenteIA: null, cargando: false, detalleAbierto: new Set(), miEscudo: '',
-  onboarding: { liga: null, clubes: [], clubId: '', nombre: '', pais: '', cargando: false, error: null, enviando: false, abierto: null, modo: 'facil' },
+  onboarding: { liga: null, clubes: [], clubId: '', nombre: '', pais: '', cargando: false, error: null, enviando: false, abierto: null, modo: 'facil', modoJuego: 'liga' },
+  draftPuro: null,
 };
 // La entrada animada del onboarding corre UNA vez por carga de página: cada
 // acción (p. ej. abrir un dropdown) re-renderiza el DOM completo y no queremos
@@ -62,6 +63,25 @@ const PAISES = [
   ['Croacia', 'hr'], ['Japón', 'jp'], ['Nigeria', 'ng'], ['Marruecos', 'ma'],
 ];
 const BANDERAS = new Map(PAISES);
+
+// Modo País: país del DT → league_id para filtrar pool de cartas.
+const PAIS_A_LIGA = new Map([
+  ['Argentina',      'ligapro'],
+  ['España',         'laliga'],
+  ['Italia',         'seriea'],
+  ['Alemania',       'bundesliga'],
+  ['Francia',        'ligue1'],
+  ['Inglaterra',     'premier'],
+  ['Estados Unidos', 'mls'],
+]);
+
+const MODOS_JUEGO_UI = [
+  { id: 'liga',   ico: '⚽', nombre: 'Liga',   desc: 'Solo cartas de tu liga' },
+  { id: 'global', ico: '🌍', nombre: 'Global', desc: 'Todas las ligas' },
+  { id: 'budget', ico: '💸', nombre: 'Budget', desc: '$4M para arrancar' },
+  { id: 'draft',  ico: '🎲', nombre: 'Draft',  desc: 'Elegís 1 de 4 por carta' },
+  { id: 'pais',   ico: '🏴', nombre: 'País',   desc: 'Cartas de tu país' },
+];
 const banderaImg = (nombre) => {
   const code = BANDERAS.get(nombre);
   return code
@@ -434,6 +454,23 @@ const PANTALLAS = {
               ${ob.clubes.map((cl) => `<li role="option" data-accion="ob-club" data-id="${esc(cl.id)}" class="dd-item${ob.clubId === cl.id ? ' activo' : ''}">${escudoDe(cl)} ${esc(cl.name)}</li>`).join('')}
             </ul>` : ''}
           </div>
+          <label class="eyebrow">Modo de juego</label>
+          <div class="row" style="flex-wrap:wrap;gap:6px">
+            ${MODOS_JUEGO_UI.map((m) => `<button type="button" class="ob-liga${ob.modoJuego === m.id ? ' activo' : ''}" data-accion="ob-set-modo" data-modo="${m.id}" title="${m.desc}" style="flex-direction:column;align-items:center;gap:3px;padding:10px 14px;min-width:80px;font-size:13px"><span style="font-size:20px">${m.ico}</span><span>${m.nombre}</span></button>`).join('')}
+          </div>
+          <p class="hint">${(() => {
+            const paisLiga = PAIS_A_LIGA.get(ob.pais);
+            const ligaLabel = LIGAS.find((l) => l.id === paisLiga)?.label;
+            return ({
+              liga:   'Solo cartas de la liga elegida. El modo estándar.',
+              global: 'Pool completo: jugadores de todas las ligas.',
+              budget: 'Arrancás con $4M. Cada decisión económica duele.',
+              draft:  'Elegís 1 de 4 cartas por slot. Sin economía inicial.',
+              pais:   ob.pais
+                ? (paisLiga ? `Cartas de jugadores de ${ligaLabel || paisLiga}.` : `Pool global — ${ob.pais} no tiene liga mapeada.`)
+                : 'Elegí tu país para ver el pool disponible.',
+            })[ob.modoJuego] || '';
+          })()}</p>
           <label class="eyebrow">Dificultad</label>
           <div class="ob-seg" role="group" aria-label="Dificultad">
             <button type="button" class="ob-seg-btn${ob.modo === 'facil' ? ' activo' : ''}" data-accion="ob-modo" data-modo="facil">Accesible</button>
@@ -458,7 +495,8 @@ const PANTALLAS = {
           <div class="ob-ficha-fila"><span class="ob-ficha-lbl">País</span><span class="ob-ficha-val">${ob.pais ? `${banderaImg(ob.pais)} ${esc(ob.pais)}` : '—'}</span></div>
           <div class="ob-ficha-fila"><span class="ob-ficha-lbl">Liga</span><span class="ob-ficha-val">${ligaSel ? `<img class="liga-logo" src="${ligaSel.logo}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()" />${esc(ligaSel.label)}` : '—'}</span></div>
           <div class="ob-ficha-fila"><span class="ob-ficha-lbl">Club</span><span class="ob-ficha-val">${clubSel ? `${escudoDe(clubSel)}${esc(clubSel.name)}` : '—'}</span></div>
-          <div class="ob-ficha-fila"><span class="ob-ficha-lbl">Modo</span><span class="ob-ficha-val">${ob.modo === 'dificil' ? 'Difícil' : 'Accesible'}</span></div>
+          <div class="ob-ficha-fila"><span class="ob-ficha-lbl">Modo</span><span class="ob-ficha-val">${MODOS_JUEGO_UI.find((m) => m.id === ob.modoJuego)?.ico || '⚽'} ${MODOS_JUEGO_UI.find((m) => m.id === ob.modoJuego)?.nombre || 'Liga'}</span></div>
+          <div class="ob-ficha-fila"><span class="ob-ficha-lbl">Dif.</span><span class="ob-ficha-val">${ob.modo === 'dificil' ? 'Difícil' : 'Accesible'}</span></div>
           <div class="ob-ficha-pie"><span class="ob-ficha-sobre">×3 sobres gratis</span></div>
         </aside>
       </div>
@@ -760,6 +798,31 @@ const PANTALLAS = {
       </div>
     </div>`;
   },
+
+  'draft-puro': () => {
+    const dp = ui.draftPuro;
+    if (!dp) return '<div class="stack"><p class="hint">Cargando draft…</p></div>';
+    const total = dp.grupos.length;
+    const pick = dp.pick;
+    const opciones = dp.grupos[pick] || [];
+    const posIcono = { POR: '🧤', DEF: '🛡️', MED: '⚙️', DEL: '⚡' };
+    return `<div class="stack">
+      <div class="eyebrow">Modo Draft · Carta ${pick + 1} de ${total}</div>
+      <h2>Elegí tu carta</h2>
+      <p class="hint">Quedan ${total - pick} elecciones. Cada carta que elegís va directo a tu plantel.</p>
+      <div class="grid-cartas" style="grid-template-columns:repeat(auto-fill,minmax(140px,1fr))">
+        ${opciones.map((x, i) => `
+          <div data-accion="draft-elegir" data-i="${i}" style="cursor:pointer;transition:transform .15s" onmouseenter="this.style.transform='translateY(-4px)'" onmouseleave="this.style.transform=''">
+            ${carta(x, { i })}
+          </div>`).join('')}
+      </div>
+      ${dp.elegidas.length > 0 ? `
+        <div class="sep"></div>
+        <div class="eyebrow">Ya elegidas (${dp.elegidas.length})</div>
+        <div class="grid-cartas" style="opacity:.7">${dp.elegidas.map((x) => carta(x)).join('')}</div>
+      ` : ''}
+    </div>`;
+  },
 };
 
 function render() {
@@ -821,7 +884,7 @@ const acciones = {
     }
     ob.enviando = true; ob.error = null; render();
     const { crearManager } = await import('../net/supabaseClient.js');
-    const managerId = await crearManager({ name: ob.nombre, country: ob.pais, league_id: ob.liga, club_id: ob.clubId, modo: ob.modo || 'facil' });
+    const managerId = await crearManager({ name: ob.nombre, country: ob.pais, league_id: ob.liga, club_id: ob.clubId, modo: ob.modo || 'facil', modo_juego: ob.modoJuego || 'liga' });
     if (!managerId) {
       ob.enviando = false;
       ob.error = 'No se pudo crear el perfil. Intentá de nuevo.';
@@ -834,15 +897,44 @@ const acciones = {
     // (openInitialPacks guarda el plantel en user_cards y devuelve los sobres
     // armados). Si la DB falla, el motor arma los sobres locales — la carrera
     // nunca se traba y el mock queda solo como fallback offline.
+    const modoJuego = ob.modoJuego || 'liga';
+    // Determinar el pool de cartas según el modo de juego
+    const leagueIdPool =
+      modoJuego === 'global' ? null
+      : modoJuego === 'pais'  ? (PAIS_A_LIGA.get(ob.pais) || null)
+      : ob.liga; // liga, budget, draft
+
+    ui.miEscudo = club?.badge_url || club?.club_badge_url || club?.badge || '';
+
+    if (modoJuego === 'draft') {
+      // Draft Puro: abrimos el pool pero NO guardamos en user_cards todavía
+      let grupos = [];
+      try {
+        const { openDraftPool } = await import('../data/cardsRepo.js');
+        grupos = await openDraftPool(managerId, leagueIdPool);
+      } catch (e) {
+        console.warn('[dream-team] openDraftPool falló:', e.message);
+      }
+      ob.enviando = false;
+      ui.draftPuro = {
+        grupos, pick: 0, elegidas: [],
+        managerId, dt: ob.nombre,
+        club: club?.name || ob.nombre,
+        leagueId: ob.liga, clubId: club?.id,
+        modo: ob.modo || 'facil',
+      };
+      ui.vista = 'draft-puro';
+      return;
+    }
+
     let sobresInicialesDB = null;
     try {
       const { openInitialPacks } = await import('../data/cardsRepo.js');
-      sobresInicialesDB = await openInitialPacks(managerId, ob.liga);
+      sobresInicialesDB = await openInitialPacks(managerId, leagueIdPool);
     } catch (e) {
       console.warn('[dream-team] Draft inicial de Supabase falló, se usa el fallback local:', e.message);
     }
 
-    ui.miEscudo = club?.badge_url || club?.club_badge_url || club?.badge || '';
     c = iniciarCarrera({
       dt: ob.nombre,
       club: club?.name || ob.nombre,
@@ -850,6 +942,7 @@ const acciones = {
       clubId: club?.id,
       cartasInicialesDB: sobresInicialesDB,
       modo: ob.modo || 'facil',
+      modoJuego,
     });
     ob.enviando = false;
     ui.vista = 'sobres'; ui.sobresAbiertos = [];
@@ -869,8 +962,35 @@ const acciones = {
     c = iniciarCarrera({ dt, club: club.nombre, cartasInicialesDB });
     ui.vista = 'sobres'; ui.sobresAbiertos = [];
   },
+  'ob-set-modo'(el) { ui.onboarding.modoJuego = el.dataset.modo; },
   'abrir-sobre'(el) { ui.sobresAbiertos.push(Number(el.dataset.i)); },
   'ir-once'() { ui.vista = 'once'; ui.slot = null; if (!c.once.length) c.once = autoOnce(c.plantel); },
+  async 'draft-elegir'(el) {
+    const dp = ui.draftPuro;
+    if (!dp) return;
+    const i = Number(el.dataset.i);
+    const elegida = dp.grupos[dp.pick][i];
+    dp.elegidas.push(elegida);
+    dp.pick++;
+    if (dp.pick >= dp.grupos.length) {
+      ui.cargando = true; render();
+      try {
+        const { saveDraftChoices } = await import('../data/cardsRepo.js');
+        await saveDraftChoices(dp.managerId, dp.elegidas.map((x) => x.id));
+      } catch (e) {
+        console.warn('[dream-team] saveDraftChoices falló:', e.message);
+      }
+      const sobres = [dp.elegidas.slice(0, 5), dp.elegidas.slice(5, 10), dp.elegidas.slice(10, 15)];
+      c = iniciarCarrera({
+        dt: dp.dt, club: dp.club, leagueId: dp.leagueId, clubId: dp.clubId,
+        cartasInicialesDB: sobres, modo: dp.modo, modoJuego: 'draft',
+      });
+      ui.cargando = false;
+      ui.draftPuro = null;
+      ui.vista = 'once'; ui.slot = null;
+      if (!c.once.length) c.once = autoOnce(c.plantel);
+    }
+  },
   slot(el) { const i = Number(el.dataset.i); ui.slot = ui.slot === i ? null : i; },
   poner(el) {
     if (ui.slot === null) return;
