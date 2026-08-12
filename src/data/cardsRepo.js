@@ -57,9 +57,10 @@ const COLUMNAS_CARTA =
 // Trae el catálogo de cartas activas. Con `leagueId` (slug de cards.league_id,
 // ej. 'premier' | 'laliga' | 'seriea') filtra el pool a una liga: el draft
 // inicial siempre entrega cartas de la liga del DT.
-async function fetchCardPool(leagueId = null) {
+async function fetchCardPool(leagueId = null, nationalityId = null) {
   let query = supabase.from('cards').select(COLUMNAS_CARTA).eq('is_active', true);
-  if (leagueId) query = query.eq('league_id', leagueId);
+  if (nationalityId) query = query.eq('nationality_id', nationalityId);
+  else if (leagueId) query = query.eq('league_id', leagueId);
 
   const { data, error } = await query;
 
@@ -137,8 +138,8 @@ function normalizarParaUI(c) {
   };
 }
 
-export async function openDraftPool(managerId, leagueId = null, slots = 15, opcionesPorSlot = 4) {
-  const [pool, idsUsados] = await Promise.all([fetchCardPool(leagueId), fetchOwnedCardIds(managerId)]);
+export async function openDraftPool(managerId, leagueId = null, slots = 15, opcionesPorSlot = 4, nationalityId = null) {
+  const [pool, idsUsados] = await Promise.all([fetchCardPool(leagueId, nationalityId), fetchOwnedCardIds(managerId)]);
   const disponibles = pool.filter((c) => !idsUsados.has(c.id));
   // Fisher-Yates shuffle
   for (let i = disponibles.length - 1; i > 0; i--) {
@@ -162,8 +163,8 @@ export async function saveDraftChoices(managerId, cardIds) {
   if (error) throw new DataError(error.message, { causa: error });
 }
 
-export async function openInitialPacks(managerId, leagueId = null) {
-  const [pool, idsUsados] = await Promise.all([fetchCardPool(leagueId), fetchOwnedCardIds(managerId)]);
+export async function openInitialPacks(managerId, leagueId = null, nationalityId = null) {
+  const [pool, idsUsados] = await Promise.all([fetchCardPool(leagueId, nationalityId), fetchOwnedCardIds(managerId)]);
 
   // Filtramos las cartas que el manager ya tiene para que draftSquad no
   // vuelva a repartirlas (eso era lo que rompía el insert con el error de

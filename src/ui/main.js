@@ -64,15 +64,32 @@ const PAISES = [
 ];
 const BANDERAS = new Map(PAISES);
 
-// Modo País: país del DT → league_id para filtrar pool de cartas.
-const PAIS_A_LIGA = new Map([
-  ['Argentina',      'ligapro'],
-  ['España',         'laliga'],
-  ['Italia',         'seriea'],
-  ['Alemania',       'bundesliga'],
-  ['Francia',        'ligue1'],
-  ['Inglaterra',     'premier'],
-  ['Estados Unidos', 'mls'],
+// Modo País: país del DT → EA FC 26 nation ID (nationality_id en cards).
+// IDs confirmados desde la DB; países sin ID quedan en null (pool global).
+const PAIS_A_NACION_ID = new Map([
+  ['Argentina',      52],
+  ['Brasil',         54],
+  ['Colombia',      133],
+  ['México',        163],
+  ['Estados Unidos', 95],
+  ['España',         45],
+  ['Italia',         27],
+  ['Inglaterra',     14],
+  ['Francia',        18],
+  ['Alemania',       21],
+  ['Países Bajos',   34],
+  ['Portugal',       38],
+  ['Uruguay',        60],
+  ['Chile',          56],
+  ['Paraguay',      158],
+  ['Bolivia',       157],
+  ['Ecuador',       155],
+  ['Venezuela',     161],
+  ['Bélgica',         7],
+  ['Croacia',        10],
+  ['Japón',          29],
+  ['Nigeria',        35],
+  ['Marruecos',      32],
 ]);
 
 const MODOS_JUEGO_UI = [
@@ -459,15 +476,14 @@ const PANTALLAS = {
             ${MODOS_JUEGO_UI.map((m) => `<button type="button" class="ob-liga${ob.modoJuego === m.id ? ' activo' : ''}" data-accion="ob-set-modo" data-modo="${m.id}" title="${m.desc}" style="flex-direction:column;align-items:center;gap:3px;padding:10px 14px;min-width:80px;font-size:13px"><span style="font-size:20px">${m.ico}</span><span>${m.nombre}</span></button>`).join('')}
           </div>
           <p class="hint">${(() => {
-            const paisLiga = PAIS_A_LIGA.get(ob.pais);
-            const ligaLabel = LIGAS.find((l) => l.id === paisLiga)?.label;
+            const nacionId = PAIS_A_NACION_ID.get(ob.pais);
             return ({
               liga:   'Solo cartas de la liga elegida. El modo estándar.',
               global: 'Pool completo: jugadores de todas las ligas.',
               budget: 'Arrancás con $4M. Cada decisión económica duele.',
               draft:  'Elegís 1 de 4 cartas por slot. Sin economía inicial.',
               pais:   ob.pais
-                ? (paisLiga ? `Cartas de jugadores de ${ligaLabel || paisLiga}.` : `Pool global — ${ob.pais} no tiene liga mapeada.`)
+                ? (nacionId ? `Jugadores de ${ob.pais} en todas las ligas del mundo.` : `Pool global — ${ob.pais} aún sin datos de nacionalidad.`)
                 : 'Elegí tu país para ver el pool disponible.',
             })[ob.modoJuego] || '';
           })()}</p>
@@ -903,9 +919,10 @@ const acciones = {
     // nunca se traba y el mock queda solo como fallback offline.
     const modoJuego = ob.modoJuego || 'liga';
     // Determinar el pool de cartas según el modo de juego
+    const nationalityId = modoJuego === 'pais' ? (PAIS_A_NACION_ID.get(ob.pais) ?? null) : null;
     const leagueIdPool =
       modoJuego === 'global' ? null
-      : modoJuego === 'pais'  ? (PAIS_A_LIGA.get(ob.pais) || null)
+      : modoJuego === 'pais'  ? null  // filtro por nationalityId, no por liga
       : ob.liga; // liga, budget, draft
 
     ui.miEscudo = club?.badge_url || club?.club_badge_url || club?.badge || '';
@@ -915,7 +932,7 @@ const acciones = {
       let grupos = [];
       try {
         const { openDraftPool } = await import('../data/cardsRepo.js');
-        grupos = await openDraftPool(managerId, leagueIdPool);
+        grupos = await openDraftPool(managerId, leagueIdPool, 15, 4, nationalityId);
       } catch (e) {
         console.warn('[dream-team] openDraftPool falló:', e.message);
       }
@@ -934,7 +951,7 @@ const acciones = {
     let sobresInicialesDB = null;
     try {
       const { openInitialPacks } = await import('../data/cardsRepo.js');
-      sobresInicialesDB = await openInitialPacks(managerId, leagueIdPool);
+      sobresInicialesDB = await openInitialPacks(managerId, leagueIdPool, nationalityId);
     } catch (e) {
       console.warn('[dream-team] Draft inicial de Supabase falló, se usa el fallback local:', e.message);
     }

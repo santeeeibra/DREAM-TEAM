@@ -212,6 +212,24 @@ async function main() {
   // fotos de jugador: en paralelo de a CONCURRENCY
   // force:false → si la foto ya existe en Storage la saltea (re-runs rápidos).
   // Para forzar re-descarga de una foto específica, borrala de Storage primero.
+  // Banderas de nación: subidas solo una vez por nationId (cache en Storage).
+  const nationFlagCache = new Map();
+  async function getNationFlagUrl(nationId, nationImageUrl) {
+    if (!nationId) return null;
+    if (nationFlagCache.has(nationId)) return nationFlagCache.get(nationId);
+    let url = null;
+    if (!dryRun && nationImageUrl) {
+      try {
+        const src = nationImageUrl.replace('format=auto', 'format=webp');
+        url = await uploadAsset(BUCKET_BADGES, `nation/${nationId}.webp`, src, { contentType: 'image/webp' });
+      } catch (e) {
+        console.warn(`\n    bandera nación ${nationId}: ${e.message}`);
+      }
+    }
+    nationFlagCache.set(nationId, url);
+    return url;
+  }
+
   async function uploadRow(p) {
     const futId = String(p.basePlayerEaId ?? p.eaId);
     const futbinUrl = `https://cdn.futbin.com/content/fifa${GAME}/img/players/${futId}.png`;
@@ -226,11 +244,17 @@ async function main() {
         photoUrl = await uploadAsset(BUCKET_PHOTOS, `futgg/${futId}.webp`, futggUrl, { contentType: 'image/webp' });
       }
     }
+    // Nacionalidad: el campo puede venir como p.nationId, p.nation?.eaId, o p.nation?.id
+    const nationId = p.nationId ?? p.nation?.eaId ?? p.nation?.id ?? null;
+    const nationImageUrl = p.nationImageUrl ?? p.nation?.imageUrl ?? null;
+    const nationFlagUrl = nationId ? await getNationFlagUrl(nationId, nationImageUrl) : null;
+
     return {
       fut_id: futId, name: playerName(p), club: p.club?.name ?? null,
       position: POSITION_MAP[p.position] ?? 'MED', overall_rating: p.overall,
       rarity: toRarity(p.overall), league_id: key, photo_url: photoUrl,
       club_badge_url: clubBadge.get(p.club?.eaId) ?? null, league_logo_url: leagueLogoUrl,
+      nation_flag_url: nationFlagUrl, nationality_id: nationId ? Number(nationId) : null,
       is_active: true, uses_generated_avatar: false, photo_source_url: sourceUrl, photo_credit: source,
     };
   }
