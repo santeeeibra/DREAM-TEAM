@@ -21,6 +21,9 @@ let ui = {
   onboarding: { liga: null, clubes: [], clubId: '', nombre: '', pais: '', cargando: false, error: null, enviando: false, abierto: null, modo: 'facil', modoJuego: 'liga' },
   draftPuro: null,
 };
+// Hidratar draft de DT si existe
+const _dtDraft = (() => { try { return JSON.parse(localStorage.getItem('dt_draft') || 'null'); } catch { return null; } })();
+if (_dtDraft) ui.onboarding = { ...ui.onboarding, ..._dtDraft };
 // La entrada animada del onboarding corre UNA vez por carga de página: cada
 // acción (p. ej. abrir un dropdown) re-renderiza el DOM completo y no queremos
 // que la pantalla "parpadee" en cada interacción.
@@ -601,6 +604,7 @@ const PANTALLAS = {
       </div>
       ${abiertos.length ? `<div class="grid-cartas">${abiertos.flatMap((i) => c.sobresIniciales[i]).map((x, i) => carta(x, { i })).join('')}</div>` : ''}
       ${todos ? `<div class="row"><button class="btn" data-accion="ir-once">Armar el 11</button></div>` : ''}
+      <div class="row"><button class="btn ghost" data-accion="volver-onboarding">← Editar perfil de DT</button></div>
     </div>`;
   },
 
@@ -854,19 +858,25 @@ function render() {
 }
 
 // ───────────────────────── acciones ─────────────────────────
+const _guardarDtDraft = () => {
+  const ob = ui.onboarding;
+  localStorage.setItem('dt_draft', JSON.stringify({ nombre: ob.nombre, pais: ob.pais, liga: ob.liga, clubId: ob.clubId, modo: ob.modo, modoJuego: ob.modoJuego }));
+};
 const acciones = {
-  'ob-modo'(el) { ui.onboarding.modo = el.dataset.modo; render(); },
+  'ob-modo'(el) { ui.onboarding.modo = el.dataset.modo; render(); _guardarDtDraft(); },
   'ob-pais'(el) {
     const ob = ui.onboarding;
     ob.nombre = document.getElementById('ob-dt')?.value ?? ob.nombre;
     if (el.dataset.pais) { ob.pais = el.dataset.pais; ob.abierto = null; }
     else ob.abierto = ob.abierto === 'pais' ? null : 'pais';
+    _guardarDtDraft();
   },
   'ob-club'(el) {
     const ob = ui.onboarding;
     ob.nombre = document.getElementById('ob-dt')?.value ?? ob.nombre;
     if (el.dataset.id) { ob.clubId = el.dataset.id; ob.abierto = null; }
     else if (!ob.cargando) ob.abierto = ob.abierto === 'club' ? null : 'club';
+    _guardarDtDraft();
   },
   async 'ob-liga'(el) {
     const ob = ui.onboarding;
@@ -877,6 +887,7 @@ const acciones = {
     ob.liga = el.dataset.liga;
     ob.abierto = null;
     ob.cargando = true; ob.error = null; ob.clubes = []; ob.clubId = '';
+    _guardarDtDraft();
     render();
     // Los clubes viven en leagues.js (la misma fuente que el draft y el motor):
     // así el club elegido siempre tiene cartas en su liga, un id estable para
@@ -966,6 +977,7 @@ const acciones = {
       modoJuego,
     });
     ob.enviando = false;
+    localStorage.removeItem('dt_draft');
     ui.vista = 'sobres'; ui.sobresAbiertos = [];
   },
   async empezar() {
@@ -983,7 +995,8 @@ const acciones = {
     c = iniciarCarrera({ dt, club: club.nombre, cartasInicialesDB });
     ui.vista = 'sobres'; ui.sobresAbiertos = [];
   },
-  'ob-set-modo'(el) { ui.onboarding.modoJuego = el.dataset.modo; },
+  'ob-set-modo'(el) { ui.onboarding.modoJuego = el.dataset.modo; _guardarDtDraft(); },
+  'volver-onboarding'() { ui.vista = 'onboarding'; render(); },
   'abrir-sobre'(el) { ui.sobresAbiertos.push(Number(el.dataset.i)); },
   'ir-once'() { ui.vista = 'once'; ui.slot = null; if (!c.once.length) c.once = autoOnce(c.plantel); },
   async 'draft-elegir'(el) {
