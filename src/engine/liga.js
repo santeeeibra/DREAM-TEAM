@@ -1,5 +1,5 @@
 // PURA. Resolución de temporada por tramos (§2.2): sin motor de partido en vivo.
-import { LIGA, FUERZA, ESCALADA_LIGA, ESTILOS_CLUB, TIER_LIGA, TIER_LIGA_DEFAULT, FUERZA_POR_TIER } from './balance.js';
+import { LIGA, FUERZA, ESCALADA_LIGA, ESTILOS_CLUB, TIER_LIGA, TIER_LIGA_DEFAULT, FUERZA_POR_TIER, BOOST_RIVAL_GLOBAL } from './balance.js';
 import { getLeagueById } from '../data/leagues.js';
 
 export const MI_EQUIPO = 0;
@@ -42,11 +42,19 @@ function candidatosRivales(club) {
  * los tiers (TIER_LIGA) y los estilos (ESTILOS_CLUB) se resuelven por ese id,
  * nunca por el nombre mostrado.
  */
-export function crearLiga(rng, club, { temporada = 1, posAnterior = null } = {}) {
+export function crearLiga(rng, club, { temporada = 1, posAnterior = null, ovrDT = null } = {}) {
   const media = ESCALADA_LIGA.BASE
     + ESCALADA_LIGA.POR_TEMPORADA * (temporada - 1)
     + (posAnterior && posAnterior <= 5 ? ESCALADA_LIGA.CASTIGO_AL_LIDER : 0)
     + (posAnterior && posAnterior >= 15 ? ESCALADA_LIGA.ALIVIO_AL_ULTIMO : 0);
+
+  // Adaptive difficulty: si el plantel del DT supera claramente la media de la
+  // liga (modo Global con ligas chicas), los rivales reciben un boost de fuerza.
+  const { UMBRAL_DELTA, FACTOR, MAX_BOOST } = BOOST_RIVAL_GLOBAL;
+  const mediaBoost = ovrDT !== null
+    ? Math.min(MAX_BOOST, Math.max(0, (ovrDT - media - UMBRAL_DELTA) * FACTOR))
+    : 0;
+
   const rivales = rng.shuffle(candidatosRivales(club)).slice(0, LIGA.EQUIPOS - 1);
   const equipos = [
     { id: 0, nombre: club.name, fuerza: 0, esMio: true, clubId: club.id || null },
@@ -60,7 +68,7 @@ export function crearLiga(rng, club, { temporada = 1, posAnterior = null } = {})
         id: i + 1,
         clubId: r.id,
         nombre: r.nombre,
-        fuerza: Math.round(clampNum(gauss(rng, media + cfg.off, cfg.sd), 54, 90) * 10) / 10,
+        fuerza: Math.round(clampNum(gauss(rng, media + cfg.off + mediaBoost, cfg.sd), 54, 90) * 10) / 10,
         esMio: false,
       };
     }),

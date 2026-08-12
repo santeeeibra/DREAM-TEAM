@@ -935,6 +935,12 @@ const acciones = {
       modoJuego === 'global' ? null
       : modoJuego === 'pais'  ? null  // filtro por nationalityId, no por liga
       : ob.liga; // liga, budget, draft
+    // Cap de OVR: en modo Global el pool es de todo el catálogo; limitamos el
+    // techo de rating según la liga del DT para no romper el balance competitivo.
+    const { OVR_CAP_POR_LIGA, OVR_CAP_DEFAULT } = await import('../engine/balance.js');
+    const ovrCap = modoJuego === 'global'
+      ? (OVR_CAP_POR_LIGA[ob.liga] ?? OVR_CAP_DEFAULT)
+      : 99;
 
     ui.miEscudo = club?.badge_url || club?.club_badge_url || club?.badge || '';
 
@@ -962,7 +968,7 @@ const acciones = {
     let sobresInicialesDB = null;
     try {
       const { openInitialPacks } = await import('../data/cardsRepo.js');
-      sobresInicialesDB = await openInitialPacks(managerId, leagueIdPool, nationalityId);
+      sobresInicialesDB = await openInitialPacks(managerId, leagueIdPool, nationalityId, ovrCap);
     } catch (e) {
       console.warn('[dream-team] Draft inicial de Supabase falló, se usa el fallback local:', e.message);
     }

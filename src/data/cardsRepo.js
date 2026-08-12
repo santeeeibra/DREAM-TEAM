@@ -163,13 +163,15 @@ export async function saveDraftChoices(managerId, cardIds) {
   if (error) throw new DataError(error.message, { causa: error });
 }
 
-export async function openInitialPacks(managerId, leagueId = null, nationalityId = null) {
+export async function openInitialPacks(managerId, leagueId = null, nationalityId = null, ovrCap = 99) {
   const [pool, idsUsados] = await Promise.all([fetchCardPool(leagueId, nationalityId), fetchOwnedCardIds(managerId)]);
 
   // Filtramos las cartas que el manager ya tiene para que draftSquad no
   // vuelva a repartirlas (eso era lo que rompía el insert con el error de
   // constraint duplicada).
-  const poolNuevo = pool.filter((carta) => !idsUsados.has(carta.id));
+  const poolNuevo = pool
+    .filter((carta) => !idsUsados.has(carta.id))
+    .filter((carta) => carta.overall_rating <= ovrCap);
   verificarPoolAlcanza(poolNuevo);
 
   const plantel = draftSquad(poolNuevo);

@@ -138,7 +138,12 @@ export function iniciarCarrera({
 export function confirmarOnce(c, once) {
   const elegido = once && onceCompleto(once) ? once : autoOnce(c.plantel);
   c.once = elegido;
-  if (!c.liga) c.liga = crearLiga(c.rng, { id: c.clubId || null, name: c.club, leagueId: c.leagueId || null });
+  if (!c.liga) {
+    const ovrDT = c.plantel.length
+      ? Math.round(c.plantel.reduce((s, j) => s + j.rating, 0) / c.plantel.length)
+      : null;
+    c.liga = crearLiga(c.rng, { id: c.clubId || null, name: c.club, leagueId: c.leagueId || null }, { ovrDT });
+  }
   c.fase = FASES.TRAMO;
   return c;
 }
@@ -442,7 +447,10 @@ export function aplicarRefuerzo(c, idsEntran = [], idsSalen = []) {
   c.momentum = 0;
   c.refuerzo = null;
   c.estadisticas = { goleadores: {}, asistencias: {} };
-  c.liga = crearLiga(c.rng, { id: c.clubId || null, name: c.club, leagueId: c.leagueId || null }, { temporada: c.temporada, posAnterior: pos });
+  const ovrDT = c.plantel.length
+    ? Math.round(c.plantel.reduce((s, j) => s + j.rating, 0) / c.plantel.length)
+    : null;
+  c.liga = crearLiga(c.rng, { id: c.clubId || null, name: c.club, leagueId: c.leagueId || null }, { temporada: c.temporada, posAnterior: pos, ovrDT });
   c.once = autoOnce(c.plantel);
   c.fase = FASES.ONCE;
   

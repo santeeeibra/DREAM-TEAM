@@ -1,6 +1,6 @@
 // PURA. Único lugar donde viven los números de balance.
 // Versionado: si cambiás algo acá, subí BALANCE_VERSION y volvé a correr el harness.
-export const BALANCE_VERSION = '1.6.0';
+export const BALANCE_VERSION = '1.7.0';
 
 export const LIGA = {
   EQUIPOS: 20,
@@ -271,6 +271,27 @@ export const TIER_LIGA = {
   'hellas-verona': 'bajo', 'lecce': 'bajo', 'parma': 'bajo', 'pisa': 'bajo',
 };
 export const TIER_LIGA_DEFAULT = 'medio';
+
+// Cap de OVR para el pool de cartas en modo Global según la liga del DT.
+// Evita que en ligas chicas el DT reciba épicas (85-99) que rompen el balance.
+export const OVR_CAP_POR_LIGA = {
+  premier:    99,
+  laliga:     99,
+  seriea:     99,
+  bundesliga: 99,
+  ligue1:     82,
+  ligapro:    78,
+  mls:        78,
+};
+export const OVR_CAP_DEFAULT = 78;
+
+// Boost pasivo a rivales en modo Global cuando el plantel del DT supera al OVR
+// promedio de la liga. Evita que el DT domine ligas cuyos rivales promedian 66-70.
+export const BOOST_RIVAL_GLOBAL = {
+  UMBRAL_DELTA: 6,  // diferencia mínima para activar el boost
+  FACTOR:       0.4, // puntos de fuerza por cada punto de diferencia sobre el umbral
+  MAX_BOOST:    5,   // techo de boost
+};
 
 // Banda de fuerza por tier: desvío sobre la media de ESCALADA_LIGA.
 // ±7 con sd 2 deja las bandas SEPARADAS (sin solape realista): un club medio o
