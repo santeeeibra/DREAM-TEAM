@@ -2,6 +2,9 @@
 
 Activar solo cuando la tarea toque contexto, skills o la estructura del repo.
 
++ ## Exploración rápida
++ Antes de leer archivos crudos, corrés `graphify query "<pregunta>"`.
++ Solo abrís el archivo raw si necesitás ver líneas específicas para editar.
 ## El reto
 - El repo sufre **deriva documental**: mismo dato en varios lugares con
   versiones distintas. Antes de agregar o editar docs, corroborá contra el

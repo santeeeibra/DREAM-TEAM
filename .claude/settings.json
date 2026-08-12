@@ -1,4 +1,12 @@
 {
+  "permissions": {
+  "allow": [
+    "Bash(npm run sim)",
+    "Bash(npm run dev)",
+    "Bash(node scripts/*)",
+    "Bash(git *)"
+  ]
+},
   "hooks": {
     "PreToolUse": [
       {

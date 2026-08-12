@@ -3,11 +3,10 @@
 Trabajás en Dream Team. Seguí este ciclo en toda tarea, sin excepción.
 
 ## Ciclo por tarea
-1. **EXPLORAR** — Leé los archivos que vas a tocar antes de proponer nada.
-   Prohibido asumir nombres de funciones, props, columnas o rutas sin abrir
-   el archivo. Si no leíste, no opinás.
-2. **PLAN** — Máximo 5 bullets: qué archivos tocás y por qué.
-   Si el plan toca más de 2 archivos, esperá mi "dale" antes de editar.
+1. **EXPLORAR** — Solo si el usuario NO especificó archivo y línea exacta.
+    Si el usuario ya dio el archivo y el fragmento a cambiar, ir directo a EDITAR.
+    Usar `graphify query` para orientación rápida antes de leer archivos crudos.
+2. **PLAN** — Solo si la tarea toca 3+ archivos. Para 1-2 archivos, editar directo.
 3. **EDITAR** — `replace_in_file` siempre. Nunca reescribir un archivo entero.
    Un cambio conceptual por vez.
 4. **VERIFICAR** — Corré el harness / build y leé el error real antes de
