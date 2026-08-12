@@ -65,11 +65,11 @@ Fuente de verdad: `src/engine/balance.js`.
 - **Draft inicial real** (el camino del onboarding): `openInitialPacks()`
   (`src/data/cardsRepo.js`) filtra `cards` activas por `league_id` de la liga
   del DT (`premier`/`laliga`/`seriea`) y descarta las que el manager ya tiene;
-  `draftSquad()` (`src/packOpening/draftSquad.js`) arma **25 cartas** — mínimos
-  2 POR / 6 DEF / 6 MED / 4 DEL (18) + 7 libres, ponderadas por banda
+  `draftSquad()` (`src/packOpening/draftSquad.js`) arma **15 cartas** — mínimos
+  1 POR / 4 DEF / 3 MED / 3 DEL (11) + 4 libres, ponderadas por banda
   (15% bronze · 15% silver · 45% gold · 25% special) — y `splitIntoPacks()` las
-  corta en **5 sobres × 5**. Se guardan en `user_cards` ANTES de la animación.
-  El 11 sale armable sin penalidad (2 arqueros de mínimo).
+  corta en **3 sobres × 5**. Se guardan en `user_cards` ANTES de la animación.
+  El 11 sale armable sin penalidad (1 arquero de mínimo).
 - `SOBRES.REFUERZO` — 3 cartas; `bonusPorPosicion`: ≤1 → 3, ≤4 → 2, ≤10 → 1, resto 0. Mejor posición final = mejor sobre.
 
 ## Progresión de jugadores

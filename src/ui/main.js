@@ -72,9 +72,13 @@ const banderaImg = (nombre) => {
 // Botones de liga con logo oficial (CDN público temporal; onerror lo oculta).
 // ids = cards.league_id: el draft y el motor las usan tal cual.
 const LIGAS = [
-  { id: 'premier', label: 'Premier League', logo: 'https://media.api-sports.io/football/leagues/39.png' },
-  { id: 'laliga', label: 'LaLiga', logo: 'https://media.api-sports.io/football/leagues/140.png' },
-  { id: 'seriea', label: 'Serie A', logo: 'https://media.api-sports.io/football/leagues/135.png' },
+  { id: 'premier',     label: 'Premier League',           logo: 'https://media.api-sports.io/football/leagues/39.png'  },
+  { id: 'laliga',      label: 'LaLiga',                   logo: 'https://media.api-sports.io/football/leagues/140.png' },
+  { id: 'seriea',      label: 'Serie A',                  logo: 'https://media.api-sports.io/football/leagues/135.png' },
+  { id: 'bundesliga',  label: 'Bundesliga',               logo: 'https://media.api-sports.io/football/leagues/78.png'  },
+  { id: 'ligapro',     label: 'Liga Profesional',         logo: 'https://media.api-sports.io/football/leagues/128.png' },
+  { id: 'mls',         label: 'MLS',                      logo: 'https://media.api-sports.io/football/leagues/253.png' },
+  { id: 'ligue1',      label: 'Ligue 1',                  logo: 'https://media.api-sports.io/football/leagues/61.png'  },
 ];
 
 // Escudo del club: badge real de la fila de `clubs` (badge_url /
@@ -811,7 +815,7 @@ const acciones = {
     localStorage.setItem('manager_id', managerId);
     const club = ob.clubes.find((cl) => cl.id === ob.clubId);
 
-    // Draft inicial real: 5 sobres x 5 cartas de la liga elegida
+    // Draft inicial real: 3 sobres x 5 cartas de la liga elegida
     // (openInitialPacks guarda el plantel en user_cards y devuelve los sobres
     // armados). Si la DB falla, el motor arma los sobres locales — la carrera
     // nunca se traba y el mock queda solo como fallback offline.

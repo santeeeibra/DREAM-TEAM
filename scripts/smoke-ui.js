@@ -1,7 +1,7 @@
 // Smoke test de la UI: juega una carrera completa con los mismos clicks del jugador.
 // Los clubes salen de leagues.js (local); las cartas del draft inicial salen del
 // REST stubeado (/rest/v1/cards + /rest/v1/user_cards) con el shape real de `cards`,
-// así el harness ejercita openInitialPacks (draft real de 25 cartas) sin tocar la BD.
+// así el harness ejercita openInitialPacks (draft real de 15 cartas) sin tocar la BD.
 // La edge open-pack queda solo para el sobre de refuerzo y devuelve null → catálogo local.
 import { JSDOM } from 'jsdom';
 import { readFileSync } from 'node:fs';
@@ -31,7 +31,7 @@ process.env.VITE_SUPABASE_ANON_KEY = 'stub-anon-key';
 // openInitialPacks (id, name, club, position, overall_rating, rarity, photo_url,
 // ..., league_id). 80 cartas = 40 de LaLiga + 40 de Serie A repartidas por
 // posición: la corrida entera es en Serie A y cubre los mínimos de draftSquad
-// (2 POR, 6 DEF, 6 MED, 4 DEL) y el total de 25 del plantel.
+// (1 POR, 4 DEF, 3 MED, 3 DEL) y el total de 15 del plantel.
 const CARTAS_STUB = Array.from({ length: 80 }, (_, i) => {
   const position = ['POR', 'DEF', 'DEF', 'DEF', 'DEF', 'MED', 'MED', 'MED', 'DEL', 'DEL'][i % 10];
   return {
@@ -67,7 +67,7 @@ global.fetch = async (url, opts = {}) => {
   // GET /rest/v1/cards (fetchCardPool del draft) → pool de la liga pedida.
   if (u.includes('/rest/v1/cards')) return responder(CARTAS_STUB);
   // user_cards: GET (fetchOwnedCardIds) → inventario vacío; POST (upsert de las
-  // 25 cartas del draft) → ok sin body.
+  // 15 cartas del draft) → ok sin body.
   if (u.includes('/rest/v1/user_cards')) {
     return opts.method === 'POST' ? responder([], 201) : responder([]);
   }
@@ -123,8 +123,8 @@ if (!bodyManager || bodyManager.league_id !== 'seriea' || bodyManager.club_id !=
   throw new Error(`crearManager no envió el slug Serie A esperado: ${JSON.stringify(bodyManager)}`);
 }
 
-// Contrato del draft inicial: openInitialPacks entrega 5 sobres × 5 cartas de la
-// liga elegida (25 en la grilla al abrir todos). El onboarding NO debe tocar la
+// Contrato del draft inicial: openInitialPacks entrega 3 sobres × 5 cartas de la
+// liga elegida (15 en la grilla al abrir todos). El onboarding NO debe tocar la
 // edge open-pack.
 if (localStorage.getItem('manager_id') !== 'smoke-manager') {
   throw new Error('main.js no persistió manager_id en localStorage. Pantalla:\n' + document.body.textContent.slice(0, 400));
@@ -133,14 +133,14 @@ if (bodiesOpenPack.some((b) => b.free === true)) {
   throw new Error('El onboarding llamó open-pack con free:true — debería usar openInitialPacks');
 }
 const btnsSobres = document.querySelectorAll('[data-accion="abrir-sobre"]');
-if (btnsSobres.length !== 5) {
-  throw new Error(`Draft inicial: se esperaban 5 sobres, hay ${btnsSobres.length}`);
+if (btnsSobres.length !== 3) {
+  throw new Error(`Draft inicial: se esperaban 3 sobres, hay ${btnsSobres.length}`);
 }
-for (let i = 0; i < 5; i++) await click('abrir-sobre', `[data-i="${i}"]`);
+for (let i = 0; i < 3; i++) await click('abrir-sobre', `[data-i="${i}"]`);
 await new Promise((r) => setTimeout(r, 10));
 const cartasReveladas = document.querySelectorAll('.grid-cartas .carta-slot').length;
-if (cartasReveladas !== 25) {
-  throw new Error(`Draft inicial: se esperaban 25 cartas reveladas, hay ${cartasReveladas}`);
+if (cartasReveladas !== 15) {
+  throw new Error(`Draft inicial: se esperaban 15 cartas reveladas, hay ${cartasReveladas}`);
 }
 await click('ir-once');
 await click('auto-once');

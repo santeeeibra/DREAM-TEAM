@@ -29,7 +29,7 @@ Trabajás en Dream Team. Seguí este ciclo en toda tarea, sin excepción.
   es lógica pura Node. Si algún día se migra, se reemplaza `src/ui/`.
 - IA runtime: GROQ vía proxy serverless (`api/evento.js`). La key nunca
   va al cliente.
-- Loop: crear DT en una de 3 ligas → draft inicial de tu liga (5 sobres
+- Loop: crear DT en una de 3 ligas → draft inicial de tu liga (3 sobres
   × 5 cartas, `openInitialPacks`) → armar 11 → temporada por tramos →
   resumen → sobre de refuerzo (`open-pack`) → siguiente temporada (8 por
   carrera).

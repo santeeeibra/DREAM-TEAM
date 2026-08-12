@@ -17,14 +17,19 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // --- config ---------------------------------------------------------------
 
 const LEAGUES = {
-  premier: { eaId: 13, label: 'Premier League' },
-  laliga: { eaId: 53, label: 'LaLiga' },
-  seriea: { eaId: 31, label: 'Serie A' },
+  premier:     { eaId: 13, label: 'Premier League' },
+  laliga:      { eaId: 53, label: 'LaLiga' },
+  seriea:      { eaId: 31, label: 'Serie A' },
+  bundesliga:  { eaId: 19, label: 'Bundesliga' },
+  ligapro:     { eaId: 353, label: 'Liga Profesional Argentina' },
+  mls:         { eaId: 39, label: 'MLS' },
+  ligue1:      { eaId: 16, label: 'Ligue 1' },
 };
 
 const GAME = 26;
-const MIN_OVERALL = 74;
-const PAGE_DELAY_MS = 120;
+const MIN_OVERALL = 74; // override por liga con minOverall en LEAGUES
+const PAGE_DELAY_MS = 80;
+const CONCURRENCY = 8; // uploads en paralelo
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0 Safari/537.36';
 
 const BUCKET_PHOTOS = 'player-photos';
@@ -101,11 +106,11 @@ async function fetchLeaguePlayers(leagueEaId) {
 }
 
 /** Cartas base unicas, la de mayor overall por jugador. */
-function selectBaseCards(items) {
+function selectBaseCards(items, minOvr = MIN_OVERALL) {
   const byEaId = new Map();
   for (const p of items) {
     if (p.isSpecial || p.isEvolutionPlayerItem || p.isIcon || p.isHero) continue;
-    if (p.overall < MIN_OVERALL) continue;
+    if (p.overall < minOvr) continue;
     // El id estable del JUGADOR (base) es basePlayerEaId; p.eaId es el id del
     // item/versión (incluso el contenido de la foto cambia), y la BD guarda
     // futble clásicos. Deduplicar por basePlayerEaId.
@@ -177,75 +182,66 @@ async function main() {
 
   console.log(`\n=== ${league.label} (EA ${league.eaId}) -> league_id='${key}'${dryRun ? '  [DRY RUN]' : ''} ===`);
 
+  const minOvr = league.minOverall ?? MIN_OVERALL;
   const items = await fetchLeaguePlayers(league.eaId);
-  const players = selectBaseCards(items);
-  console.log(`  ${items.length} items -> ${players.length} cartas base con overall >= ${MIN_OVERALL}`);
+  const players = selectBaseCards(items, minOvr);
+  console.log(`  ${items.length} items -> ${players.length} cartas base con overall >= ${minOvr}`);
+
+  if (players.length === 0) {
+    console.error(`  ERROR: 0 jugadores encontrados. Verificá el eaId (${league.eaId}) o bajá minOverall.`);
+    process.exit(1);
+  }
 
   // logo de liga: una sola vez
   const leagueSample = players.find(p => p.leagueImageUrl);
-  const leagueLogoUrl = dryRun
+  const leagueLogoUrl = dryRun || !leagueSample
     ? null
     : await uploadAsset(BUCKET_BADGES, `league/${league.eaId}.webp`, leagueSample.leagueImageUrl);
 
-  // escudos de club: uno por club
+  // escudos de club: todos en paralelo (pocos clubs, sin riesgo de rate-limit)
   const clubs = new Map();
   for (const p of players) if (p.club?.eaId && !clubs.has(p.club.eaId)) clubs.set(p.club.eaId, p.clubImageUrl);
   const clubBadge = new Map();
-  let n = 0;
-  for (const [clubEaId, srcUrl] of clubs) {
-    clubBadge.set(clubEaId, dryRun ? null : await uploadAsset(BUCKET_BADGES, `club/${clubEaId}.webp`, srcUrl));
-    if (process.stdout.isTTY) process.stdout.write(`\r  escudos ${++n}/${clubs.size}   `);
+  if (!dryRun) {
+    await Promise.all([...clubs.entries()].map(async ([clubEaId, srcUrl]) => {
+      clubBadge.set(clubEaId, await uploadAsset(BUCKET_BADGES, `club/${clubEaId}.webp`, srcUrl));
+    }));
   }
-  console.log();
+  console.log(`  ${clubs.size} escudos de club listos`);
 
-  // fotos de jugador
-  const rows = [];
-  let i = 0;
-  for (const p of players) {
+  // fotos de jugador: en paralelo de a CONCURRENCY
+  // force:false → si la foto ya existe en Storage la saltea (re-runs rápidos).
+  // Para forzar re-descarga de una foto específica, borrala de Storage primero.
+  async function uploadRow(p) {
     const futId = String(p.basePlayerEaId ?? p.eaId);
-    // Retrato limpio de cabeza y hombros (transparente): FUTBIN. El render
-    // "player-item" de fut.gg en cambio es la figura de cuerpo/acción, que con
-    // object-fit:cover queda mal (parece carta/acción). FUTBIN va PRIMERO y
-    // fut.gg queda de fallback si FUTBIN no tuviera la carta.
     const futbinUrl = `https://cdn.futbin.com/content/fifa${GAME}/img/players/${futId}.png`;
     const futggUrl = p.imageUrl.replace('format=auto', 'format=webp');
-
-    let photoUrl = null;
-    let source = 'FUTBIN';
-    let sourceUrl = futbinUrl;
+    let photoUrl = null, source = 'FUTBIN', sourceUrl = futbinUrl;
     if (!dryRun) {
       try {
-        photoUrl = await uploadAsset(BUCKET_PHOTOS, `futbin/${futId}.png`, futbinUrl, {
-          force: true,
-          contentType: 'image/png',
-        });
+        photoUrl = await uploadAsset(BUCKET_PHOTOS, `futbin/${futId}.png`, futbinUrl, { contentType: 'image/png' });
       } catch (e) {
-        console.warn(`    fallback fut.gg para ${playerName(p)} (${futId}): ${e.message}`);
-        source = 'FUT.GG';
-        sourceUrl = `https://www.fut.gg${p.url}`;
-        photoUrl = await uploadAsset(BUCKET_PHOTOS, `futgg/${futId}.webp`, futggUrl, {
-          force: true,
-          contentType: 'image/webp',
-        });
+        console.warn(`\n    fallback fut.gg para ${playerName(p)} (${futId}): ${e.message}`);
+        source = 'FUT.GG'; sourceUrl = `https://www.fut.gg${p.url}`;
+        photoUrl = await uploadAsset(BUCKET_PHOTOS, `futgg/${futId}.webp`, futggUrl, { contentType: 'image/webp' });
       }
     }
-    rows.push({
-      fut_id: futId,
-      name: playerName(p),
-      club: p.club?.name ?? null,
-      position: POSITION_MAP[p.position] ?? 'MED',
-      overall_rating: p.overall,
-      rarity: toRarity(p.overall),
-      league_id: key,
-      photo_url: photoUrl,
-      club_badge_url: clubBadge.get(p.club?.eaId) ?? null,
-      league_logo_url: leagueLogoUrl,
-      is_active: true,
-      uses_generated_avatar: false,
-      photo_source_url: sourceUrl,
-      photo_credit: source,
-    });
-    if (process.stdout.isTTY) process.stdout.write(`\r  fotos ${++i}/${players.length}   `);
+    return {
+      fut_id: futId, name: playerName(p), club: p.club?.name ?? null,
+      position: POSITION_MAP[p.position] ?? 'MED', overall_rating: p.overall,
+      rarity: toRarity(p.overall), league_id: key, photo_url: photoUrl,
+      club_badge_url: clubBadge.get(p.club?.eaId) ?? null, league_logo_url: leagueLogoUrl,
+      is_active: true, uses_generated_avatar: false, photo_source_url: sourceUrl, photo_credit: source,
+    };
+  }
+
+  const rows = [];
+  let done = 0;
+  for (let b = 0; b < players.length; b += CONCURRENCY) {
+    const batch = await Promise.all(players.slice(b, b + CONCURRENCY).map(uploadRow));
+    rows.push(...batch);
+    done += batch.length;
+    if (process.stdout.isTTY) process.stdout.write(`\r  fotos ${done}/${players.length}   `);
   }
   console.log();
 

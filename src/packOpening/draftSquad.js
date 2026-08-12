@@ -1,21 +1,21 @@
-// draftSquad.js — arma el plantel inicial de 25 cartas (5 sobres x 5).
+// draftSquad.js — arma el plantel inicial de 15 cartas (3 sobres × 5).
 // Es lógica "pura": no toca Supabase ni Phaser, solo recibe un array de
 // cartas disponibles y devuelve cuáles le tocaron al jugador. Así se puede
 // leer y probar sin depender de la base de datos ni de la pantalla.
 
 import { getTier } from '../core/ratingTiers.js';
 
-// Mínimos garantizados por posición. Suman 18 de las 25 cartas totales.
+// Mínimos garantizados por posición. Suman 11 de las 15 cartas totales.
 export const MINIMOS_POR_POSICION = {
-  POR: 2,
-  DEF: 6,
-  MED: 6,
-  DEL: 4,
+  POR: 1,
+  DEF: 4,
+  MED: 3,
+  DEL: 3,
 };
 
-export const TOTAL_CARTAS = 25;
+export const TOTAL_CARTAS = 15;
 export const CARTAS_POR_SOBRE = 5;
-export const CANTIDAD_SOBRES = TOTAL_CARTAS / CARTAS_POR_SOBRE; // 5
+export const CANTIDAD_SOBRES = TOTAL_CARTAS / CARTAS_POR_SOBRE; // 3
 
 // Fisher-Yates: mezcla un array de forma pareja (cada orden posible tiene
 // la misma probabilidad). No modifica el array original, devuelve uno nuevo.
@@ -66,15 +66,15 @@ function elegirCartaPorBanda(candidatas, bandaPedida) {
 }
 
 // pool: todas las cartas activas disponibles (mínimo necesitan `id`,
-// `position` y `overall_rating`). Devuelve un array de 25 cartas sin
+// `position` y `overall_rating`). Devuelve un array de 15 cartas sin
 // repetidos.
 //
 // Cómo arma el plantel:
 // 1. Separa el pool en 4 grupos por posición.
-// 2. Toma los mínimos garantizados (2 POR, 6 DEF, 6 MED, 4 DEL = 18 cartas).
+// 2. Toma los mínimos garantizados (1 POR, 4 DEF, 3 MED, 3 DEL = 11 cartas).
 //    Cada carta se elige ponderando por banda de rareza (pickWeightedTier:
 //    15% bronze, 15% silver, 45% gold, 25% special) en vez de uniforme.
-// 3. Las 7 cartas que faltan para llegar a 25 también se eligen ponderadas
+// 3. Las 4 cartas que faltan para llegar a 15 también se eligen ponderadas
 //    por banda, pero de TODO el resto del pool sin importar posición.
 export function draftSquad(pool) {
   const porPosicion = { POR: [], DEF: [], MED: [], DEL: [] };
@@ -122,7 +122,7 @@ export function draftSquad(pool) {
   return mezclar(seleccionadas);
 }
 
-// Corta las 25 cartas en 5 sobres de 5 para la animación de apertura.
+// Corta las 15 cartas en 3 sobres de 5 para la animación de apertura.
 export function splitIntoPacks(cards, cardsPerPack = CARTAS_POR_SOBRE) {
   const sobres = [];
   for (let i = 0; i < cards.length; i += cardsPerPack) {

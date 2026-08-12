@@ -1,6 +1,6 @@
 // cardsRepo.js — todo lo relacionado a las cartas que posee un manager:
 // leerlas (getManagerCards) y armar/guardar el plantel inicial al abrir los
-// 5 sobres (openInitialPacks, portado de packOpening/openPacks.js).
+// 3 sobres (openInitialPacks, portado de packOpening/openPacks.js).
 import { supabase } from './supabaseClient.js';
 import { draftSquad, splitIntoPacks, MINIMOS_POR_POSICION } from '../packOpening/draftSquad.js';
 import { DataError } from '../core/errors.js';
@@ -44,9 +44,9 @@ export async function borrarCartasDeManager(managerId) {
 }
 
 // openInitialPacks.js — conecta la lógica pura de draftSquad.js con
-// Supabase: trae el catálogo de cartas activas, arma el plantel de 25, lo
-// guarda en `user_cards` y devuelve los 5 sobres ya armados para que la
-// escena de Phaser los vaya revelando.
+// Supabase: trae el catálogo de cartas activas, arma el plantel de 15
+// (3 sobres × 5), lo guarda en `user_cards` y devuelve los 3 sobres ya
+// armados para que la UI de apertura los vaya revelando.
 
 // Columnas que necesita el draft (id, position) + las que necesita la
 // pantalla de apertura para mostrar cada carta (nombre, foto, rating, etc).
@@ -110,14 +110,14 @@ async function saveSquad(managerId, cards) {
 }
 
 // Arma y guarda el plantel inicial de un manager recién creado.
-// Devuelve un array de 5 sobres, cada uno con 5 cartas completas
-// (listas para dibujar en PackOpeningScene).
+// Devuelve un array de 3 sobres, cada uno con 5 cartas completas
+// (listas para dibujar en la pantalla de apertura).
 //
 // leagueId: slug de cards.league_id ('premier' | 'laliga' | 'seriea'). El
 // pool se filtra a esa liga. Sin leagueId (panel de dev) se usa el catálogo
 // completo, como antes.
 //
-// Guardamos las 25 cartas en la base ANTES de mostrar la animación, así
+// Guardamos las 15 cartas en la base ANTES de mostrar la animación, así
 // el plantel queda persistido aunque el jugador cierre la pestaña a mitad
 // de la apertura de sobres: la animación solo "reproduce" algo que ya
 // está guardado, nunca al revés.

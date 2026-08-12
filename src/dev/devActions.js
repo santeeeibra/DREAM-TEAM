@@ -50,7 +50,7 @@ function iniciarEscenaUnica(game, key, data) {
   game.scene.start(key, data);
 }
 
-// Botón 1: corre el flujo REAL de abrir 5 sobres (draftSquad + guardar 25
+// Botón 1: corre el flujo REAL de abrir 3 sobres (draftSquad + guardar 15
 // cartas nuevas en user_cards, ver openPacks.js) para el manager actual, y
 // arranca la animación de PackOpeningScene. Al terminar de revelar las
 // cartas, sigue al mismo lugar que sigue el juego real (LineupScene con las
@@ -125,7 +125,7 @@ export async function irAPantalla(nombreEscena) {
   iniciarEscenaUnica(game, nombreEscena);
 }
 
-// Botón 3: borra SOLO las 25 cartas del manager actual (tabla user_cards),
+// Botón 3: borra SOLO las 15 cartas del manager actual (tabla user_cards),
 // sin tocar el manager ni el lineup guardado. Sirve para re-testear la
 // apertura de sobres sin tener que resetear la cuenta entera.
 export async function vaciarPlantel() {

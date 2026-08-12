@@ -36,15 +36,17 @@ export function slotsVacios(once) {
  * Auto-armado (§D.2). Determinístico: no toca el RNG.
  * 1) ARQ es exclusivo de POR. Si no hay arquero en el plantel, el slot queda VACÍO —
  *    nunca se rellena en silencio con un jugador de campo.
- * 2) El resto se asigna por pares (slot, carta) ordenados por penalidad ascendente y
- *    rating descendente: primero todos los puestos naturales, después vecinos, después fuera.
- * 3) Último recurso: si sobran slots y solo quedan arqueros, se usan igual.
+ * 2) Los 10 slots de campo se resuelven con el algoritmo de asignación de
+ *    Kuhn–Munkres ("húngaro", condición de optimalidad H1'), maximizando la suma
+ *    de rating efectivo (rating − penalidad): el 11 de mayor rating posible para
+ *    el plantel en esta formación. Un POR jamás sale a la cancha fuera del arco.
  */
 export function autoOnce(plantel, { excluir = new Set() } = {}) {
   const libres = (plantel || []).filter((c) => c && !excluir.has(c.id));
   const once = FORMACION.map(() => null);
   const usados = new Set();
 
+  // 1) ARQ: el mejor POR disponible; vacío si no hay.
   FORMACION.forEach((slot, i) => {
     if (slot !== 'ARQ') return;
     const arquero = libres
@@ -56,27 +58,78 @@ export function autoOnce(plantel, { excluir = new Set() } = {}) {
     }
   });
 
-  const pares = [];
-  FORMACION.forEach((slot, i) => {
-    if (slot === 'ARQ') return;
-    for (const c of libres) {
-      if (c.pos === 'POR') continue; // un arquero sale a la cancha solo en el paso 3
-      pares.push({ i, id: c.id, pen: penalidad(c.pos, slot), rating: c.rating });
-    }
-  });
-  pares.sort((a, b) => a.pen - b.pen || b.rating - a.rating);
-  for (const p of pares) {
-    if (once[p.i] !== null || usados.has(p.id)) continue;
-    once[p.i] = p.id;
-    usados.add(p.id);
-  }
-
-  const sobrantes = libres.filter((c) => !usados.has(c.id)).sort((a, b) => b.rating - a.rating);
-  for (let i = 0; i < once.length && sobrantes.length; i++) {
-    if (once[i] !== null) continue;
-    if (FORMACION[i] === 'ARQ') continue; // sigue siendo exclusivo: mejor vacío que un DEL al arco
-    once[i] = sobrantes.shift().id;
+  // 2) Campo: asignación exacta con el húngaro sobre los jugadores de campo.
+  const jugadores = libres.filter((c) => !usados.has(c.id) && c.pos !== 'POR');
+  const slotsCampo = FORMACION.map((s, i) => ({ s, i })).filter((x) => x.s !== 'ARQ');
+  for (const [iJugador, iSlot] of asignacionOptima(jugadores, slotsCampo)) {
+    once[iSlot] = jugadores[iJugador].id;
   }
 
   return once;
+}
+
+// Asignación jugadores→slots que maximiza la suma de rating efectivo. Reduce al
+// problema de asignación de costo mínimo (Kuhn–Munkres, O(n³) con n ≤ 15): el
+// costo de un jugador real en un slot real es 1000 − rating efectivo (minimizar
+// la suma equivale a maximizarla). Si hay más jugadores que slots, los que no
+// entran se emparejan con columnas dummy; si hay menos, los slots vacíos se
+// emparejan con filas dummy y quedan null en el once.
+function asignacionOptima(jugadores, slots) {
+  const nFilas = jugadores.length;
+  const nCols = slots.length;
+  const n = Math.max(nFilas, nCols);
+  const costo = (f, c) =>
+    f >= nFilas || c >= nCols ? 0 : 1000 - ratingEnSlot(jugadores[f], slots[c].s);
+
+  // Kuhn–Munkres clásico (configuración "assignment problem", minimización).
+  const u = new Array(n + 1).fill(0);
+  const v = new Array(n + 1).fill(0);
+  const p = new Array(n + 1).fill(0);
+  const way = new Array(n + 1).fill(0);
+  for (let i = 1; i <= n; i++) {
+    p[0] = i;
+    let j0 = 0;
+    const minv = new Array(n + 1).fill(Infinity);
+    const used = new Array(n + 1).fill(false);
+    do {
+      used[j0] = true;
+      const i0 = p[j0];
+      let delta = Infinity;
+      let j1 = -1;
+      for (let j = 1; j <= n; j++) {
+        if (used[j]) continue;
+        const cur = costo(i0 - 1, j - 1) - u[i0] - v[j];
+        if (cur < minv[j]) {
+          minv[j] = cur;
+          way[j] = j0;
+        }
+        if (minv[j] < delta) {
+          delta = minv[j];
+          j1 = j;
+        }
+      }
+      for (let j = 0; j <= n; j++) {
+        if (used[j]) {
+          u[p[j]] += delta;
+          v[j] -= delta;
+        } else {
+          minv[j] -= delta;
+        }
+      }
+      j0 = j1;
+    } while (p[j0] !== 0);
+    do {
+      const j1 = way[j0];
+      p[j0] = p[j1];
+      j0 = j1;
+    } while (j0 !== 0);
+  }
+
+  // p[c] = fila (1-based) asignada a la columna c; las dummies se descartan.
+  const resultado = [];
+  for (let c = 1; c <= n; c++) {
+    const fila = p[c] - 1;
+    if (fila < nFilas && c - 1 < nCols) resultado.push([fila, slots[c - 1].i]);
+  }
+  return resultado;
 }

@@ -178,11 +178,11 @@ export function initDevPanel() {
   banner.textContent = '⚠ MODO DEV ⚠';
   panel.appendChild(banner);
 
-  // Botón 1: simular apertura de 5 sobres. El panel se cierra recién si
+  // Botón 1: simular apertura de 3 sobres. El panel se cierra recién si
   // salió bien, así se ve la animación; si falla (ej: sin manager
   // todavía), se queda abierto con el error a la vista.
-  crearBoton('🎁 Simular apertura de 5 sobres', () => {
-    ejecutarAccion(simularAperturaDeSobres, '25 cartas nuevas guardadas y animación arrancada.', () => {
+  crearBoton('🎁 Simular apertura de 3 sobres', () => {
+    ejecutarAccion(simularAperturaDeSobres, '15 cartas nuevas guardadas y animación arrancada.', () => {
       panel.classList.remove('devpanel-abierto');
     });
   });
@@ -206,8 +206,8 @@ export function initDevPanel() {
   tituloAcciones.textContent = 'Datos:';
   panel.appendChild(tituloAcciones);
 
-  // Botón 3: vaciar plantel (solo las 25 cartas).
-  crearBoton('🗑️ Vaciar plantel (borra las 25 cartas)', () => {
+  // Botón 3: vaciar plantel (solo las 15 cartas).
+  crearBoton('🗑️ Vaciar plantel (borra las 15 cartas)', () => {
     ejecutarAccion(vaciarPlantel, 'Plantel vaciado. Volvé a "Colección" o "Armar 11" para verlo.');
   });
 
@@ -217,7 +217,7 @@ export function initDevPanel() {
     '☠️ Resetear mi cuenta',
     () => {
       const confirmado = window.confirm(
-        '¿Estás seguro? Esto borra tu manager, tus 25 cartas, tu lineup y tu temporada. No se puede deshacer.'
+        '¿Estás seguro? Esto borra tu manager, tus 15 cartas, tu lineup y tu temporada. No se puede deshacer.'
       );
       if (!confirmado) return;
 

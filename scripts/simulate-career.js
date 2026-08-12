@@ -4,7 +4,7 @@ import {
   iniciarCarrera, confirmarOnce, jugarTramo, candidatosDelTramo, fijarNarracion,
   resolverEvento, abrirRefuerzo, aplicarRefuerzo, resumenCarrera, FASES,
   autoOnce, CATALOGO, BALANCE_VERSION, RANGOS, TIER_LIGA, TIER_LIGA_DEFAULT,
-  FORMACION, penalidad, SLOTS_POR_PUESTO_ANCHO,
+  FORMACION, penalidad, SLOTS_POR_PUESTO_ANCHO, ratingEnSlot,
 } from '../src/engine/index.js';
 
 const N = Number(process.argv[2]) || 200;
@@ -71,6 +71,23 @@ function autoOnceVerificado(plantel) {
         throw new Error(`Fase D: ${carta.nombre} (${carta.pos}) en ${slot} con slot exacto libre`);
       }
       faseD.fueraDePosicion++;
+    }
+  });
+
+  // Condición H1' (§D.2): optimalidad del XI. Ningún jugador fuera del once puede
+  // mejorar el rating efectivo de un slot de campo → autoOnce devolvió el mejor 11
+  // posible para este plantel. Un slot vacío solo es válido si no queda ningún
+  // jugador de campo libre (si no, el húngaro lo habría llenado).
+  const fueraDelOnce = plantel.filter((c) => !once.includes(c.id) && c.pos !== 'POR');
+  FORMACION.forEach((slot, i) => {
+    if (slot === 'ARQ') return;
+    const actual = once[i] ? porId.get(once[i]) : null;
+    for (const k of fueraDelOnce) {
+      if (ratingEnSlot(k, slot) > (actual ? ratingEnSlot(actual, slot) : -1)) {
+        throw new Error(
+          `Fase D (óptimo): ${k.nombre} (${k.pos},${k.rating}) mejora ${slot} (${actual ? actual.nombre : 'vacío'}) y no está en el XI`
+        );
+      }
     }
   });
   return once;

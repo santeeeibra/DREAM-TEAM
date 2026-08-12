@@ -4,7 +4,7 @@ Fuente de verdad (estado/vars): `src/ui/main.js` (primeras líneas) + capas del 
 ## Capas
 - **Motor** (`src/engine/`) — lógica pura Node: no importa Phaser, Supabase ni DOM. `state.js` es el único camino de mutación con clamps.
 - **UI** (`src/ui/main.js`) — DOM: solo render e input. Lee el motor y llama sus funciones; **no calcula reglas ni efectos**.
-- **Datos/red** (`src/data/`, `src/net/`) — persistencia Supabase y fetch de narración (`pedirNarracion` en `src/net/evento.js`). `src/data/leagues.js` es la fuente única de las 3 ligas × 20 clubes (draft, motor, dropdown, escudos); `src/data/cardsRepo.js` arma el draft inicial real (`openInitialPacks`); `src/packOpening/draftSquad.js` es la lógica pura de draft (25 cartas en 5 sobres). ⚠ Antipatrón detectado (preexistente, sin unificar): hay DOS clientes Supabase (`src/data/supabaseClient.js` y `src/net/supabaseClient.js`).
+- **Datos/red** (`src/data/`, `src/net/`) — persistencia Supabase y fetch de narración (`pedirNarracion` en `src/net/evento.js`). `src/data/leagues.js` es la fuente única de las 3 ligas × 20 clubes (draft, motor, dropdown, escudos); `src/data/cardsRepo.js` arma el draft inicial real (`openInitialPacks`); `src/packOpening/draftSquad.js` es la lógica pura de draft (15 cartas en 3 sobres). ⚠ Antipatrón detectado (preexistente, sin unificar): hay DOS clientes Supabase (`src/data/supabaseClient.js` y `src/net/supabaseClient.js`).
 - **IA** — GROQ vía proxy serverless. La key nunca va al cliente; no se llama a la IA en el camino crítico del render.
 - Nota: existe una entrada legacy Phaser (`src/main.js`, `src/scenes/`, `src/objects/`, `src/packOpening/`) que convive con la capa DOM; la capa visual documentada acá es `src/ui/main.js`.
 
@@ -16,7 +16,7 @@ Fuente de verdad (estado/vars): `src/ui/main.js` (primeras líneas) + capas del 
 - Otros: `CLUBES_JUGABLES` (`data/nombres.js`), `generateClubBadgeDataURI` (`utils/badgeGenerator.js`).
 
 ## Constantes y helpers de UI
-- `PACK_ID` — único pack pagado (Sobre Dream Team, `b34f5178-…`): solo se usa para el **sobre de refuerzo** post-temporada (`open-pack`). El draft inicial ya no pasa por packs: son los 5 sobres de `openInitialPacks` (25 cartas de la liga del DT, `src/data/cardsRepo.js`).
+- `PACK_ID` — único pack pagado (Sobre Dream Team, `b34f5178-…`): solo se usa para el **sobre de refuerzo** post-temporada (`open-pack`). El draft inicial ya no pasa por packs: son los 3 sobres de `openInitialPacks` (15 cartas de la liga del DT, `src/data/cardsRepo.js`).
 - `esc(s)` — escape HTML de `& < > "`.
 - `ICONO` — `{ money: 💰, moral: 😊, fatiga: 🔋, presion: 🔥, ratingDelta: ⭐ }`.
 - `NOMBRE_VAR` — `{ money: 'Plata', moral: 'Moral', fatiga: 'Fatiga', presion: 'Presión', ratingDelta: 'Nivel' }`.
