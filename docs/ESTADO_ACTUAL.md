@@ -1,1 +1,1 @@
-Error al generar resumen.
+null
