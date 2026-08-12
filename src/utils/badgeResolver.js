@@ -14,10 +14,12 @@ const THESPORTSDB_KEY = '3'; // clave pública de pruebas de TheSportsDB
 // permite que getLeagueLogoUrl funcione con cualquiera de los dos.
 const LEAGUE_LOGO_IDS = {
   'Premier League': '4328',
+  'premier': '4328',
   'premier-league': '4328',
   'LaLiga': '4335',
   'laliga': '4335',
   'Serie A': '4332',
+  'seriea': '4332',
   'serie-a': '4332',
   'Bundesliga': '4331',
   'bundesliga': '4331',

@@ -12,6 +12,11 @@ const politica = (process.argv.find((a) => a.startsWith('--politica=')) || '--po
 // Default dificil: es donde viven los graves (rotación de figuras) — el modo
 // fácil no los ejercita y el invariante de rotación no tendría qué medir.
 const modo = (process.argv.find((a) => a.startsWith('--modo=')) || '--modo=dificil').split('=')[1];
+// Arena por liga/club reales (slugs de leagues.js). Sin flags, se corre la
+// arena legacy (club sin liga → liga.js usa los clubes reales de Premier como
+// rivales de respaldo). Ej.: node scripts/simulate-career.js 200 --liga=laliga --club=barcelona
+const liga = (process.argv.find((a) => a.startsWith('--liga=')) || '').split('=')[1] || null;
+const clubSel = (process.argv.find((a) => a.startsWith('--club=')) || '').split('=')[1] || null;
 
 function decidir(narracion, carrera, rng) {
   const ops = narracion.opciones;
@@ -73,7 +78,7 @@ function autoOnceVerificado(plantel) {
 
 console.time('simulacion');
 for (let i = 0; i < N; i++) {
-  const c = iniciarCarrera({ seed: 1000 + i, dt: 'Harness', club: 'Club Atlético Viedma', modo });
+  const c = iniciarCarrera({ seed: 1000 + i, dt: 'Harness', club: clubSel || 'Club Atlético Viedma', leagueId: liga, modo });
   confirmarOnce(c, autoOnceVerificado(c.plantel));
 
   let guardia = 0;
@@ -125,7 +130,7 @@ for (let i = 0; i < N; i++) {
   for (const t of c.temporadas) {
     const lider = t.tablaTop5[0];
     if (!lider) continue;
-    const tier = lider.nombre === c.club ? 'mio' : TIER_LIGA[lider.nombre] ?? TIER_LIGA_DEFAULT;
+    const tier = lider.esMio ? 'mio' : TIER_LIGA[lider.clubId] ?? TIER_LIGA_DEFAULT;
     stats.campeonTier[tier] = (stats.campeonTier[tier] || 0) + 1;
   }
 

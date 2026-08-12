@@ -1,27 +1,65 @@
 // PURA. Resolución de temporada por tramos (§2.2): sin motor de partido en vivo.
 import { LIGA, FUERZA, ESCALADA_LIGA, ESTILOS_CLUB, TIER_LIGA, TIER_LIGA_DEFAULT, FUERZA_POR_TIER } from './balance.js';
-import { CLUBES_RIVALES } from '../data/nombres.js';
+import { getLeagueById } from '../data/leagues.js';
 
 export const MI_EQUIPO = 0;
 
-export function crearLiga(rng, nombreClub, { temporada = 1, posAnterior = null } = {}) {
+// Cuando el DT no tiene liga (carreras legacy / harness sin club real), la
+// arena se arma con los clubes reales de Premier: una sola fuente de clubes,
+// nunca una lista de rivales duplicada a mano.
+const LIGA_FALLBACK = 'premier';
+
+// Normaliza el nombre de un club para comparar tolerante (FC Barcelona ≈
+// Barcelona, Sevilla FC ≈ Sevilla, CA Osasuna ≈ Osasuna): quita acentos y
+// los prefijos típicos de los nombres EA/fantasia. Sirve para excluir al
+// propio club cuando su nombre viene de otra fuente (p. ej. la tabla `clubs`
+// de temporada actual vs. las cartas FC24).
+function normalizarNombreClub(nombre) {
+  return (nombre || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/^(fc|cf|ud|cd|ca|ssc|sc|as|sd|rc|rcd|d\.)\s+/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// Los 19 rivales del DT: los otros clubes de su liga en leagues.js (la misma
+// lista que alimenta el draft y los escudos). Con liga desconocida, Premier.
+function candidatosRivales(club) {
+  const liga = club.leagueId ? getLeagueById(club.leagueId) : null;
+  const lista = (liga || getLeagueById(LIGA_FALLBACK)).clubs;
+  const miId = club.id;
+  const miNombre = normalizarNombreClub(club.name);
+  return lista
+    .filter((c) => (miId ? c.id !== miId : true) && normalizarNombreClub(c.name) !== miNombre)
+    .map((c) => ({ id: c.id, nombre: c.name }));
+}
+
+/**
+ * club: { id, name, leagueId } — el id es el slug de leagues.js (ej.
+ * 'manchester-city'). El club del DT y cada rival llevan su `clubId` estable:
+ * los tiers (TIER_LIGA) y los estilos (ESTILOS_CLUB) se resuelven por ese id,
+ * nunca por el nombre mostrado.
+ */
+export function crearLiga(rng, club, { temporada = 1, posAnterior = null } = {}) {
   const media = ESCALADA_LIGA.BASE
     + ESCALADA_LIGA.POR_TEMPORADA * (temporada - 1)
     + (posAnterior && posAnterior <= 5 ? ESCALADA_LIGA.CASTIGO_AL_LIDER : 0)
     + (posAnterior && posAnterior >= 15 ? ESCALADA_LIGA.ALIVIO_AL_ULTIMO : 0);
-  const rivales = rng.shuffle(CLUBES_RIVALES).slice(0, LIGA.EQUIPOS - 1);
+  const rivales = rng.shuffle(candidatosRivales(club)).slice(0, LIGA.EQUIPOS - 1);
   const equipos = [
-    { id: 0, nombre: nombreClub, fuerza: 0, esMio: true },
-    ...rivales.map((nombre, i) => {
+    { id: 0, nombre: club.name, fuerza: 0, esMio: true, clubId: club.id || null },
+    ...rivales.map((r, i) => {
       // Jerarquía real por club: cada rival saca su fuerza de la banda de su
       // tier (TIER_LIGA → FUERZA_POR_TIER). Las bandas son separadas a
       // propósito: los grandes pelean el título, los medios la mitad de la
-      // tabla, los bajos el descenso. Antes todos sacaban de la misma gauss
-      // y un equipo de mitad/baja tabla podía salir campeón.
-      const cfg = FUERZA_POR_TIER[TIER_LIGA[nombre] ?? TIER_LIGA_DEFAULT];
+      // tabla, los bajos el descenso.
+      const cfg = FUERZA_POR_TIER[TIER_LIGA[r.id] ?? TIER_LIGA_DEFAULT];
       return {
         id: i + 1,
-        nombre,
+        clubId: r.id,
+        nombre: r.nombre,
         fuerza: Math.round(clampNum(gauss(rng, media + cfg.off, cfg.sd), 54, 90) * 10) / 10,
         esMio: false,
       };
@@ -36,9 +74,10 @@ function gauss(rng, media, sd) {
 }
 const clampNum = (v, a, b) => Math.max(a, Math.min(b, v));
 
-/** Estilo de juego del rival por nombre. Default implícito: club neutro. */
-export function getEstiloRival(nombreRival) {
-  return ESTILOS_CLUB[nombreRival] ?? { goles_mod: 0, concedidos_mod: 0, presion_extra: 1 };
+/** Estilo de juego del rival por club_id (o nombre, caso legacy). Default implícito: club neutro. */
+export function getEstiloRival(rival) {
+  const key = typeof rival === 'string' ? rival : rival.clubId || rival.nombre;
+  return ESTILOS_CLUB[key] ?? { goles_mod: 0, concedidos_mod: 0, presion_extra: 1 };
 }
 
 /** Round-robin (círculo) ida y vuelta: 38 fechas para 20 equipos. */
@@ -107,7 +146,7 @@ export function simularTramo(rng, liga, desde, hasta, fuerzaMia, misJugadores = 
       let gv = goles(rng, fv, fl, FUERZA.VISITA);
       // Estilo del rival: el fuerte te cierra (menos goles) y te castiga más (más en contra).
       if (local.esMio || visita.esMio) {
-        const estilo = getEstiloRival((local.esMio ? visita : local).nombre);
+        const estilo = getEstiloRival(local.esMio ? visita : local);
         if (local.esMio) {
           gl = goles(rng, fl, fv, FUERZA.LOCALIA, 1 - estilo.goles_mod);
           gv = goles(rng, fv, fl, FUERZA.VISITA, 1 + estilo.concedidos_mod);
@@ -123,6 +162,7 @@ export function simularTramo(rng, liga, desde, hasta, fuerzaMia, misJugadores = 
         misPartidos.push({
           fecha: f + 1,
           rival: soyLocal ? visita.nombre : local.nombre,
+          rivalId: soyLocal ? visita.clubId : local.clubId,
           localia: soyLocal ? 'L' : 'V',
           gf: soyLocal ? gl : gv,
           gc: soyLocal ? gv : gl,

@@ -76,31 +76,6 @@ export async function fetchAbrirSobre({ managerId, packId, free = false } = {}) 
 }
 
 /**
- * Trae los clubes jugables de una liga ('premier' | 'laliga') desde la
- * tabla `clubs`. Devuelve [] si no hay resultados, null si no se pudo
- * consultar (sin Supabase configurado o error de red/RPC).
- */
-export async function fetchClubsPorLiga(liga) {
-  await initSupabase();
-  if (!supabase) return null;
-  try {
-    const { data, error } = await supabase
-      .from('clubs')
-      .select('*')
-      .eq('league', liga)
-      .order('name');
-    if (error) {
-      console.warn('[dream-team] fetchClubsPorLiga falló:', error.message);
-      return null;
-    }
-    return data ?? [];
-  } catch (e) {
-    console.warn('[dream-team] fallo de red al pedir clubes:', e.message);
-    return null;
-  }
-}
-
-/**
  * Crea el manager (DT) en la tabla `managers`. Devuelve el id creado o
  * null si no se pudo (sin Supabase configurado o error).
  */

@@ -50,11 +50,18 @@ export async function borrarCartasDeManager(managerId) {
 
 // Columnas que necesita el draft (id, position) + las que necesita la
 // pantalla de apertura para mostrar cada carta (nombre, foto, rating, etc).
+// `league_id` viaja en cada carta: el motor la guarda en el shape normalizado.
 const COLUMNAS_CARTA =
-  'id, name, club, position, overall_rating, rarity, photo_url, fut_id, uses_generated_avatar, club_badge_url, nation_flag_url, league_logo_url';
+  'id, name, club, position, overall_rating, rarity, photo_url, fut_id, uses_generated_avatar, club_badge_url, nation_flag_url, league_logo_url, league_id';
 
-async function fetchCardPool() {
-  const { data, error } = await supabase.from('cards').select(COLUMNAS_CARTA).eq('is_active', true);
+// Trae el catálogo de cartas activas. Con `leagueId` (slug de cards.league_id,
+// ej. 'premier' | 'laliga' | 'seriea') filtra el pool a una liga: el draft
+// inicial siempre entrega cartas de la liga del DT.
+async function fetchCardPool(leagueId = null) {
+  let query = supabase.from('cards').select(COLUMNAS_CARTA).eq('is_active', true);
+  if (leagueId) query = query.eq('league_id', leagueId);
+
+  const { data, error } = await query;
 
   if (error) throw new DataError(error.message, { causa: error });
   return data;
@@ -106,12 +113,16 @@ async function saveSquad(managerId, cards) {
 // Devuelve un array de 5 sobres, cada uno con 5 cartas completas
 // (listas para dibujar en PackOpeningScene).
 //
+// leagueId: slug de cards.league_id ('premier' | 'laliga' | 'seriea'). El
+// pool se filtra a esa liga. Sin leagueId (panel de dev) se usa el catálogo
+// completo, como antes.
+//
 // Guardamos las 25 cartas en la base ANTES de mostrar la animación, así
 // el plantel queda persistido aunque el jugador cierre la pestaña a mitad
 // de la apertura de sobres: la animación solo "reproduce" algo que ya
 // está guardado, nunca al revés.
-export async function openInitialPacks(managerId) {
-  const [pool, idsUsados] = await Promise.all([fetchCardPool(), fetchOwnedCardIds(managerId)]);
+export async function openInitialPacks(managerId, leagueId = null) {
+  const [pool, idsUsados] = await Promise.all([fetchCardPool(leagueId), fetchOwnedCardIds(managerId)]);
 
   // Filtramos las cartas que el manager ya tiene para que draftSquad no
   // vuelva a repartirlas (eso era lo que rompía el insert con el error de

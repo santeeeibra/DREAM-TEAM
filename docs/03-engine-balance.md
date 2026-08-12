@@ -3,7 +3,7 @@ Fuente de verdad: `src/engine/balance.js`.
 
 ## Rol
 - Único lugar donde viven los números de balance. Lógica pura: no importa Phaser, Supabase ni DOM.
-- Versionado: si cambiás algo, subí `BALANCE_VERSION` (hoy `'1.4.0'`) y volvé a correr el harness.
+- Versionado: si cambiás algo, subí `BALANCE_VERSION` (hoy `'1.5.0'`) y volvé a correr el harness.
 - Los deltas jamás los calcula ni devuelve la IA: salen de este módulo / catálogo local.
 
 ## Liga y carrera
@@ -22,17 +22,18 @@ Fuente de verdad: `src/engine/balance.js`.
   - `PESO_PRESION` 0.02 → 0..−2
   - `PESO_MOMENTUM` 0.5 → momentum ∈ [−3, 3] = ±1.5
   - `PENALIDAD_POSICION` — NATURAL 0 / VECINO 5 / FUERA 12. Criterio de "vecino" en `data/posiciones.js:penalidad()`. DFC es exclusivo de DEF (como ARQ de POR): ahí un MED/DEL cae directo a FUERA; LI/LD sí admiten MED como vecino.
-  - `LOCALIA` 1.12 · `VISITA` 0.92 · `GOLES_BASE` 1.35 · `GOLES_ESCALA` 18 (sensibilidad al diferencial de fuerza).
+  - `LOCALIA` 1.12 · `VISITA` 0.92 · `GOLES_BASE` 1.35 · `GOLES_ESCALA` 18 · `GOLES_ESCALA_INFERIOR` 12 — curva asimétrica: cuando un equipo es inferior (`fuerza < rival`) la escala cae a 12 (el débil decae más abrupto → menos milagros contra los grandes); el favorito usa la escala 18 (se aplica en `liga.js:goles()`).
 
 ## Deriva por tramo
 - `TRAMO` — deriva pasiva, sin feedback multiplicativo (evita el "pozo gravitacional" de moral):
-  - `FATIGA_POR_TRAMO` 7 · `MORAL_DRIFT_A_50` 2 (tira 1 punto hacia 50, aditivo) · `INGRESO_NETO` 1 (sponsors − sueldos)
+  - `FATIGA_POR_TRAMO` 4 · `FATIGA_HAZANA` 3 · `MORAL_DRIFT_A_50` 2 (tira 1 punto hacia 50, aditivo) · `INGRESO_NETO` 1 (sponsors − sueldos)
+  - Impuesto por hazaña (v1.5.0): por cada partido del tramo con puntos (`res ≠ 'P'`) contra un rival de tier con `off > 0` (`FUERZA_POR_TIER`, i.e. `grande`) se suma `FATIGA_HAZANA` a la fatiga del tramo — robarle puntos a un grande cansa (lo suma `carrera.js:jugarTramo()`).
   - `MORAL_POR_RENDIMIENTO` 6 (±, escalado por ppp − 1.35)
   - `PRESION_POR_RENDIMIENTO` 7 (los malos resultados duelen más) · `PRESION_OBJETIVO_LEJOS` 6 · `PRESION_OBJETIVO_CERCA` −4.
 
 ## Temporada
 - `TEMPORADA`:
-  - `PREMIO_BASE` 0.9 → (21 − posición) · base · `DESCANSO_FATIGA` −35
+  - `PREMIO_BASE` 0.9 → (21 − posición) · base · `DESCANSO_FATIGA` −42
   - Objetivo: `OBJETIVO_INICIAL` 12 (12° o mejor en la temp. 1), `OBJETIVO_APRIETE` 2 por temporada, `OBJETIVO_PISO` 2 (nunca menos que subcampeón)
   - `PRESION_OBJETIVO_FALLADO` 32 · `PRESION_OBJETIVO_CUMPLIDO` −15 · `MORAL_TITULO` 10 · `PRESION_EXPECTATIVA_POR_TEMPORADA` 2.0.
 - `DESPIDO` — `PRESION: 80`. Llegar a 80 de presión = te echan.

@@ -70,9 +70,11 @@ const banderaImg = (nombre) => {
 };
 
 // Botones de liga con logo oficial (CDN público temporal; onerror lo oculta).
+// ids = cards.league_id: el draft y el motor las usan tal cual.
 const LIGAS = [
   { id: 'premier', label: 'Premier League', logo: 'https://media.api-sports.io/football/leagues/39.png' },
   { id: 'laliga', label: 'LaLiga', logo: 'https://media.api-sports.io/football/leagues/140.png' },
+  { id: 'seriea', label: 'Serie A', logo: 'https://media.api-sports.io/football/leagues/135.png' },
 ];
 
 // Escudo del club: badge real de la fila de `clubs` (badge_url /
@@ -532,7 +534,7 @@ const PANTALLAS = {
     const todos = abiertos.length === c.sobresIniciales.length;
     return `<div class="stack">
       <div class="eyebrow">Paso 1 de 2 · Plantel inicial</div>
-      <h2>Tus tres sobres</h2>
+      <h2>Tus ${c.sobresIniciales.length} sobres</h2>
       <p class="hint">Lo que salga acá es con lo que arrancás la temporada 1. No hay repetición.</p>
       <div class="row">
         ${c.sobresIniciales.map((_, i) => abiertos.includes(i)
@@ -766,7 +768,7 @@ const acciones = {
   },
   async 'ob-liga'(el) {
     const ob = ui.onboarding;
-    // Guardamos lo ya tipeado: el fetch de clubes dispara un render() antes de
+    // Guardamos lo ya tipeado: el cambio de liga dispara un render() antes de
     // terminar, y el innerHTML se reconstruye — sin esto se perdería lo escrito.
     ob.nombre = document.getElementById('ob-dt')?.value ?? ob.nombre;
     // El país ya vive en el estado (dropdown visual), no en un input.
@@ -774,22 +776,20 @@ const acciones = {
     ob.abierto = null;
     ob.cargando = true; ob.error = null; ob.clubes = []; ob.clubId = '';
     render();
-    const { fetchClubsPorLiga } = await import('../net/supabaseClient.js');
-    const clubes = await fetchClubsPorLiga(ob.liga);
+    // Los clubes viven en leagues.js (la misma fuente que el draft y el motor):
+    // así el club elegido siempre tiene cartas en su liga, un id estable para
+    // persistir en `managers` y un escudo resoluble por la teca local.
+    const { getLeagueById } = await import('../data/leagues.js');
+    const liga = getLeagueById(ob.liga);
+    const clubes = liga ? liga.clubs.map((c) => ({ ...c })) : [];
+    clubes.forEach((cl) => {
+      const teca = escudoDeNombre(cl.name);
+      if (teca) { const img = new Image(); img.src = teca; }
+    });
     ob.cargando = false;
-    if (clubes === null) {
-      ob.error = 'No se pudieron cargar los clubes. Revisá tu conexión e intentá de nuevo.';
-    } else {
-      clubes.forEach(cl => {
-        const badge = cl.badge_url || cl.club_badge_url || cl.badge;
-        if (badge) { const img = new Image(); img.src = badge; }
-        const teca = escudoDeNombre(cl.name);
-        if (teca) { const img = new Image(); img.src = teca; }
-      });
-      ob.clubes = clubes;
-      ob.clubId = clubes[0]?.id || '';
-      ob.error = clubes.length === 0 ? 'No hay clubes cargados para esta liga todavía.' : null;
-    }
+    ob.clubes = clubes;
+    ob.clubId = clubes[0]?.id || '';
+    ob.error = clubes.length === 0 ? 'No hay clubes cargados para esta liga todavía.' : null;
   },
   async 'ob-confirmar'() {
     const ob = ui.onboarding;
@@ -801,7 +801,7 @@ const acciones = {
       return;
     }
     ob.enviando = true; ob.error = null; render();
-    const { crearManager, fetchAbrirSobre } = await import('../net/supabaseClient.js');
+    const { crearManager } = await import('../net/supabaseClient.js');
     const managerId = await crearManager({ name: ob.nombre, country: ob.pais, league_id: ob.liga, club_id: ob.clubId, modo: ob.modo || 'facil' });
     if (!managerId) {
       ob.enviando = false;
@@ -810,14 +810,28 @@ const acciones = {
     }
     localStorage.setItem('manager_id', managerId);
     const club = ob.clubes.find((cl) => cl.id === ob.clubId);
-    const sobres = await Promise.all([
-      fetchAbrirSobre({ managerId, packId: PACK_ID, free: true }),
-      fetchAbrirSobre({ managerId, packId: PACK_ID, free: true }),
-      fetchAbrirSobre({ managerId, packId: PACK_ID, free: true }),
-    ]);
-    const cartasInicialesDB = sobres.every(Boolean) ? sobres : null;
+
+    // Draft inicial real: 5 sobres x 5 cartas de la liga elegida
+    // (openInitialPacks guarda el plantel en user_cards y devuelve los sobres
+    // armados). Si la DB falla, el motor arma los sobres locales — la carrera
+    // nunca se traba y el mock queda solo como fallback offline.
+    let sobresInicialesDB = null;
+    try {
+      const { openInitialPacks } = await import('../data/cardsRepo.js');
+      sobresInicialesDB = await openInitialPacks(managerId, ob.liga);
+    } catch (e) {
+      console.warn('[dream-team] Draft inicial de Supabase falló, se usa el fallback local:', e.message);
+    }
+
     ui.miEscudo = club?.badge_url || club?.club_badge_url || club?.badge || '';
-    c = iniciarCarrera({ dt: ob.nombre, club: club?.name || ob.nombre, cartasInicialesDB, modo: ob.modo || 'facil' });
+    c = iniciarCarrera({
+      dt: ob.nombre,
+      club: club?.name || ob.nombre,
+      leagueId: ob.liga,
+      clubId: club?.id,
+      cartasInicialesDB: sobresInicialesDB,
+      modo: ob.modo || 'facil',
+    });
     ob.enviando = false;
     ui.vista = 'sobres'; ui.sobresAbiertos = [];
   },

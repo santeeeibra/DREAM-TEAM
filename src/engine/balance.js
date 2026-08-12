@@ -1,6 +1,6 @@
 // PURA. Único lugar donde viven los números de balance.
 // Versionado: si cambiás algo acá, subí BALANCE_VERSION y volvé a correr el harness.
-export const BALANCE_VERSION = '1.5.0';
+export const BALANCE_VERSION = '1.6.0';
 
 export const LIGA = {
   EQUIPOS: 20,
@@ -127,64 +127,137 @@ export const EPICAS_DIFICIL = {
 export const DIFICULTAD = { PROB_GRAVE_POR_TRAMO: 0.30 };
 
 // Presión inicial del DT según el club elegido (solo modo difícil).
+// Clave: `club_id` de leagues.js (los 60 clubes de las 3 ligas con cartas).
 // Clubs grandes: ya arrancás con presión de la hinchada y la directiva.
 // Clubs chicos: arrancan más tranquilos, pero sin margen de error.
 export const PRESION_INICIAL_TIER = {
   // Premier League — Big 6
-  'Manchester City': 42, 'Arsenal': 36, 'Liverpool': 40,
-  'Chelsea': 32, 'Manchester United': 30, 'Tottenham': 28,
-  // Medianos
-  'Aston Villa': 25, 'Newcastle': 24, 'Brighton': 20, 'West Ham': 20,
+  'man-city': 42, 'arsenal': 36, 'liverpool': 40,
+  'chelsea': 32, 'man-utd': 30, 'tottenham': 28,
+  // Premier — medianos
+  'aston-villa': 25, 'newcastle': 24, 'brighton': 20, 'crystal-palace': 18,
+  'fulham': 18, 'brentford': 18, 'everton': 18, 'leeds': 18, 'nottingham-forest': 18,
+  'bournemouth': 16,
   // LaLiga — tops
-  'Real Madrid': 42, 'Barcelona': 40, 'Atlético Madrid': 34,
-  'Sevilla': 25, 'Valencia': 22, 'Villarreal': 22,
-  // Bundesliga
-  'Bayern Munich': 42, 'Borussia Dortmund': 34, 'RB Leipzig': 28,
+  'real-madrid': 42, 'barcelona': 40, 'atletico-madrid': 34,
+  'sevilla': 25, 'valencia': 22, 'villarreal': 22, 'athletic': 22,
+  'real-sociedad': 20, 'real-betis': 18, 'girona': 16, 'celta-vigo': 16,
   // Serie A
-  'Juventus': 38, 'Inter Milan': 38, 'AC Milan': 36, 'Napoli': 32,
+  'juventus': 38, 'inter': 38, 'milan': 36, 'napoli': 32,
+  'roma': 26, 'atalanta': 22, 'lazio': 20, 'fiorentina': 18, 'bologna': 16,
 };
 // Clubs no listados (chicos): menor presión inicial pero techo de título muy bajo
 export const PRESION_INICIAL_DIFICIL_DEFAULT = 15;
 
-// Estilos de juego por club. Afectan el multiplicador de goles en la simulación (liga.js).
+// Estilos de juego por club. Clave: `club_id` de leagues.js.
+// Afectan el multiplicador de goles en la simulación (liga.js).
 // goles_mod: cuánto cambia la producción ofensiva del RIVAL al enfrentarlos
 // concedidos_mod: cuánto cambia lo que te meten a vos
 // presion_extra: presión adicional que suma al estado del DT si perdés contra ellos
 export const ESTILOS_CLUB = {
   // Premier League — Top 6
-  'Manchester City':    { goles_mod: +0.20, concedidos_mod: +0.18, presion_extra: 4 },
-  'Arsenal':            { goles_mod: +0.15, concedidos_mod: +0.14, presion_extra: 3 },
-  'Liverpool':          { goles_mod: +0.18, concedidos_mod: +0.16, presion_extra: 3 },
-  'Chelsea':            { goles_mod: +0.12, concedidos_mod: +0.10, presion_extra: 2 },
-  'Manchester United':  { goles_mod: +0.10, concedidos_mod: +0.08, presion_extra: 2 },
-  'Tottenham':          { goles_mod: +0.12, concedidos_mod: +0.14, presion_extra: 2 },
-  // Equipos de media tabla — neutrales
-  'Aston Villa':        { goles_mod: +0.05, concedidos_mod: +0.05, presion_extra: 1 },
-  'Newcastle':          { goles_mod: +0.06, concedidos_mod: +0.06, presion_extra: 1 },
-  'West Ham':           { goles_mod: +0.04, concedidos_mod: +0.08, presion_extra: 1 },
-  'Brighton':           { goles_mod: +0.06, concedidos_mod: +0.04, presion_extra: 1 },
-  // Equipos defensivos / candidatos al descenso
-  'Burnley':            { goles_mod: -0.10, concedidos_mod: +0.12, presion_extra: 0 },
-  'Sheffield United':   { goles_mod: -0.12, concedidos_mod: +0.14, presion_extra: 0 },
-  'Luton Town':         { goles_mod: -0.10, concedidos_mod: +0.15, presion_extra: 0 },
-  'Brentford':          { goles_mod: +0.04, concedidos_mod: +0.10, presion_extra: 1 },
+  'man-city':       { goles_mod: +0.20, concedidos_mod: +0.18, presion_extra: 4 },
+  'arsenal':        { goles_mod: +0.15, concedidos_mod: +0.14, presion_extra: 3 },
+  'liverpool':      { goles_mod: +0.18, concedidos_mod: +0.16, presion_extra: 3 },
+  'chelsea':        { goles_mod: +0.12, concedidos_mod: +0.10, presion_extra: 2 },
+  'man-utd':        { goles_mod: +0.10, concedidos_mod: +0.08, presion_extra: 2 },
+  'tottenham':      { goles_mod: +0.12, concedidos_mod: +0.14, presion_extra: 2 },
+  // Premier — media tabla (neutrales)
+  'aston-villa':    { goles_mod: +0.05, concedidos_mod: +0.05, presion_extra: 1 },
+  'newcastle':      { goles_mod: +0.06, concedidos_mod: +0.06, presion_extra: 1 },
+  'brighton':       { goles_mod: +0.06, concedidos_mod: +0.04, presion_extra: 1 },
+  'crystal-palace': { goles_mod: +0.02, concedidos_mod: +0.08, presion_extra: 1 },
+  'fulham':         { goles_mod: +0.04, concedidos_mod: +0.10, presion_extra: 1 },
+  'bournemouth':    { goles_mod: +0.04, concedidos_mod: +0.10, presion_extra: 1 },
+  'brentford':      { goles_mod: +0.04, concedidos_mod: +0.10, presion_extra: 1 },
+  // Premier — defensivos / candidatos al descenso
+  'nottingham-forest': { goles_mod: -0.10, concedidos_mod: +0.12, presion_extra: 0 },
+  'everton':        { goles_mod: -0.10, concedidos_mod: +0.14, presion_extra: 0 },
+  'leeds':          { goles_mod: -0.12, concedidos_mod: +0.14, presion_extra: 0 },
+  'sunderland':     { goles_mod: -0.12, concedidos_mod: +0.15, presion_extra: 0 },
+  'hull':           { goles_mod: -0.12, concedidos_mod: +0.15, presion_extra: 0 },
+  'coventry':       { goles_mod: -0.10, concedidos_mod: +0.12, presion_extra: 0 },
+  'ipswich':        { goles_mod: -0.12, concedidos_mod: +0.14, presion_extra: 0 },
+  // LaLiga — tops
+  'real-madrid':    { goles_mod: +0.18, concedidos_mod: +0.16, presion_extra: 4 },
+  'barcelona':      { goles_mod: +0.17, concedidos_mod: +0.15, presion_extra: 4 },
+  'atletico-madrid':{ goles_mod: +0.10, concedidos_mod: +0.12, presion_extra: 3 },
+  'sevilla':        { goles_mod: +0.06, concedidos_mod: +0.10, presion_extra: 2 },
+  'valencia':       { goles_mod: +0.04, concedidos_mod: +0.08, presion_extra: 1 },
+  'villarreal':     { goles_mod: +0.06, concedidos_mod: +0.08, presion_extra: 1 },
+  'athletic':       { goles_mod: +0.06, concedidos_mod: +0.06, presion_extra: 1 },
+  'real-sociedad':  { goles_mod: +0.05, concedidos_mod: +0.05, presion_extra: 1 },
+  'real-betis':     { goles_mod: +0.04, concedidos_mod: +0.08, presion_extra: 1 },
+  'girona':         { goles_mod: +0.04, concedidos_mod: +0.10, presion_extra: 1 },
+  'celta-vigo':     { goles_mod: +0.02, concedidos_mod: +0.08, presion_extra: 1 },
+  // LaLiga — defensivos / candidatos al descenso
+  'getafe':         { goles_mod: -0.06, concedidos_mod: +0.06, presion_extra: 0 },
+  'osasuna':        { goles_mod: +0.02, concedidos_mod: +0.04, presion_extra: 0 },
+  'rayo-vallecano': { goles_mod: +0.02, concedidos_mod: +0.10, presion_extra: 0 },
+  'mallorca':       { goles_mod: -0.04, concedidos_mod: +0.08, presion_extra: 0 },
+  'espanyol':       { goles_mod: -0.10, concedidos_mod: +0.14, presion_extra: 0 },
+  'alaves':         { goles_mod: -0.08, concedidos_mod: +0.10, presion_extra: 0 },
+  'elche':          { goles_mod: -0.12, concedidos_mod: +0.15, presion_extra: 0 },
+  'levante':        { goles_mod: -0.12, concedidos_mod: +0.15, presion_extra: 0 },
+  'real-oviedo':    { goles_mod: -0.10, concedidos_mod: +0.12, presion_extra: 0 },
+  // Serie A — tops
+  'juventus':       { goles_mod: +0.12, concedidos_mod: +0.10, presion_extra: 3 },
+  'inter':          { goles_mod: +0.14, concedidos_mod: +0.10, presion_extra: 3 },
+  'milan':          { goles_mod: +0.12, concedidos_mod: +0.10, presion_extra: 3 },
+  'napoli':         { goles_mod: +0.12, concedidos_mod: +0.12, presion_extra: 3 },
+  'roma':           { goles_mod: +0.08, concedidos_mod: +0.08, presion_extra: 2 },
+  'atalanta':       { goles_mod: +0.10, concedidos_mod: +0.10, presion_extra: 2 },
+  'lazio':          { goles_mod: +0.06, concedidos_mod: +0.08, presion_extra: 2 },
+  'fiorentina':     { goles_mod: +0.06, concedidos_mod: +0.06, presion_extra: 1 },
+  'bologna':        { goles_mod: +0.04, concedidos_mod: +0.06, presion_extra: 1 },
+  'torino':         { goles_mod: +0.02, concedidos_mod: +0.04, presion_extra: 1 },
+  'sassuolo':       { goles_mod: +0.02, concedidos_mod: +0.08, presion_extra: 1 },
+  'udinese':        { goles_mod: +0.02, concedidos_mod: +0.08, presion_extra: 1 },
+  // Serie A — defensivos / candidatos al descenso
+  'genoa':          { goles_mod: -0.04, concedidos_mod: +0.08, presion_extra: 0 },
+  'cagliari':       { goles_mod: -0.06, concedidos_mod: +0.10, presion_extra: 0 },
+  'como':           { goles_mod: -0.04, concedidos_mod: +0.08, presion_extra: 0 },
+  'cremonese':      { goles_mod: -0.10, concedidos_mod: +0.12, presion_extra: 0 },
+  'hellas-verona':  { goles_mod: -0.08, concedidos_mod: +0.10, presion_extra: 0 },
+  'lecce':          { goles_mod: -0.06, concedidos_mod: +0.08, presion_extra: 0 },
+  'parma':          { goles_mod: -0.08, concedidos_mod: +0.10, presion_extra: 0 },
+  'pisa':           { goles_mod: -0.12, concedidos_mod: +0.14, presion_extra: 0 },
   // Default implícito (si el club no aparece acá): { goles_mod: 0, concedidos_mod: 0, presion_extra: 1 }
 };
 
-// Jerarquía de poder real por club (los 19 rivales de CLUBES_RIVALES).
+// Jerarquía de poder real por club. Clave: `club_id` de leagues.js (los 19
+// rivales de cada liga salen de esa lista y traen su id).
 // grande = pelea el título, medio = pelea la mitad de la tabla, bajo = candidato al descenso.
-// Si un club no aparece acá (p. ej. un club creado en otra liga) cae a TIER_LIGA_DEFAULT.
+// Si un club no aparece acá (p. ej. un club sin liga, caso legacy) cae a TIER_LIGA_DEFAULT.
 export const TIER_LIGA = {
   // Premier League — Top 6
-  'Manchester City': 'grande', 'Arsenal': 'grande', 'Liverpool': 'grande',
-  'Chelsea': 'grande', 'Manchester United': 'grande', 'Tottenham': 'grande',
-  // Media tabla
-  'Aston Villa': 'medio', 'Newcastle': 'medio', 'West Ham': 'medio',
-  'Brighton': 'medio', 'Everton': 'medio', 'Crystal Palace': 'medio',
-  'Fulham': 'medio', 'Wolverhampton': 'medio', 'Nottingham Forest': 'medio',
-  // Candidatos al descenso
-  'Burnley': 'bajo', 'Sheffield United': 'bajo', 'Luton Town': 'bajo',
-  'Brentford': 'bajo',
+  'man-city': 'grande', 'arsenal': 'grande', 'liverpool': 'grande',
+  'chelsea': 'grande', 'man-utd': 'grande', 'tottenham': 'grande',
+  // Premier — media tabla
+  'aston-villa': 'medio', 'newcastle': 'medio', 'brighton': 'medio',
+  'crystal-palace': 'medio', 'everton': 'medio', 'fulham': 'medio',
+  'bournemouth': 'medio', 'leeds': 'medio', 'nottingham-forest': 'medio',
+  'brentford': 'medio',
+  // Premier — candidatos al descenso
+  'coventry': 'bajo', 'hull': 'bajo', 'ipswich': 'bajo', 'sunderland': 'bajo',
+  // LaLiga — tops
+  'real-madrid': 'grande', 'barcelona': 'grande', 'atletico-madrid': 'grande',
+  // LaLiga — media tabla
+  'sevilla': 'medio', 'valencia': 'medio', 'villarreal': 'medio',
+  'athletic': 'medio', 'real-sociedad': 'medio', 'real-betis': 'medio',
+  'girona': 'medio', 'celta-vigo': 'medio', 'getafe': 'medio', 'osasuna': 'medio',
+  'rayo-vallecano': 'medio', 'mallorca': 'medio',
+  // LaLiga — candidatos al descenso
+  'espanyol': 'bajo', 'alaves': 'bajo', 'elche': 'bajo', 'levante': 'bajo',
+  'real-oviedo': 'bajo',
+  // Serie A — tops
+  'juventus': 'grande', 'inter': 'grande', 'milan': 'grande', 'napoli': 'grande',
+  // Serie A — media tabla
+  'roma': 'medio', 'atalanta': 'medio', 'lazio': 'medio', 'fiorentina': 'medio',
+  'bologna': 'medio', 'torino': 'medio', 'sassuolo': 'medio', 'udinese': 'medio',
+  // Serie A — candidatos al descenso
+  'genoa': 'bajo', 'cagliari': 'bajo', 'como': 'bajo', 'cremonese': 'bajo',
+  'hellas-verona': 'bajo', 'lecce': 'bajo', 'parma': 'bajo', 'pisa': 'bajo',
 };
 export const TIER_LIGA_DEFAULT = 'medio';
 

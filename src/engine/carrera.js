@@ -9,6 +9,7 @@ import { sobresIniciales, sobreRefuerzo } from './sobresLocal.js';
 import { cargarCartasDB, envejecerPlantel, valorDeVenta } from './cartas.js';
 import { candidatosEvento, efectosDeOpcion, elegirPorSorteo, figuraConRotacion, figurasRecientes } from './candidatosEvento.js';
 import { paquete, CATALOGO_GRAVES } from './catalogoEventos.js';
+import { getClubById, findClubIdByName, getLeagueByClubName } from '../data/leagues.js';
 
 export const FASES = {
   SOBRES: 'sobres', ONCE: 'once', TRAMO: 'tramo', EVENTO: 'evento',
@@ -44,11 +45,22 @@ export function cargarCarrera(managerDB, plantelDB, temporadasDB = []) {
     ratingDelta: managerDB.rating_delta || 0
   };
 
+  // Identidad del club: resolvemos el nombre estable a partir de los ids
+  // persistidos (league_id / club_id de leagues.js). Managers viejos con
+  // club_id foráneo (la tabla `clubs` UUID) quedan con ese id como nombre:
+  // el motor igual los hace jugar en la arena (liga.js usa la Premier real
+  // como fallback cuando no hay liga).
+  const clubId = managerDB.club_id || null;
+  const leagueId = managerDB.league_id || null;
+  const clubInfo = clubId && leagueId ? getClubById(leagueId, clubId) : null;
+
   return {
     seed, 
     rng, 
     dt: managerDB.dt_name || 'DT', 
-    club: managerDB.club_id || 'Club Atlético Viedma',
+    club: clubInfo?.name ?? clubId ?? 'Club Atlético Viedma',
+    clubId,
+    leagueId,
     modo: managerDB.modo || MODO.FACIL,
     fase: managerDB.fase_actual || FASES.ONCE,
     temporada: managerDB.temporada_actual || 1,
@@ -73,21 +85,29 @@ export function cargarCarrera(managerDB, plantelDB, temporadasDB = []) {
 
 export function iniciarCarrera({
   seed = Date.now(), dt = 'DT', club = 'Club Atlético Viedma', cartasInicialesDB = null, modo = MODO.FACIL,
+  leagueId = null, clubId = null,
 } = {}) {
   const rng = createRng(seed);
-  // Sobres iniciales: los inyecta la UI desde Supabase (open_pack) o, si vienen
+  // Sobres iniciales: los inyecta la UI desde Supabase (openInitialPacks) o, si vienen
   // vacíos/nulos, se resuelven con el fallback local — la carrera nunca se traba.
   const sobres = cartasInicialesDB?.length
     ? cartasInicialesDB.map((s) => cargarCartasDB(s))
     : sobresIniciales(rng).map((s) => cargarCartasDB(s));
 
+  // El id estable del club (slug de leagues.js) manda para tiers, presión
+  // inicial y arena. Si solo llega el nombre (callers legacy), lo resolvemos
+  // contra leagues.js; si no es un club real, se conserva el nombre y la
+  // arena cae al fallback de liga.js.
+  const clubIdFinal = clubId || findClubIdByName(club) || club;
+  const leagueIdFinal = leagueId || getLeagueByClubName(club)?.id || null;
+
   // En modo difícil: la presión inicial depende del peso del club
   const presionInicial = modo === MODO.DIFICIL
-    ? (PRESION_INICIAL_TIER[club] ?? PRESION_INICIAL_DIFICIL_DEFAULT)
+    ? (PRESION_INICIAL_TIER[clubIdFinal] ?? PRESION_INICIAL_DIFICIL_DEFAULT)
     : undefined;
 
   return {
-    seed, rng, dt, club, modo,
+    seed, rng, dt, club, clubId: clubIdFinal, leagueId: leagueIdFinal, modo,
     fase: FASES.SOBRES,
     temporada: 1,
     tramo: 0,
@@ -113,7 +133,7 @@ export function iniciarCarrera({
 export function confirmarOnce(c, once) {
   const elegido = once && onceCompleto(once) ? once : autoOnce(c.plantel);
   c.once = elegido;
-  if (!c.liga) c.liga = crearLiga(c.rng, c.club);
+  if (!c.liga) c.liga = crearLiga(c.rng, { id: c.clubId || null, name: c.club, leagueId: c.leagueId || null });
   c.fase = FASES.TRAMO;
   return c;
 }
@@ -196,7 +216,7 @@ export function jugarTramo(c) {
   // partido contra un tier alto (off > 0, ver FUERZA_POR_TIER) donde sacamos puntos.
   const impuestoHazana = partidos.reduce((s, p) => {
     if (p.res === 'P') return s;
-    const off = FUERZA_POR_TIER[TIER_LIGA[p.rival] ?? TIER_LIGA_DEFAULT].off;
+    const off = FUERZA_POR_TIER[TIER_LIGA[p.rivalId] ?? TIER_LIGA_DEFAULT].off;
     return off > 0 ? s + TRAMO.FATIGA_HAZANA : s;
   }, 0);
 
@@ -231,7 +251,7 @@ function acumularEstadisticas(c, delTramo) {
 
 /** Presión extra por perder contra rivales de peso (ESTILOS_CLUB.presion_extra). */
 function presionExtraDerrotas(partidos) {
-  return partidos.reduce((s, p) => (p.res === 'P' ? s + getEstiloRival(p.rival).presion_extra : s), 0);
+  return partidos.reduce((s, p) => (p.res === 'P' ? s + getEstiloRival({ clubId: p.rivalId, nombre: p.rival }).presion_extra : s), 0);
 }
 
 function driftMoral(moral) {
@@ -354,7 +374,7 @@ function cerrarTemporada(c) {
     temporada: c.temporada, posicion: pos, pts: mia.pts, g: mia.g, e: mia.e, p: mia.p,
     gf: mia.gf, gc: mia.gc, objetivo: c.objetivo, cumplio, campeon,
     ratingOnceSnapshot: ratingActual(c),
-    tablaTop5: tabla.slice(0, 5).map((t) => ({ nombre: t.nombre, pts: t.pts })),
+    tablaTop5: tabla.slice(0, 5).map((t) => ({ nombre: t.nombre, pts: t.pts, clubId: c.liga.equipos[t.id]?.clubId ?? null, esMio: t.id === 0 })),
     estadisticas: { goleadores: { ...c.estadisticas.goleadores }, asistencias: { ...c.estadisticas.asistencias } },
   });
 
@@ -417,7 +437,7 @@ export function aplicarRefuerzo(c, idsEntran = [], idsSalen = []) {
   c.momentum = 0;
   c.refuerzo = null;
   c.estadisticas = { goleadores: {}, asistencias: {} };
-  c.liga = crearLiga(c.rng, c.club, { temporada: c.temporada, posAnterior: pos });
+  c.liga = crearLiga(c.rng, { id: c.clubId || null, name: c.club, leagueId: c.leagueId || null }, { temporada: c.temporada, posAnterior: pos });
   c.once = autoOnce(c.plantel);
   c.fase = FASES.ONCE;
   
