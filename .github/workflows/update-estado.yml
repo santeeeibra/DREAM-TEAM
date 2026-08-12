@@ -16,66 +16,51 @@ jobs:
         with:
           fetch-depth: 20
 
-      - name: Build git context
-        id: context
-        run: |
-          LOG=$(git log -10 --pretty=format:"- %h %s (%an, %ar)" 2>/dev/null || echo "Sin commits")
-          DIFF=$(git diff HEAD~1 HEAD --stat 2>/dev/null || git show --stat HEAD 2>/dev/null || echo "Primer commit")
-          DATE=$(date -u '+%Y-%m-%d %H:%M UTC')
-
-          {
-            echo "LOG<<EOF"
-            echo "$LOG"
-            echo "EOF"
-            echo "DIFF<<EOF"
-            echo "$DIFF"
-            echo "EOF"
-            echo "DATE=$DATE"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Call Claude API
-        id: claude
+      - name: Build git context and call Claude
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
-          LOG="${{ steps.context.outputs.LOG }}"
-          DIFF="${{ steps.context.outputs.DIFF }}"
+          # Recopilar contexto git en archivos temporales
+          git log -10 --pretty=format:"- %h %s (%an, %ar)" > /tmp/git_log.txt 2>/dev/null || echo "Sin commits" > /tmp/git_log.txt
+          git diff HEAD~1 HEAD --stat > /tmp/git_diff.txt 2>/dev/null || git show --stat HEAD > /tmp/git_diff.txt 2>/dev/null || echo "Primer commit" > /tmp/git_diff.txt
 
-          PAYLOAD=$(jq -n \
-            --arg log "$LOG" \
-            --arg diff "$DIFF" \
+          echo "=== LOG ==="
+          cat /tmp/git_log.txt
+          echo "=== DIFF ==="
+          cat /tmp/git_diff.txt
+
+          # Construir payload con jq leyendo archivos directamente
+          jq -n \
+            --rawfile log /tmp/git_log.txt \
+            --rawfile diff /tmp/git_diff.txt \
             '{
               model: "claude-sonnet-4-6",
               max_tokens: 1024,
               messages: [{
                 role: "user",
-                content: ("Sos el asistente del proyecto Dream Team, un juego de gestión de fútbol (roguelite, Ultimate Team style).\nAnalizá estos cambios y generá un resumen en español conciso para docs/ESTADO_ACTUAL.md.\n\nÚltimos commits:\n" + $log + "\n\nArchivos modificados:\n" + $diff + "\n\nDevolvé SOLO contenido markdown sin preámbulo. Incluí:\n## Estado actual\n(2-3 líneas de qué funciona hoy)\n## Último cambio\n(qué se hizo en el commit más reciente)\n## Próximo paso sugerido\n(1 línea)\n## Actualizado\n(fecha)")
+                content: ("Sos el asistente del proyecto Dream Team, un juego de gestión de fútbol roguelite.\nAnalizá estos cambios y generá un resumen en español para docs/ESTADO_ACTUAL.md.\n\nÚltimos commits:\n" + $log + "\nArchivos modificados:\n" + $diff + "\n\nDevolvé SOLO markdown sin preámbulo. Secciones:\n## Estado actual\n## Último cambio\n## Próximo paso sugerido\n## Actualizado")
               }]
-            }')
+            }' > /tmp/payload.json
 
-          RESPONSE=$(curl -sf https://api.anthropic.com/v1/messages \
+          echo "=== PAYLOAD ==="
+          cat /tmp/payload.json
+
+          # Llamar a Claude
+          curl -f -s \
             -H "x-api-key: $ANTHROPIC_API_KEY" \
             -H "anthropic-version: 2023-06-01" \
             -H "content-type: application/json" \
-            -d "$PAYLOAD")
+            -d @/tmp/payload.json \
+            https://api.anthropic.com/v1/messages > /tmp/response.json
 
-          echo "RESPONSE: $RESPONSE"
+          echo "=== RESPONSE ==="
+          cat /tmp/response.json
 
-          CONTENT=$(echo "$RESPONSE" | jq -r '.content[0].text // "Error al generar resumen."')
-
-          {
-            echo "CONTENT<<EOF"
-            echo "$CONTENT"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Write ESTADO_ACTUAL.md
-        run: |
+          # Extraer texto y escribir MD
           mkdir -p docs
-          cat > docs/ESTADO_ACTUAL.md << 'MDEOF'
-          ${{ steps.claude.outputs.CONTENT }}
-          MDEOF
-          echo "--- Archivo generado ---"
+          jq -r '.content[0].text' /tmp/response.json > docs/ESTADO_ACTUAL.md
+
+          echo "=== ESTADO_ACTUAL.md ==="
           cat docs/ESTADO_ACTUAL.md
 
       - name: Commit and push
