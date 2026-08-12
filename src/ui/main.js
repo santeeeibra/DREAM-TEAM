@@ -3,7 +3,7 @@ import {
   iniciarCarrera, confirmarOnce, jugarTramo, candidatosDelTramo, fijarNarracion,
   resolverEvento, abrirRefuerzo, registrarRefuerzo, aplicarRefuerzo, resumenCarrera, ratingActual,
   contexto, FASES, autoOnce, FORMACION, ratingEnSlot, penalidad, slotsVacios, posiciones, miPosicion,
-  paquete, valorDeVenta, CARRERA, LIGA, RANGOS,
+  paquete, valorDeVenta, CARRERA, LIGA, RANGOS, FUERZA,
 } from '../engine/index.js';
 import { CLUBES_JUGABLES } from '../data/nombres.js';
 import { escudoDeNombre } from '../data/escudoteca.js';
@@ -221,7 +221,7 @@ const LABEL_RAREZA = { bronce: 'Bronce', oro_comun: 'Oro común', oro_unico: 'Or
 function carta(x, { sel = false, accion = '', slot = null, bloqueada = false, motivo = '', i = 0 } = {}) {
   const pen = slot ? penalidad(x.pos, slot) : 0;
   const efectivo = slot ? ratingEnSlot(x, slot) : x.rating;
-  const clasePen = pen === 0 ? '' : pen <= 2 ? ' pen-vecino' : ' pen-fuera';
+  const clasePen = pen === 0 ? '' : pen === FUERZA.PENALIDAD_POSICION.VECINO ? ' pen-vecino' : ' pen-fuera';
   const num = pen === 0
     ? `<div class="num">${efectivo}</div>`
     : `<div class="num-cambio"><span class="orig">${x.rating}</span><span class="flecha">→</span><span class="efectivo">${efectivo}</span></div>`;
@@ -521,7 +521,7 @@ const PANTALLAS = {
     const slot = (i) => {
       const x = porId.get(c.once[i]);
       const pen = x ? penalidad(x.pos, FORMACION[i]) : 0;
-      const clase = pen === 0 ? '' : pen <= 2 ? 'vecino' : 'fuera';
+      const clase = pen === 0 ? '' : pen === FUERZA.PENALIDAD_POSICION.VECINO ? 'vecino' : 'fuera';
       return `<div class="slot ${ui.slot === i ? 'activo' : ''} ${clase} ${x ? '' : 'vacio'}" data-accion="slot" data-i="${i}">
         <div class="sl">${FORMACION[i]}</div>
         <div class="sr">${x ? ratingEnSlot(x, FORMACION[i]) : '—'}</div>
@@ -530,7 +530,7 @@ const PANTALLAS = {
     };
     const slotElegido = ui.slot !== null ? FORMACION[ui.slot] : null;
     // Recomendación por puesto: primero los naturales al slot (penalidad 0), después
-    // línea vecina (2), al final fuera de posición (6); dentro de cada grupo, el mejor
+    // línea vecina (VECINO), al final fuera de posición (FUERA); dentro de cada grupo, el mejor
     // rating efectivo para ese slot primero. Mismo criterio que usa autoOnce.
     const candidatos = ui.slot === null ? [] : [...banco, ...c.once.map((id) => porId.get(id))].filter(Boolean)
       .sort((a, b) =>
@@ -543,7 +543,7 @@ const PANTALLAS = {
       ${!sinArquero && vacios.length ? `<p class="aviso">Quedan ${vacios.length} puesto(s) sin cubrir. Tocá el puesto vacío para elegir jugador.</p>` : ''}
       <div class="cancha-grid">${lineas.map((l) => `<div class="linea-f">${l.map(slot).join('')}</div>`).join('')}</div>
       <p class="hint">${slotElegido
-        ? `Elegí quién juega de <b>${slotElegido}</b>. Cada carta muestra su rating real y el que rinde en este puesto: <span class="pen-vecino-tx">ámbar −2</span> si es una línea vecina, <span class="pen-fuera-tx">rojo −6</span> si está fuera de posición.`
+        ? `Elegí quién juega de <b>${slotElegido}</b>. Cada carta muestra su rating real y el que rinde en este puesto: <span class="pen-vecino-tx">ámbar −${FUERZA.PENALIDAD_POSICION.VECINO}</span> si es una línea vecina, <span class="pen-fuera-tx">rojo −${FUERZA.PENALIDAD_POSICION.FUERA}</span> si está fuera de posición.`
         : 'Tocá un puesto para cambiar al jugador. En ámbar o rojo: jugador fuera de su puesto natural.'}</p>
       ${slotElegido ? `<div class="grid-cartas">${candidatos.map((x, i) => carta(x, { accion: 'poner', slot: slotElegido, i })).join('')}</div>` : ''}
       <div class="row">

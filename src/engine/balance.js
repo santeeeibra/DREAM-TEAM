@@ -1,6 +1,6 @@
 // PURA. Único lugar donde viven los números de balance.
 // Versionado: si cambiás algo acá, subí BALANCE_VERSION y volvé a correr el harness.
-export const BALANCE_VERSION = '1.3.0';
+export const BALANCE_VERSION = '1.4.0';
 
 export const LIGA = {
   EQUIPOS: 20,
@@ -40,7 +40,8 @@ export const FUERZA = {
   PESO_MOMENTUM: 0.5,    // momentum ∈ [-3,3]  -> ±1.5
   // Penalización de rating por jugador fuera de su puesto natural, graduada por cercanía
   // de línea. Ver data/posiciones.js:penalidad() para el criterio de qué es "vecino".
-  PENALIDAD_POSICION: { NATURAL: 0, VECINO: 2, FUERA: 6 },
+  // DFC es exclusivo de DEF (igual que ARQ de POR): ahí un MED/DEL cae directo a FUERA.
+  PENALIDAD_POSICION: { NATURAL: 0, VECINO: 5, FUERA: 12 },
   LOCALIA: 1.12,
   VISITA: 0.92,
   GOLES_BASE: 1.35,

@@ -20,14 +20,18 @@ const PUESTO_ANCHO_DE_SLOT = Object.fromEntries(
 
 // Adyacencia entre puestos anchos: DEF-MED-DEL en línea. POR no tiene vecinos:
 // el arquero es exclusivo de su slot y penalización máxima en cualquier otro (regla dura §D.2).
+// Excepción fina: DFC también es exclusivo de DEF — solo un DEF lo cubre sin penalidad; un MED
+// no lo tapa como vecino. LI/LD, en cambio, sí admiten vecindad de MED.
 const VECINOS_PUESTO_ANCHO = { DEF: ['MED'], MED: ['DEF', 'DEL'], DEL: ['MED'] };
 
-/** 0 = puesto natural, 2 = línea vecina, 6 = fuera de posición. Reemplaza a encaja(). */
+/** 0 = puesto natural, 5 = línea vecina, 12 = fuera de posición. Reemplaza a encaja(). */
 export function penalidad(posCarta, slot) {
   if (slot === 'ARQ' || posCarta === 'POR') {
     return posCarta === 'POR' && slot === 'ARQ' ? FUERZA.PENALIDAD_POSICION.NATURAL : FUERZA.PENALIDAD_POSICION.FUERA;
   }
   if (SLOTS_POR_PUESTO_ANCHO[posCarta]?.includes(slot)) return FUERZA.PENALIDAD_POSICION.NATURAL;
+  // DFC es exclusivo de DEF: superado el puesto natural, no admite vecinos (§D.2).
+  if (slot === 'DFC') return FUERZA.PENALIDAD_POSICION.FUERA;
   const puestoDelSlot = PUESTO_ANCHO_DE_SLOT[slot];
   return VECINOS_PUESTO_ANCHO[posCarta]?.includes(puestoDelSlot)
     ? FUERZA.PENALIDAD_POSICION.VECINO

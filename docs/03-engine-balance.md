@@ -3,7 +3,7 @@ Fuente de verdad: `src/engine/balance.js`.
 
 ## Rol
 - Único lugar donde viven los números de balance. Lógica pura: no importa Phaser, Supabase ni DOM.
-- Versionado: si cambiás algo, subí `BALANCE_VERSION` (hoy `'1.3.0'`) y volvé a correr el harness.
+- Versionado: si cambiás algo, subí `BALANCE_VERSION` (hoy `'1.4.0'`) y volvé a correr el harness.
 - Los deltas jamás los calcula ni devuelve la IA: salen de este módulo / catálogo local.
 
 ## Liga y carrera
@@ -21,7 +21,7 @@ Fuente de verdad: `src/engine/balance.js`.
   - `PESO_FATIGA` 0.05 → −fatiga · peso = 0..−5
   - `PESO_PRESION` 0.02 → 0..−2
   - `PESO_MOMENTUM` 0.5 → momentum ∈ [−3, 3] = ±1.5
-  - `PENALIDAD_POSICION` — NATURAL 0 / VECINO 2 / FUERA 6. Criterio de "vecino" en `data/posiciones.js:penalidad()`.
+  - `PENALIDAD_POSICION` — NATURAL 0 / VECINO 5 / FUERA 12. Criterio de "vecino" en `data/posiciones.js:penalidad()`. DFC es exclusivo de DEF (como ARQ de POR): ahí un MED/DEL cae directo a FUERA; LI/LD sí admiten MED como vecino.
   - `LOCALIA` 1.12 · `VISITA` 0.92 · `GOLES_BASE` 1.35 · `GOLES_ESCALA` 18 (sensibilidad al diferencial de fuerza).
 
 ## Deriva por tramo

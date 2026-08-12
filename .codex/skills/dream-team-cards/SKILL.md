@@ -35,8 +35,9 @@ Activar cuando toques cartas, sobres, pantallas, chips, HUD o cualquier cosa vis
   desencuadra los retratos. Fallback: silueta SVG (`SIL_CARTA`).
 - Efectos foil/holo solo en desktop (`hover:hover` + `pointer:fine`).
 - Penalidad fuera de posición: `penalidad(posCarta, slot)` en
-  `src/data/posiciones.js` devuelve 0 (natural) / 2 (línea vecina) /
-  6 (fuera). La carta muestra el rating original tachado + el efectivo.
+  `src/data/posiciones.js` devuelve 0 (natural) / 5 (línea vecina) /
+  12 (fuera). DFC es exclusivo de DEF (un MED no lo tapa como vecino).
+  La carta muestra el rating original tachado + el efectivo.
 - Draft inicial: `sobresIniciales(rng)` garantiza puestos (1 POR, 4 DEF,
   3 MED, 3 DEL) para armar un 4-3-3 sin penalidad. `sobreRefuerzo` sube el
   piso de rareza post-temporada.
