@@ -1,7 +1,7 @@
 // PURA. Orquestador del loop completo. Es la única memoria entre tramos.
 // Máquina de fases: sobres → armar11 → tramo → evento → (…) → resumen → refuerzo → … → fin
 import { createRng } from './rng.js';
-import { CARRERA, TRAMO, TEMPORADA, LIGA, DESPIDO, MODO, DIFICULTAD, PRESION_DIFICIL, EPICAS_DIFICIL, PRESION_INICIAL_TIER, PRESION_INICIAL_DIFICIL_DEFAULT } from './balance.js';
+import { CARRERA, TRAMO, TEMPORADA, LIGA, FUERZA_POR_TIER, TIER_LIGA, TIER_LIGA_DEFAULT, DESPIDO, MODO, DIFICULTAD, PRESION_DIFICIL, EPICAS_DIFICIL, PRESION_INICIAL_TIER, PRESION_INICIAL_DIFICIL_DEFAULT } from './balance.js';
 import { createEstado, aplicarEfectos, resetRatingDelta } from './state.js';
 import { crearLiga, simularTramo, miPosicion, posiciones, fuerzaDeEquipo, getEstiloRival } from './liga.js';
 import { ratingOnce, autoOnce, onceCompleto } from './once.js';
@@ -192,8 +192,16 @@ export function jugarTramo(c) {
   const ppp = pts / partidos.length;
   const pos = miPosicion(c.liga);
 
+  // Impuesto fisico por hazana: robarle puntos a un grande cansa. Cobra por cada
+  // partido contra un tier alto (off > 0, ver FUERZA_POR_TIER) donde sacamos puntos.
+  const impuestoHazana = partidos.reduce((s, p) => {
+    if (p.res === 'P') return s;
+    const off = FUERZA_POR_TIER[TIER_LIGA[p.rival] ?? TIER_LIGA_DEFAULT].off;
+    return off > 0 ? s + TRAMO.FATIGA_HAZANA : s;
+  }, 0);
+
   const efectos = {
-    fatiga: TRAMO.FATIGA_POR_TRAMO,
+    fatiga: TRAMO.FATIGA_POR_TRAMO + impuestoHazana,
     money: TRAMO.INGRESO_NETO,
     moral: redondear(TRAMO.MORAL_POR_RENDIMIENTO * (ppp - 1.35)) + driftMoral(c.estado.moral),
     presion: redondear(-TRAMO.PRESION_POR_RENDIMIENTO * (ppp - 1.35))

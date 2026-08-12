@@ -1,6 +1,6 @@
 // PURA. Único lugar donde viven los números de balance.
 // Versionado: si cambiás algo acá, subí BALANCE_VERSION y volvé a correr el harness.
-export const BALANCE_VERSION = '1.4.0';
+export const BALANCE_VERSION = '1.5.0';
 
 export const LIGA = {
   EQUIPOS: 20,
@@ -45,12 +45,14 @@ export const FUERZA = {
   LOCALIA: 1.12,
   VISITA: 0.92,
   GOLES_BASE: 1.35,
-  GOLES_ESCALA: 18,      // sensibilidad al diferencial de fuerza
+  GOLES_ESCALA: 18,               // sensibilidad al diferencial de fuerza
+  GOLES_ESCALA_INFERIOR: 12,      // el inferior cae mas abrupto: menos milagros contra los grandes
 };
 
 // Deriva pasiva por tramo (sin feedback multiplicativo: evita el "pozo gravitacional" de moral)
 export const TRAMO = {
-  FATIGA_POR_TRAMO: 7,
+  FATIGA_POR_TRAMO: 4,   // base por tramo; la hazana contra grandes cobra aparte (FATIGA_HAZANA)
+  FATIGA_HAZANA: 3,      // impuesto fisico por partido con puntos contra un tier alto (off > 0)
   MORAL_DRIFT_A_50: 2,     // tira 1 punto hacia 50, aditivo
   INGRESO_NETO: 1,         // sponsors - sueldos
   MORAL_POR_RENDIMIENTO: 6,  // ±, escalado por (ppp - 1.35)
@@ -61,7 +63,7 @@ export const TRAMO = {
 
 export const TEMPORADA = {
   PREMIO_BASE: 0.9,          // (21 - posicion) * base
-  DESCANSO_FATIGA: -35,
+  DESCANSO_FATIGA: -42,
   OBJETIVO_INICIAL: 12,      // terminar 12° o mejor en la temporada 1
   OBJETIVO_APRIETE: 2,       // cada temporada el club pide 2 puestos más arriba
   OBJETIVO_PISO: 2,          // el club nunca exige menos que subcampeón

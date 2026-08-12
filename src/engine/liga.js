@@ -65,8 +65,9 @@ function tablaVacia(equipos) {
 }
 
 function goles(rng, fuerza, rival, localia, mod = 1) {
+  const escala = fuerza < rival ? FUERZA.GOLES_ESCALA_INFERIOR : FUERZA.GOLES_ESCALA;
   const lambda = clampNum(
-    FUERZA.GOLES_BASE * Math.exp((fuerza - rival) / FUERZA.GOLES_ESCALA) * localia * mod,
+    FUERZA.GOLES_BASE * Math.exp((fuerza - rival) / escala) * localia * mod,
     0.15, 4.5,
   );
   return rng.poisson(lambda);
