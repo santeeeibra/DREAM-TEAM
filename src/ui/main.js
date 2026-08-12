@@ -3,7 +3,7 @@ import {
   iniciarCarrera, confirmarOnce, jugarTramo, candidatosDelTramo, fijarNarracion,
   resolverEvento, abrirRefuerzo, registrarRefuerzo, aplicarRefuerzo, resumenCarrera, ratingActual,
   elegirReemplazoLesion, calcularOfertasPlantel, resolverOferta, cartasExtraRefuerzo,
-  contexto, FASES, autoOnce, FORMACION, ratingEnSlot, penalidad, slotsVacios, posiciones, miPosicion,
+  contexto, FASES, autoOnce, FORMACION, FORMACIONES_SLOTS, ratingEnSlot, penalidad, slotsVacios, posiciones, miPosicion,
   paquete, valorDeVenta, CARRERA, LIGA, RANGOS, FUERZA,
 } from '../engine/index.js';
 import { CLUBES_JUGABLES } from '../data/nombres.js';
@@ -19,7 +19,7 @@ let c = null;
 let ui = {
   vista: 'intro', vistaAnterior: 'intro', slot: null, sobresAbiertos: [], deltas: null, tabla: false,
   sel: new Set(), salen: new Set(), fuenteIA: null, cargando: false, detalleAbierto: new Set(), miEscudo: '',
-  onboarding: { liga: null, clubes: [], clubId: '', nombre: '', pais: '', cargando: false, error: null, enviando: false, abierto: null, modo: 'facil', modoJuego: 'liga' },
+  onboarding: { liga: null, clubes: [], clubId: '', nombre: '', pais: '', cargando: false, error: null, enviando: false, abierto: null, modo: 'facil', modoJuego: 'liga', formacion: '4-3-3' },
   draftPuro: null,
 };
 // Hidratar draft de DT si existe
@@ -48,6 +48,13 @@ const EXPLICACION_VAR = {
   presion: 'llega a 100 y te echan',
   ratingDelta: 'fuerza extra este tramo',
   money: 'para fichar refuerzos',
+};
+const HINT_VAR = {
+  moral: '↑ rinde mejor',
+  fatiga: '↓ cansa menos',
+  presion: '100 = te echan',
+  ratingDelta: 'bono este tramo',
+  money: 'para fichajes',
 };
 
 // Silueta de fallback cuando el jugador no tiene foto (mismo trazo que antes,
@@ -96,12 +103,22 @@ const PAIS_A_NACION_ID = new Map([
   ['Marruecos',      32],
 ]);
 
+const FORMACIONES_UI = [
+  { id: '4-3-3',   label: '4-3-3',   desc: 'Ofensivo' },
+  { id: '4-4-2',   label: '4-4-2',   desc: 'Equilibrado' },
+  { id: '4-2-3-1', label: '4-2-3-1', desc: 'Control' },
+  { id: '3-5-2',   label: '3-5-2',   desc: 'Mediocampo' },
+  { id: '3-4-2-1', label: '3-4-2-1', desc: 'Creativo' },
+  { id: '5-3-2',   label: '5-3-2',   desc: 'Defensivo' },
+];
+
 const MODOS_JUEGO_UI = [
-  { id: 'liga',   ico: '⚽', nombre: 'Liga',   desc: 'Solo cartas de tu liga' },
-  { id: 'global', ico: '🌍', nombre: 'Global', desc: 'Todas las ligas' },
-  { id: 'budget', ico: '💸', nombre: 'Budget', desc: '$4M para arrancar' },
-  { id: 'draft',  ico: '🎲', nombre: 'Draft',  desc: 'Elegís 1 de 4 por carta' },
-  { id: 'pais',   ico: '🏴', nombre: 'País',   desc: 'Cartas de tu país' },
+  { id: 'liga',      ico: '⚽', nombre: 'Liga',      desc: 'Solo cartas de tu liga' },
+  { id: 'global',    ico: '🌍', nombre: 'Global',    desc: 'Todas las ligas' },
+  { id: 'budget',    ico: '💸', nombre: 'Budget',    desc: '$4M para arrancar' },
+  { id: 'draft',     ico: '🎲', nombre: 'Draft',     desc: 'Elegís 1 de 4 por carta' },
+  { id: 'pais',      ico: '🏴', nombre: 'País',      desc: 'Cartas de tu país' },
+  { id: 'club_real', ico: '🏟️', nombre: 'Club Real', desc: 'Plantilla oficial del club elegido + 1 sobre' },
 ];
 const banderaImg = (nombre) => {
   const code = BANDERAS.get(nombre);
@@ -302,18 +319,24 @@ function marcador() {
     const critico = k === 'presion' ? v >= 80 : k === 'fatiga' ? v >= 80 : k === 'moral' ? v <= 25 : false;
     const alerta = k === 'presion' ? v >= 60 : k === 'fatiga' ? v >= 60 : k === 'moral' ? v <= 40 : false;
     const d = ui.deltas?.[k];
-    const dir = k === 'ratingDelta' ? 'fuerza' : MALO_SI_SUBE.has(k) ? '↓ mejor' : '↑ mejor';
-    const estado = critico ? 'CRITICO' : alerta ? 'ALERTA' : null;
+    const circum = (Math.PI * 26).toFixed(1);
+    const offset = (Math.PI * 26 * (1 - pctv / 100)).toFixed(1);
+    const stroke = critico ? '#FF4A4A' : alerta ? '#FFC24B' : '#6FE39A';
+    const dv = k === 'money'
+      ? (v < 1 ? Math.round(v * 1000) + 'K' : (v % 1 < 0.05 ? Math.round(v) + 'M' : v.toFixed(1) + 'M'))
+      : v;
     return `<div class="gauge ${critico ? 'bad' : alerta ? 'warn' : ''}">
-      <div class="gauge-head">
-        <div class="lbl">${NOMBRE_VAR[k]}</div>
-        <div class="val">${k === 'money' ? fmtMoney(v) : v}</div>
+      <div class="gauge-arc-wrap">
+        <svg class="gauge-arc-svg" viewBox="0 0 64 36" fill="none">
+          <path d="M6 32 A26 26 0 0 1 58 32" stroke="rgba(255,255,255,.09)" stroke-width="5" stroke-linecap="round" fill="none"/>
+          <path d="M6 32 A26 26 0 0 1 58 32" stroke="${stroke}" stroke-width="5" stroke-linecap="round" fill="none"
+            style="stroke-dasharray:${circum};stroke-dashoffset:${offset};transition:stroke-dashoffset .6s cubic-bezier(.2,.7,.2,1),stroke .3s"/>
+        </svg>
+        ${d ? `<span class="gauge-delta ${d === 0 ? '' : (MALO_SI_SUBE.has(k) ? d < 0 : d > 0) ? 'pos' : 'neg'}">${signoDelta(k, d)}${Math.abs(d)}</span>` : ''}
       </div>
-      <div class="bar"><i style="width:${pctv}%"></i></div>
-      <div class="gauge-foot">
-        <span class="dir">${estado ?? dir}</span>
-        ${d ? `<span class="delta on ${d === 0 ? '' : (MALO_SI_SUBE.has(k) ? d < 0 : d > 0) ? 'pos' : 'neg'}">${signoDelta(k, d)}${Math.abs(d)}</span>` : ''}
-      </div>
+      <div class="gauge-arc-val">${dv}</div>
+      <div class="gauge-lbl">${ICONO[k]} ${NOMBRE_VAR[k]}</div>
+      <div class="gauge-hint">${HINT_VAR[k]}</div>
     </div>`;
   };
   const cinta = c.liga ? `<div class="cinta">${Array.from({ length: LIGA.FECHAS }, (_, i) => {
@@ -482,13 +505,14 @@ const PANTALLAS = {
           <p class="hint">${(() => {
             const nacionId = PAIS_A_NACION_ID.get(ob.pais);
             return ({
-              liga:   'Solo cartas de la liga elegida. El modo estándar.',
-              global: 'Pool completo: jugadores de todas las ligas.',
-              budget: 'Arrancás con $4M. Cada decisión económica duele.',
-              draft:  'Elegís 1 de 4 cartas por slot. Sin economía inicial.',
-              pais:   ob.pais
+              liga:      'Solo cartas de la liga elegida. El modo estándar.',
+              global:    'Pool completo: jugadores de todas las ligas.',
+              budget:    'Arrancás con $4M. Cada decisión económica duele.',
+              draft:     'Elegís 1 de 4 cartas por slot. Sin economía inicial.',
+              pais:      ob.pais
                 ? (nacionId ? `Jugadores de ${ob.pais} en todas las ligas del mundo.` : `Pool global — ${ob.pais} aún sin datos de nacionalidad.`)
                 : 'Elegí tu país para ver el pool disponible.',
+              club_real: 'Arrancás con la plantilla oficial del club que elegiste. Recibís 1 sobre de refuerzo para sumar jugadores.',
             })[ob.modoJuego] || '';
           })()}</p>
           <label class="eyebrow">Dificultad</label>
@@ -500,6 +524,10 @@ const PANTALLAS = {
             ? '⚠️ La presión escala fuerte en cada decisión. Sin épicas en el 11, el rendimiento tiene techo.'
             : 'Ideal para conocer el juego. Margen de error generoso, presión suave.'
           }</p>
+          <label class="eyebrow">Formación</label>
+          <div class="row" style="flex-wrap:wrap;gap:6px">
+            ${FORMACIONES_UI.map((f) => `<button type="button" class="ob-liga${ob.formacion === f.id ? ' activo' : ''}" data-accion="ob-formacion" data-id="${f.id}" style="flex-direction:column;align-items:center;gap:2px;padding:8px 12px;min-width:70px;font-size:13px"><span style="font-size:15px;font-weight:700">${f.label}</span><span style="font-size:11px;opacity:.7">${f.desc}</span></button>`).join('')}
+          </div>
           ${ob.error ? `<p class="aviso">${esc(ob.error)}</p>` : ''}
           <button class="btn ob-cta" data-accion="ob-confirmar" ${ob.enviando ? 'disabled' : ''}>${ob.enviando ? 'Creando perfil…' : 'Firmar contrato'}</button>
         </div>
@@ -517,7 +545,8 @@ const PANTALLAS = {
           <div class="ob-ficha-fila"><span class="ob-ficha-lbl">Club</span><span class="ob-ficha-val">${clubSel ? `${escudoDe(clubSel)}${esc(clubSel.name)}` : '—'}</span></div>
           <div class="ob-ficha-fila"><span class="ob-ficha-lbl">Modo</span><span class="ob-ficha-val">${MODOS_JUEGO_UI.find((m) => m.id === ob.modoJuego)?.ico || '⚽'} ${MODOS_JUEGO_UI.find((m) => m.id === ob.modoJuego)?.nombre || 'Liga'}</span></div>
           <div class="ob-ficha-fila"><span class="ob-ficha-lbl">Dif.</span><span class="ob-ficha-val">${ob.modo === 'dificil' ? 'Difícil' : 'Accesible'}</span></div>
-          <div class="ob-ficha-pie"><span class="ob-ficha-sobre">×3 sobres gratis</span></div>
+          <div class="ob-ficha-fila"><span class="ob-ficha-lbl">Formación</span><span class="ob-ficha-val">${ob.formacion || '4-3-3'}</span></div>
+          <div class="ob-ficha-pie"><span class="ob-ficha-sobre">${ob.modoJuego === 'club_real' ? 'Plantilla oficial + ×1 sobre' : ob.modoJuego === 'draft' ? 'Draft: elegís 1 de 4' : '×3 sobres gratis'}</span></div>
         </aside>
       </div>
     </div>`;
@@ -915,10 +944,11 @@ function render() {
 // ───────────────────────── acciones ─────────────────────────
 const _guardarDtDraft = () => {
   const ob = ui.onboarding;
-  localStorage.setItem('dt_draft', JSON.stringify({ nombre: ob.nombre, pais: ob.pais, liga: ob.liga, clubId: ob.clubId, modo: ob.modo, modoJuego: ob.modoJuego }));
+  localStorage.setItem('dt_draft', JSON.stringify({ nombre: ob.nombre, pais: ob.pais, liga: ob.liga, clubId: ob.clubId, modo: ob.modo, modoJuego: ob.modoJuego, formacion: ob.formacion }));
 };
 const acciones = {
   'ob-modo'(el) { ui.onboarding.modo = el.dataset.modo; render(); _guardarDtDraft(); },
+  'ob-formacion'(el) { ui.onboarding.formacion = el.dataset.id; render(); _guardarDtDraft(); },
   'ob-pais'(el) {
     const ob = ui.onboarding;
     ob.nombre = document.getElementById('ob-dt')?.value ?? ob.nombre;
@@ -999,6 +1029,31 @@ const acciones = {
 
     ui.miEscudo = club?.badge_url || club?.club_badge_url || club?.badge || '';
 
+    if (modoJuego === 'club_real') {
+      let resultado = null;
+      try {
+        const { openClubRealSquad } = await import('../data/cardsRepo.js');
+        resultado = await openClubRealSquad(managerId, club?.name, ob.liga);
+      } catch (e) {
+        console.warn('[dream-team] openClubRealSquad falló, fallback a sobres estándar:', e.message);
+      }
+      c = iniciarCarrera({
+        dt: ob.nombre,
+        club: club?.name || ob.nombre,
+        leagueId: ob.liga,
+        clubId: club?.id,
+        plantelBase: resultado?.plantelNormalizado || null,
+        cartasInicialesDB: resultado?.sobreDB || null,
+        modo: ob.modo || 'facil',
+        modoJuego,
+        formacion: ob.formacion || '4-3-3',
+      });
+      ob.enviando = false;
+      localStorage.removeItem('dt_draft');
+      ui.vista = 'sobres'; ui.sobresAbiertos = [];
+      return;
+    }
+
     if (modoJuego === 'draft') {
       // Draft Puro: abrimos el pool pero NO guardamos en user_cards todavía
       let grupos = [];
@@ -1036,6 +1091,7 @@ const acciones = {
       cartasInicialesDB: sobresInicialesDB,
       modo: ob.modo || 'facil',
       modoJuego,
+      formacion: ob.formacion || '4-3-3',
     });
     ob.enviando = false;
     localStorage.removeItem('dt_draft');
@@ -1059,7 +1115,7 @@ const acciones = {
   'ob-set-modo'(el) { ui.onboarding.modoJuego = el.dataset.modo; _guardarDtDraft(); },
   'volver-onboarding'() { ui.vista = 'onboarding'; render(); },
   'abrir-sobre'(el) { ui.sobresAbiertos.push(Number(el.dataset.i)); },
-  'ir-once'() { ui.vista = 'once'; ui.slot = null; if (!c.once.length) c.once = autoOnce(c.plantel); },
+  'ir-once'() { ui.vista = 'once'; ui.slot = null; if (!c.once.length) c.once = autoOnce(c.plantel, { formacion: FORMACIONES_SLOTS[c.formacion] || FORMACION }); },
   async 'draft-elegir'(el) {
     const dp = ui.draftPuro;
     if (!dp) return;

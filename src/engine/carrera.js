@@ -1,6 +1,7 @@
 // PURA. Orquestador del loop completo. Es la única memoria entre tramos.
 // Máquina de fases: sobres → armar11 → tramo → evento → (…) → resumen → refuerzo → … → fin
 import { createRng } from './rng.js';
+import { FORMACIONES_SLOTS, FORMACION } from '../data/posiciones.js';
 import { CARRERA, TRAMO, TEMPORADA, LIGA, FUERZA_POR_TIER, TIER_LIGA, TIER_LIGA_DEFAULT, DESPIDO, MODO, MODO_JUEGO, BUDGET, DIFICULTAD, PRESION_DIFICIL, EPICAS_DIFICIL, PRESION_INICIAL_TIER, PRESION_INICIAL_DIFICIL_DEFAULT, ROTACION_PLANTEL } from './balance.js';
 import { createEstado, aplicarEfectos, resetRatingDelta } from './state.js';
 import { crearLiga, simularTramo, miPosicion, posiciones, fuerzaDeEquipo, getEstiloRival } from './liga.js';
@@ -10,6 +11,8 @@ import { cargarCartasDB, envejecerPlantel, valorDeVenta } from './cartas.js';
 import { candidatosEvento, efectosDeOpcion, elegirPorSorteo, figuraConRotacion, figurasRecientes, jugadorAleatorioDelOnce } from './candidatosEvento.js';
 import { paquete, CATALOGO_GRAVES } from './catalogoEventos.js';
 import { getClubById, findClubIdByName, getLeagueByClubName } from '../data/leagues.js';
+
+const fSlots = (key) => FORMACIONES_SLOTS[key] || FORMACION;
 
 export const FASES = {
   SOBRES: 'sobres', ONCE: 'once', TRAMO: 'tramo', EVENTO: 'evento',
@@ -67,6 +70,7 @@ export function cargarCarrera(managerDB, plantelDB, temporadasDB = []) {
     tramo: managerDB.tramo_actual || 0,
     estado,
     plantel: plantelDB, // Ya formateado por cartas.js
+    formacion: managerDB.formacion || '4-3-3',
     once: managerDB.once_ids || [], // Recuperar los IDs del 11 titular
     liga: managerDB.liga_snapshot || null,
     objetivo: managerDB.objetivo_temporada || TEMPORADA.OBJETIVO_INICIAL,
@@ -85,14 +89,26 @@ export function cargarCarrera(managerDB, plantelDB, temporadasDB = []) {
 
 export function iniciarCarrera({
   seed = Date.now(), dt = 'DT', club = 'Club Atlético Viedma', cartasInicialesDB = null, modo = MODO.FACIL,
-  leagueId = null, clubId = null, modoJuego = MODO_JUEGO.LIGA,
+  leagueId = null, clubId = null, modoJuego = MODO_JUEGO.LIGA, formacion = '4-3-3',
+  plantelBase = null, // Club Real: plantilla oficial ya normalizada; cartasInicialesDB = 1 sobre de refuerzo
 } = {}) {
   const rng = createRng(seed);
-  // Sobres iniciales: los inyecta la UI desde Supabase (openInitialPacks) o, si vienen
-  // vacíos/nulos, se resuelven con el fallback local — la carrera nunca se traba.
-  const sobres = cartasInicialesDB?.length
-    ? cartasInicialesDB.map((s) => cargarCartasDB(s))
-    : sobresIniciales(rng).map((s) => cargarCartasDB(s));
+
+  // Modo Club Real: plantelBase trae el plantel del club real ya normalizado.
+  // cartasInicialesDB contiene solo el sobre de refuerzo (1 pack de 5 cartas).
+  let sobres, plantelFinal;
+  if (plantelBase?.length) {
+    sobres = cartasInicialesDB?.length
+      ? cartasInicialesDB.map((s) => cargarCartasDB(s))
+      : [[]];
+    plantelFinal = [...plantelBase.map((c) => ({ edad: 24, ultimoDelta: 0, ...c })), ...sobres.flat()];
+  } else {
+    // Sobres iniciales: los inyecta la UI desde Supabase (openInitialPacks) o fallback local.
+    sobres = cartasInicialesDB?.length
+      ? cartasInicialesDB.map((s) => cargarCartasDB(s))
+      : sobresIniciales(rng).map((s) => cargarCartasDB(s));
+    plantelFinal = sobres.flat();
+  }
 
   // El id estable del club (slug de leagues.js) manda para tiers, presión
   // inicial y arena. Si solo llega el nombre (callers legacy), lo resolvemos
@@ -112,12 +128,12 @@ export function iniciarCarrera({
   };
 
   return {
-    seed, rng, dt, club, clubId: clubIdFinal, leagueId: leagueIdFinal, modo, modoJuego,
+    seed, rng, dt, club, clubId: clubIdFinal, leagueId: leagueIdFinal, modo, modoJuego, formacion,
     fase: FASES.SOBRES,
     temporada: 1,
     tramo: 0,
     estado: createEstado(estadoOverrides),
-    plantel: sobres.flat(),
+    plantel: plantelFinal,
     sobresIniciales: sobres,
     once: [],
     liga: null,
@@ -136,7 +152,8 @@ export function iniciarCarrera({
 }
 
 export function confirmarOnce(c, once) {
-  const elegido = once && onceCompleto(once) ? once : autoOnce(c.plantel);
+  const slots = fSlots(c.formacion);
+  const elegido = once && onceCompleto(once, slots) ? once : autoOnce(c.plantel, { formacion: slots });
   c.once = elegido;
   if (!c.liga) {
     const ovrDT = c.plantel.length
@@ -149,7 +166,7 @@ export function confirmarOnce(c, once) {
 }
 
 export function ratingActual(c) {
-  return ratingOnce(c.once, c.plantel);
+  return ratingOnce(c.once, c.plantel, fSlots(c.formacion));
 }
 
 export function contexto(c) {
@@ -506,7 +523,7 @@ export function aplicarRefuerzo(c, idsEntran = [], idsSalen = []) {
     ? Math.round(c.plantel.reduce((s, j) => s + j.rating, 0) / c.plantel.length)
     : null;
   c.liga = crearLiga(c.rng, { id: c.clubId || null, name: c.club, leagueId: c.leagueId || null }, { temporada: c.temporada, posAnterior: pos, ovrDT });
-  c.once = autoOnce(c.plantel);
+  c.once = autoOnce(c.plantel, { formacion: fSlots(c.formacion) });
   c.fase = FASES.ONCE;
   
   return c;

@@ -1,8 +1,8 @@
 // PURA. Armado del 11 titular y cálculo de rating (RECALCULADO, nunca persistido — §2.5).
 // La traducción puesto ancho (POR/DEF/MED/DEL) ↔ slot fino vive SOLO en data/posiciones.js.
-import { FORMACION, penalidad, SLOTS_POR_PUESTO_ANCHO, PUESTOS_ANCHOS } from '../data/posiciones.js';
+import { FORMACION, FORMACIONES_SLOTS, penalidad, SLOTS_POR_PUESTO_ANCHO, PUESTOS_ANCHOS } from '../data/posiciones.js';
 
-export { FORMACION, penalidad, SLOTS_POR_PUESTO_ANCHO, PUESTOS_ANCHOS };
+export { FORMACION, FORMACIONES_SLOTS, penalidad, SLOTS_POR_PUESTO_ANCHO, PUESTOS_ANCHOS };
 
 /** Rating efectivo de una carta en un slot concreto, ya descontada la penalidad. */
 export function ratingEnSlot(carta, slot) {
@@ -14,17 +14,17 @@ export function ratingEnSlot(carta, slot) {
  * once: array de 11 ids (o null). Devuelve el rating RECALCULADO del 11.
  * Nunca se guarda en base como valor vivo: si se guarda, es snapshot de temporada cerrada.
  */
-export function ratingOnce(once, plantel) {
+export function ratingOnce(once, plantel, formacion = FORMACION) {
   const porId = new Map(plantel.map((c) => [c.id, c]));
   let suma = 0;
-  for (let i = 0; i < FORMACION.length; i++) {
-    suma += ratingEnSlot(porId.get(once[i]), FORMACION[i]);
+  for (let i = 0; i < formacion.length; i++) {
+    suma += ratingEnSlot(porId.get(once[i]), formacion[i]);
   }
-  return Math.round((suma / FORMACION.length) * 10) / 10;
+  return Math.round((suma / formacion.length) * 10) / 10;
 }
 
-export function onceCompleto(once) {
-  return once.length === FORMACION.length && once.every((id) => !!id);
+export function onceCompleto(once, formacion = FORMACION) {
+  return once.length === formacion.length && once.every((id) => !!id);
 }
 
 /** Índices de slots que quedaron sin cubrir. La UI los usa para avisar en vez de fallar en silencio. */
@@ -41,13 +41,13 @@ export function slotsVacios(once) {
  *    de rating efectivo (rating − penalidad): el 11 de mayor rating posible para
  *    el plantel en esta formación. Un POR jamás sale a la cancha fuera del arco.
  */
-export function autoOnce(plantel, { excluir = new Set() } = {}) {
+export function autoOnce(plantel, { excluir = new Set(), formacion = FORMACION } = {}) {
   const libres = (plantel || []).filter((c) => c && !excluir.has(c.id));
-  const once = FORMACION.map(() => null);
+  const once = formacion.map(() => null);
   const usados = new Set();
 
   // 1) ARQ: el mejor POR disponible; vacío si no hay.
-  FORMACION.forEach((slot, i) => {
+  formacion.forEach((slot, i) => {
     if (slot !== 'ARQ') return;
     const arquero = libres
       .filter((c) => c.pos === 'POR' && !usados.has(c.id))
@@ -60,7 +60,7 @@ export function autoOnce(plantel, { excluir = new Set() } = {}) {
 
   // 2) Campo: asignación exacta con el húngaro sobre los jugadores de campo.
   const jugadores = libres.filter((c) => !usados.has(c.id) && c.pos !== 'POR');
-  const slotsCampo = FORMACION.map((s, i) => ({ s, i })).filter((x) => x.s !== 'ARQ');
+  const slotsCampo = formacion.map((s, i) => ({ s, i })).filter((x) => x.s !== 'ARQ');
   for (const [iJugador, iSlot] of asignacionOptima(jugadores, slotsCampo)) {
     once[iSlot] = jugadores[iJugador].id;
   }

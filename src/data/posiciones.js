@@ -4,6 +4,15 @@
 import { FUERZA } from '../engine/balance.js';
 
 export const FORMACION = ['ARQ', 'DFC', 'DFC', 'LI', 'LD', 'MC', 'MC', 'MCO', 'EI', 'ED', 'DC'];
+
+export const FORMACIONES_SLOTS = {
+  '4-3-3':   ['ARQ', 'DFC', 'DFC', 'LI',  'LD', 'MC',  'MC',  'MCO', 'EI',  'ED',  'DC'],
+  '4-4-2':   ['ARQ', 'DFC', 'DFC', 'LI',  'LD', 'MC',  'MC',  'MC',  'MC',  'DC',  'DC'],
+  '4-2-3-1': ['ARQ', 'DFC', 'DFC', 'LI',  'LD', 'MC',  'MC',  'MCO', 'EI',  'ED',  'DC'],
+  '3-5-2':   ['ARQ', 'DFC', 'DFC', 'DFC', 'MC', 'MC',  'MC',  'EI',  'ED',  'DC',  'DC'],
+  '3-4-2-1': ['ARQ', 'DFC', 'DFC', 'DFC', 'MC', 'MC',  'EI',  'ED',  'MCO', 'MCO', 'DC'],
+  '5-3-2':   ['ARQ', 'DFC', 'DFC', 'DFC', 'LI', 'LD',  'MC',  'MC',  'MCO', 'DC',  'DC'],
+};
 export const SLOTS = ['ARQ', 'DFC', 'LI', 'LD', 'MC', 'MCO', 'EI', 'ED', 'DC'];
 export const PUESTOS_ANCHOS = ['POR', 'DEF', 'MED', 'DEL'];
 

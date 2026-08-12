@@ -154,6 +154,42 @@ export async function openDraftPool(managerId, leagueId = null, slots = 15, opci
   return grupos;
 }
 
+// Modo Club Real: carga la plantilla oficial del club desde la DB y genera
+// 1 sobre de 5 cartas de refuerzo de la misma liga.
+// Devuelve { plantelNormalizado, sobreDB } donde:
+//   plantelNormalizado: array de cartas listas para el motor (con rating, nombre, pos)
+//   sobreDB: [[card1..card5]] en formato cartasInicialesDB para iniciarCarrera
+export async function openClubRealSquad(managerId, clubName, leagueId) {
+  // 1. Plantilla oficial del club (todas las cartas activas de ese club)
+  const { data: clubCards, error } = await supabase
+    .from('cards')
+    .select(COLUMNAS_CARTA)
+    .eq('is_active', true)
+    .eq('club', clubName)
+    .order('overall_rating', { ascending: false });
+  if (error) throw new DataError(error.message, { causa: error });
+
+  if (clubCards.length) await saveSquad(managerId, clubCards);
+
+  // 2. Sobre de refuerzo: 5 cartas aleatorias de la liga (excluyendo las ya guardadas)
+  const [pool, idsUsados] = await Promise.all([
+    fetchCardPool(leagueId),
+    fetchOwnedCardIds(managerId),
+  ]);
+  const poolNuevo = pool.filter((c) => !idsUsados.has(c.id));
+  for (let i = poolNuevo.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [poolNuevo[i], poolNuevo[j]] = [poolNuevo[j], poolNuevo[i]];
+  }
+  const packCards = poolNuevo.slice(0, 5);
+  if (packCards.length) await saveSquad(managerId, packCards);
+
+  return {
+    plantelNormalizado: clubCards.map(normalizarParaUI),
+    sobreDB: packCards.length ? [packCards] : [],
+  };
+}
+
 // Guarda las cartas elegidas en el draft al terminar de elegir las 15.
 export async function saveDraftChoices(managerId, cardIds) {
   const filas = cardIds.map((card_id) => ({ manager_id: managerId, card_id, acquired_via: 'draft' }));

@@ -117,11 +117,12 @@ export const PROGRESION = {
 export const MODO = { FACIL: 'facil', DIFICIL: 'dificil' };
 
 export const MODO_JUEGO = {
-  LIGA:   'liga',
-  GLOBAL: 'global',
-  BUDGET: 'budget',
-  DRAFT:  'draft',
-  PAIS:   'pais',
+  LIGA:      'liga',
+  GLOBAL:    'global',
+  BUDGET:    'budget',
+  DRAFT:     'draft',
+  PAIS:      'pais',
+  CLUB_REAL: 'club_real',
 };
 
 // Modo Budget: arrancás con poca plata — cada decisión económica duele.
