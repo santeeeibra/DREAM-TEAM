@@ -112,6 +112,18 @@ const FORMACIONES_UI = [
   { id: '5-3-2',   label: '5-3-2',   desc: 'Defensivo' },
 ];
 
+// Índices de slots por línea para cada formación.
+// Los índices corresponden a la posición en el array de FORMACIONES_SLOTS.
+// El orden dentro de cada línea es izquierda→derecha en la pantalla.
+const LINEAS_POR_FORMACION = {
+  '4-3-3':   [[0], [3,1,2,4],   [5,6,7],     [8,10,9]],
+  '4-4-2':   [[0], [3,1,2,4],   [5,6,7,8],   [9,10]],
+  '4-2-3-1': [[0], [3,1,2,4],   [5,6],       [8,7,9],  [10]],
+  '3-5-2':   [[0], [1,2,3],     [7,4,5,6,8], [9,10]],
+  '3-4-2-1': [[0], [1,2,3],     [6,4,5,7],   [8,9],    [10]],
+  '5-3-2':   [[0], [4,1,2,3,5], [6,7,8],     [9,10]],
+};
+
 const MODOS_JUEGO_UI = [
   { id: 'liga',      ico: '⚽', nombre: 'Liga',      desc: 'Solo cartas de tu liga' },
   { id: 'global',    ico: '🌍', nombre: 'Global',    desc: 'Todas las ligas' },
@@ -639,18 +651,18 @@ const PANTALLAS = {
   },
 
   once: () => {
+    const formId = c.formacion || '4-3-3';
+    const formSlots = FORMACIONES_SLOTS[formId] || FORMACION;
+    const lineas = LINEAS_POR_FORMACION[formId] || LINEAS_POR_FORMACION['4-3-3'];
     const porId = new Map(c.plantel.map((x) => [x.id, x]));
-    const lineas = [[0], [3, 1, 2, 4], [5, 6, 7], [8, 10, 9]];
     const banco = c.plantel.filter((x) => !c.once.includes(x.id));
     const vacios = slotsVacios(c.once);
-    const sinArquero = vacios.some((i) => FORMACION[i] === 'ARQ');
+    const sinArquero = vacios.some((i) => formSlots[i] === 'ARQ');
     const slot = (i) => {
       const x = porId.get(c.once[i]);
-      const pen = x ? penalidad(x.pos, FORMACION[i]) : 0;
+      const pen = x ? penalidad(x.pos, formSlots[i]) : 0;
       const clase = pen === 0 ? '' : pen === FUERZA.PENALIDAD_POSICION.VECINO ? 'vecino' : 'fuera';
-      const efectivo = x ? ratingEnSlot(x, FORMACION[i]) : null;
-      // Puesto sin cubrir: mismo molde de mini-carta, atenuado. Con penalidad se
-      // muestra el rating efectivo + el original tachado (misma semántica que la carta).
+      const efectivo = x ? ratingEnSlot(x, formSlots[i]) : null;
       const num = !x
         ? '<span class="slot-rating slot-rating-vacio">—</span>'
         : pen === 0
@@ -661,7 +673,7 @@ const PANTALLAS = {
           <div class="slot-card-inner">
             <div class="slot-photo"><img src="${x && x.foto ? esc(x.foto) : SIL_CARTA}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.src='${SIL_CARTA}'"></div>
             <div class="slot-head">
-              <span class="slot-pos">${FORMACION[i]}</span>
+              <span class="slot-pos">${formSlots[i]}</span>
               <span class="slot-num">${num}</span>
             </div>
             <div class="slot-name">${x ? esc(x.nombre) : 'vacío'}</div>
@@ -669,23 +681,23 @@ const PANTALLAS = {
         </div>
       </div>`;
     };
-    const slotElegido = ui.slot !== null ? FORMACION[ui.slot] : null;
-    // Recomendación por puesto: primero los naturales al slot (penalidad 0), después
-    // línea vecina (VECINO), al final fuera de posición (FUERA); dentro de cada grupo, el mejor
-    // rating efectivo para ese slot primero. Mismo criterio que usa autoOnce.
+    const slotElegido = ui.slot !== null ? formSlots[ui.slot] : null;
     const candidatos = ui.slot === null ? [] : [...banco, ...c.once.map((id) => porId.get(id))].filter(Boolean)
       .sort((a, b) =>
         penalidad(a.pos, slotElegido) - penalidad(b.pos, slotElegido) ||
         ratingEnSlot(b, slotElegido) - ratingEnSlot(a, slotElegido));
     return `<div class="stack">
-      <div class="eyebrow">${c.temporada === 1 ? 'Paso 2 de 2 · ' : `Temporada ${c.temporada} · `}Once titular · 4-3-3</div>
+      <div class="eyebrow">${c.temporada === 1 ? 'Paso 2 de 2 · ' : `Temporada ${c.temporada} · `}Once titular · ${formId}</div>
       <h2>Rating del 11: <span style="color:var(--fluor)">${ratingActual(c)}</span></h2>
+      <div class="row" style="flex-wrap:wrap;gap:6px;margin-bottom:2px">
+        ${FORMACIONES_UI.map((f) => `<button type="button" class="ob-liga${formId === f.id ? ' activo' : ''}" data-accion="cambiar-formacion" data-formacion="${f.id}" style="padding:6px 12px;font-size:13px;min-width:unset">${f.label}</button>`).join('')}
+      </div>
       ${sinArquero ? '<p class="aviso">No tenés ningún arquero disponible. El arco solo lo puede ocupar un POR: conseguí uno antes de empezar.</p>' : ''}
       ${!sinArquero && vacios.length ? `<p class="aviso">Quedan ${vacios.length} puesto(s) sin cubrir. Tocá el puesto vacío para elegir jugador.</p>` : ''}
       <div class="cancha-grid">${lineas.map((l) => `<div class="linea-f">${l.map(slot).join('')}</div>`).join('')}</div>
       <p class="hint">${slotElegido
         ? `Elegí quién juega de <b>${slotElegido}</b>. Cada carta muestra su rating real y el que rinde en este puesto: <span class="pen-vecino-tx">ámbar −${FUERZA.PENALIDAD_POSICION.VECINO}</span> si es una línea vecina, <span class="pen-fuera-tx">rojo −${FUERZA.PENALIDAD_POSICION.FUERA}</span> si está fuera de posición.`
-        : 'Tocá un puesto para cambiar al jugador. En ámbar o rojo: jugador fuera de su puesto natural.'}</p>
+        : 'Tocá un puesto para cambiar al jugador. Cambiá la formación con los botones de arriba.'}</p>
       ${slotElegido ? `<div class="grid-cartas">${candidatos.map((x, i) => carta(x, { accion: 'poner', slot: slotElegido, i })).join('')}</div>` : ''}
       <div class="row">
         <button class="btn" data-accion="confirmar-once">${c.temporada === 1 ? 'Empezar la temporada' : 'Confirmar y seguir'}</button>
@@ -704,7 +716,7 @@ const PANTALLAS = {
         <p class="hint">Se juegan ${LIGA.TRAMOS[c.tramo]} partidos de corrido. Después vas a tener que tomar una decisión.</p>
         <div class="row">
           <button class="btn ts-cta" data-accion="jugar">Jugar el tramo</button>
-          <button class="btn ghost" data-accion="ir-once">Cambiar el 11</button>
+          <button class="btn ghost" data-accion="ir-once">Cambiar el 11 · ${c.formacion || '4-3-3'}</button>
         </div>
       </div>
       ${tablaPosiciones()}
@@ -1153,7 +1165,14 @@ const acciones = {
     c.once[ui.slot] = id;
     ui.slot = null;
   },
-    'auto-once'() { c.once = autoOnce(c.plantel); ui.slot = null; },
+    'cambiar-formacion'(el) {
+    const f = el.dataset.formacion;
+    if (!f || f === c.formacion) return;
+    c.formacion = f;
+    c.once = autoOnce(c.plantel, { formacion: FORMACIONES_SLOTS[f] || FORMACION });
+    ui.slot = null;
+  },
+  'auto-once'() { c.once = autoOnce(c.plantel, { formacion: FORMACIONES_SLOTS[c.formacion] || FORMACION }); ui.slot = null; },
   'confirmar-once'() { confirmarOnce(c, c.once); ui.vista = 'previa'; },
   jugar() {
     jugarTramo(c);
