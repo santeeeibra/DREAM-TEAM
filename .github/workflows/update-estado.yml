@@ -51,7 +51,10 @@ jobs:
             -H "anthropic-version: 2023-06-01" \
             -H "content-type: application/json" \
             -d @/tmp/payload.json \
-            https://api.anthropic.com/v1/messages > /tmp/response.json
+            https://api.anthropic.com/v1/messages > /tmp/response.json || true
+
+          echo "=== RESPONSE RAW ==="
+          cat /tmp/response.json || echo "response.json vacio"
 
           echo "=== RESPONSE ==="
           cat /tmp/response.json
