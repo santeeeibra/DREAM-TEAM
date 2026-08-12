@@ -51,12 +51,18 @@ Fuente de verdad: `migrations/` (raíz del repo — `supabase/functions/` está 
 - Bucket público `team-badges`; archivos deduplicados por eaId de fut.gg: `club/{eaId}.webp`, `nation/{eaId}.webp`, `league/{eaId}.webp`.
 
 ## 011_manager_profile_ids.sql — perfil del DT
-- `managers` += `league_id`, `club_id` (slugs estables de `src/data/leagues.js`), `reputation smallint not null default 50` + CHECK 0–100 + backfill null→50.
+- `managers` += `league_id`, `club_id` (slugs estables de `src/data/leagues.js`; `league_id` coincide con la columna homónima de `cards` → `premier | laliga | seriea`, las 3 ligas activas), `reputation smallint not null default 50` + CHECK 0–100 + backfill null→50.
 - Mantiene las columnas legacy `league`/`club` (texto) intactas.
 
 ## 012_events_catalog_seed.sql — seed de eventos
 - Inserta 15 eventos en `events_catalog` (`code`, `title`, `description`, `min_matchday`, `weight`, `options jsonb`). Re-ejecutable: `ON CONFLICT (code) DO UPDATE`.
 - `options[].effects` usan claves de negocio: `morale`, `fatigue`, `money`, `rating_efectivo`, `pressure`.
+
+## 013_manager_club_id_text.sql — club_id pasa a text
+- `managers.club_id` pasa de `uuid` (FK → `clubs`, tabla muerta) a `text` para aceptar los slugs estables de `leagues.js` (ej. `milan`, `juventus`). Suelta la FK antes del alter; los uuid legacy quedan como texto y el motor los hace jugar en la arena Premier como fallback.
+
+## 014_manager_anon_access.sql — acceso anon a managers
+- Versiona el acceso del rol `anon`/`authenticated` a `managers` (antes hecho a mano en el dashboard, sin versionar): `grant select, insert, update` + policy RLS permisiva `managers_anon_access` (`for all`, `using(true)` / `with check(true)`) + `enable row level security`. El `GET ?select=id` deja de poder dar 400 en bases restauradas. `delete` queda fuera del grant a propósito (el loop no lo usa).
 
 ## Alertas / divergencias (schema real vs versionado)
 - **`managers`, `seasons`, `user_cards`, `season_events` NO se crean en `migrations/`**: se referencian (006, 009, 011 y FKs cascade) pero nacieron de migraciones directas a la base. Su DDL no está versionado en el repo.
@@ -65,3 +71,11 @@ Fuente de verdad: `migrations/` (raíz del repo — `supabase/functions/` está 
   - `012_events_catalog_seed.sql` asume `id uuid` + columna `code` + `title/description/min_matchday`.
   - **Verificar cuál está vivo en Supabase antes de tocar eventos.**
 - `open_pack` (004/007) sortea por bandas de `overall_rating`; la columna `rarity` y el sistema `pack_cards` son otro sistema de probabilidades que `open_pack` no usa.
+- **La tabla `clubs` no alimenta ni el draft ni el motor**: la fuente de clubes
+  es `src/data/leagues.js` (nombres EA FC24 de `cards.club`, 20 por liga). El
+  draft inicial filtra el pool por `cards.league_id` (`cardsRepo.openInitialPacks`)
+  y `liga.js` arma los 19 rivales desde `leagues.js`. Un manager cuyo
+  `club_id` quedó con un uuid foráneo de la tabla `clubs` (legacy) juega sin
+  liga: el motor usa Premier como arena de respaldo. El draft guarda cada carta
+  en `user_cards` con `acquired_via: 'pack'` (upsert `onConflict:
+  manager_id,card_id`, `ignoreDuplicates`).
