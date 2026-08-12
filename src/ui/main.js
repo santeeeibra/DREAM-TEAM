@@ -291,22 +291,43 @@ function marcador() {
   </div>`;
 }
 
+// Tabla de posiciones pro: columnas completas (PJ/G/E/P/DG/Pts), DG coloreado
+// por bueno/malo y zonas a una mirada sin semántica inventada (no hay champions
+// acá): led = puesto que cumple el objetivo del club, rojo = zona de descenso.
+// En móvil se ocultan G/E/P (patrón de las apps de fútbol).
 function tablaPosiciones() {
   if (!c.liga) return '';
   const t = posiciones(c.liga);
+  const n = t.length;
+  const riesgo = 3;
   return `<div class="panel stack ts-panel">
     <div class="row" style="justify-content:space-between">
       <div class="eyebrow">Tabla de posiciones</div>
       <button class="btn ghost" data-accion="tabla">${ui.tabla ? 'Ocultar' : 'Ver tabla'}</button>
     </div>
-    ${ui.tabla ? `<table class="ts-tabla"><thead><tr><th>#</th><th>Equipo</th><th class="n">PJ</th><th class="n">DG</th><th class="n">Pts</th></tr></thead>
-      <tbody>${t.map((e, i) => `<tr class="${e.id === 0 ? 'mio' : ''}"><td class="n">${i + 1}</td><td class="eq">${escudoClub(e.nombre)}<span>${esc(e.nombre)}</span></td><td class="n">${e.pj}</td><td class="n">${e.dg > 0 ? '+' : ''}${e.dg}</td><td class="n">${e.pts}</td></tr>`).join('')}</tbody></table>` : ''}
+    ${ui.tabla ? `<table class="ts-tabla pro"><thead><tr>
+        <th class="n th-pos">#</th><th>Equipo</th><th class="n">PJ</th><th class="n oc">G</th><th class="n oc">E</th><th class="n oc">P</th><th class="n">DG</th><th class="n th-pts">Pts</th>
+      </tr></thead>
+      <tbody>${t.map((e, i) => {
+        const pos = i + 1;
+        const zona = e.id !== 0
+          ? (pos <= c.objetivo ? 'zona-obj' : pos > n - riesgo ? 'zona-riesgo' : '')
+          : '';
+        return `<tr class="${e.id === 0 ? 'mio' : zona}">
+          <td class="n pos-num">${pos}</td>
+          <td class="eq">${escudoClub(e.nombre)}<span>${esc(e.nombre)}</span></td>
+          <td class="n">${e.pj}</td><td class="n oc">${e.g}</td><td class="n oc">${e.e}</td><td class="n oc">${e.p}</td>
+          <td class="n ${e.dg > 0 ? 'dg-pos' : e.dg < 0 ? 'dg-neg' : ''}">${e.dg > 0 ? '+' + e.dg : e.dg < 0 ? e.dg : '0'}</td>
+          <td class="n pts">${e.pts}</td>
+        </tr>`;
+      }).join('')}</tbody></table>` : ''}
   </div>`;
 }
 
 // Goleadores/asistencias de la temporada — SOLO de mi plantel: los rivales no
 // tienen jugadores simulados, solo un número de fuerza (§liga.js), así que no
 // hay a quién más atribuirle goles sin inventar jugadores que no existen.
+// Ranking profesional: medallas, avatar, barra contra el líder y cifra grande.
 function tablaGoleadores(estadisticas) {
   const est = estadisticas || c.estadisticas;
   if (!est) return '';
@@ -319,15 +340,26 @@ function tablaGoleadores(estadisticas) {
   const goleadores = top(est.goleadores);
   const asistencias = top(est.asistencias);
   if (!goleadores.length && !asistencias.length) return '';
-  const col = (icono, titulo, lista) => `<div class="stack goleadores-col">
-    <div class="eyebrow">${icono} ${titulo}</div>
+  const MEDALLAS = ['🥇', '🥈', '🥉'];
+  const col = (titulo, lista, tipo) => `<div class="stack gol-col ${tipo}">
+    <div class="gol-head"><span class="eyebrow">${titulo}</span></div>
     ${lista.length
-      ? `<table><tbody>${lista.map((x, i) => `<tr><td class="n">${i + 1}</td><td>${esc(x.jugador.nombre)}</td><td class="n">${x.n}</td></tr>`).join('')}</tbody></table>`
+      ? `<div class="gol-lista">${lista.map((x, i) => {
+          const j = x.jugador;
+          const pct = Math.max(5, Math.round((x.n / lista[0].n) * 100));
+          return `<div class="gol-fila">
+            <span class="gol-rank">${i < 3 ? MEDALLAS[i] : i + 1}</span>
+            <img class="gol-avatar" src="${j.foto ? esc(j.foto) : SIL_CARTA}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.src='${SIL_CARTA}'">
+            <div class="gol-id"><div class="gol-nombre">${esc(j.nombre)}</div><div class="gol-pos">${j.pos}</div></div>
+            <div class="gol-track"><i style="width:${pct}%"></i></div>
+            <div class="gol-num">${x.n}</div>
+          </div>`;
+        }).join('')}</div>`
       : `<p class="hint">Todavía nadie.</p>`}
   </div>`;
   return `<div class="panel stack ts-panel">
     <div class="eyebrow">Goleadores y asistencias · ${esc(c.club)}</div>
-    <div class="row goleadores-row">${col('⚽', 'Goleadores', goleadores)}${col('🅰️', 'Asistencias', asistencias)}</div>
+    <div class="row gol-row">${col('⚽ Goleadores', goleadores, 'gol')}${col('🅰️ Asistencias', asistencias, 'asist')}</div>
   </div>`;
 }
 
