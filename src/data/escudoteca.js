@@ -68,6 +68,41 @@ export const ESCUDOTECA = {
   'Sevilla': `${PALADAR}/espana/laliga/png/sevilla.png`,
   'Valencia': `${PALADAR}/espana/laliga/png/valencia.png`,
   'Villarreal': `${PALADAR}/espana/laliga/png/villarreal.png`,
+
+  // ── Serie A ──
+  // Los nombres EA de FC24 (leagues.js) matchean por la clave EA; el alias con
+  // el nombre real cubre el lookup cuando el club viene escrito de otra forma
+  // (TheSportsDB, tables del motor, etc.). Todos los slugs verificados contra
+  // Paladar Negro (Hellas Verona usa `hellasverona.png`, sin espacio ni guión).
+  'AS Roma': `${PALADAR}/italia/seriea/png/roma.png`,
+  'Roma': `${PALADAR}/italia/seriea/png/roma.png`,
+  'Bergamo Calcio': `${PALADAR}/italia/seriea/png/atalanta.png`,
+  'Atalanta': `${PALADAR}/italia/seriea/png/atalanta.png`,
+  'Bologna': `${PALADAR}/italia/seriea/png/bologna.png`,
+  'Cagliari': `${PALADAR}/italia/seriea/png/cagliari.png`,
+  'Como': `${PALADAR}/italia/seriea/png/como.png`,
+  'Cremonese': `${PALADAR}/italia/seriea/png/cremonese.png`,
+  'Fiorentina': `${PALADAR}/italia/seriea/png/fiorentina.png`,
+  'Genoa': `${PALADAR}/italia/seriea/png/genoa.png`,
+  'Hellas Verona': `${PALADAR}/italia/seriea/png/hellasverona.png`,
+  'Verona': `${PALADAR}/italia/seriea/png/hellasverona.png`,
+  'Juventus': `${PALADAR}/italia/seriea/png/juventus.png`,
+  'Latium': `${PALADAR}/italia/seriea/png/lazio.png`,
+  'Lazio': `${PALADAR}/italia/seriea/png/lazio.png`,
+  'Lecce': `${PALADAR}/italia/seriea/png/lecce.png`,
+  'Lombardia FC': `${PALADAR}/italia/seriea/png/inter.png`,
+  'Inter': `${PALADAR}/italia/seriea/png/inter.png`,
+  'Inter Milan': `${PALADAR}/italia/seriea/png/inter.png`,
+  'Milano FC': `${PALADAR}/italia/seriea/png/milan.png`,
+  'Milan': `${PALADAR}/italia/seriea/png/milan.png`,
+  'AC Milan': `${PALADAR}/italia/seriea/png/milan.png`,
+  'Parma': `${PALADAR}/italia/seriea/png/parma.png`,
+  'Pisa': `${PALADAR}/italia/seriea/png/pisa.png`,
+  'SSC Napoli': `${PALADAR}/italia/seriea/png/napoli.png`,
+  'Napoli': `${PALADAR}/italia/seriea/png/napoli.png`,
+  'Sassuolo': `${PALADAR}/italia/seriea/png/sassuolo.png`,
+  'Torino': `${PALADAR}/italia/seriea/png/torino.png`,
+  'Udinese': `${PALADAR}/italia/seriea/png/udinese.png`,
 };
 
 // Normaliza un nombre de club a una clave estable: minúsculas, sin acentos,

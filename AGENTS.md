@@ -29,7 +29,7 @@ Rules:
   Serverless en `api/`. No hay Phaser: la capa visual es DOM y el motor es
   lógica pura Node.
 - **IA runtime**: GROQ vía proxy serverless (`api/evento.js`). La key nunca va al cliente.
-- **Loop**: crear DT → 3 sobres gratis → armar 11 → temporada por tramos → resumen → sobre de refuerzo → siguiente temporada (8 por carrera).
+- **Loop**: crear DT en una de 3 ligas → draft inicial de tu liga (5 sobres × 5 cartas, `openInitialPacks`) → armar 11 → temporada por tramos → resumen → sobre de refuerzo (`open-pack`) → siguiente temporada (8 por carrera).
 - **Estado**: `money`, `moral`, `fatiga`, `presion`, `ratingDelta`. Fatiga y presión: **subir es malo**.
 - **Rarezas**: `bronce`, `oro_comun`, `oro_unico`, `epica` (coinciden con la columna `rarity` en Supabase).
 - **Lógica pura**: los módulos bajo `src/engine/` no importan Phaser, Supabase ni DOM. Todo testeable headless.

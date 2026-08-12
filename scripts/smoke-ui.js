@@ -29,9 +29,10 @@ process.env.VITE_SUPABASE_ANON_KEY = 'stub-anon-key';
 
 // Pool de cartas del stub: replicamos el shape de la tabla `cards` que pide
 // openInitialPacks (id, name, club, position, overall_rating, rarity, photo_url,
-// ..., league_id). 40 cartas de LaLiga repartidas por posición: cubre los mínimos
-// de draftSquad (2 POR, 6 DEF, 6 MED, 4 DEL) y el total de 25 del plantel.
-const CARTAS_STUB = Array.from({ length: 40 }, (_, i) => {
+// ..., league_id). 80 cartas = 40 de LaLiga + 40 de Serie A repartidas por
+// posición: la corrida entera es en Serie A y cubre los mínimos de draftSquad
+// (2 POR, 6 DEF, 6 MED, 4 DEL) y el total de 25 del plantel.
+const CARTAS_STUB = Array.from({ length: 80 }, (_, i) => {
   const position = ['POR', 'DEF', 'DEF', 'DEF', 'DEF', 'MED', 'MED', 'MED', 'DEL', 'DEL'][i % 10];
   return {
     id: `stub-card-${i + 1}`,
@@ -46,13 +47,16 @@ const CARTAS_STUB = Array.from({ length: 40 }, (_, i) => {
     club_badge_url: null,
     nation_flag_url: null,
     league_logo_url: null,
-    league_id: 'laliga',
+    league_id: i % 2 === 0 ? 'laliga' : 'seriea',
   };
 });
 
 // Captura los bodies de open-pack para asertar el contrato (manager_id, free)
 // contra el id real que devolvió crearManager — sin depender de la BD real.
 const bodiesOpenPack = [];
+// Bodies de crearManager (POST /rest/v1/managers): asertar que club_id viaja
+// como slug de leagues.js ("milan"), no como uuid foráneo (Bug club_id text).
+const bodiesManagers = [];
 
 global.fetch = async (url, opts = {}) => {
   const u = String(url);
@@ -68,7 +72,12 @@ global.fetch = async (url, opts = {}) => {
     return opts.method === 'POST' ? responder([], 201) : responder([]);
   }
   // POST /rest/v1/managers (crearManager) → PostgREST single: el body es un objeto.
-  if (u.includes('/rest/v1/managers')) return responder({ id: 'smoke-manager' }, 201);
+  // Se captura para asertar el contrato del slug Serie A (Bug club_id como text).
+  if (u.includes('/rest/v1/managers')) {
+    const body = typeof opts.body === 'string' ? JSON.parse(opts.body) : opts.body;
+    bodiesManagers.push(body);
+    return responder({ id: 'smoke-manager' }, 201);
+  }
   // POST /functions/v1/open-pack → sin cartas: el motor usa el fallback local.
   // Se captura el body recibido para asertar el contrato más abajo.
   if (u.includes('/functions/v1/open-pack')) {
@@ -96,13 +105,23 @@ dtInput.value = 'Bilardo';
 dtInput.dispatchEvent(new dom.window.Event('input', { bubbles: true })); // actualiza ui.onboarding.nombre
 await click('ob-pais'); // abre el dropdown de país
 await click('ob-pais', '[data-pais="Argentina"]');
-await click('ob-liga', '[data-liga="laliga"]');
+// La corrida entera es Serie A: aserción end-to-end del slug en club_id
+// (Bug managers.club_id como text) y del draft con cartas seriea.
+await click('ob-liga', '[data-liga="seriea"]');
 await new Promise((r) => setTimeout(r, 50)); // espera el import de leagues.js
 if ($('#ob-club').disabled) throw new Error('No cargaron los clubes en onboarding');
 await click('ob-club'); // abre el dropdown de clubes
-await click('ob-club', '[data-id="barcelona"]'); // slug de leagues.js (FC Barcelona)
+await click('ob-club', '[data-id="milan"]'); // slug de leagues.js (Milano FC / Milan)
 await click('ob-confirmar');
 await new Promise((r) => setTimeout(r, 100)); // espera crearManager + draft REST
+
+// Contrato managers.club_id: el slug de leagues.js llega tal cual en el body de
+// crearManager. La columna en la BD es text; antes era uuid con FK → clubs y el
+// insert de un slug fallaba → el perfil nunca se creaba ("No se pudo crear").
+const bodyManager = bodiesManagers[0];
+if (!bodyManager || bodyManager.league_id !== 'seriea' || bodyManager.club_id !== 'milan') {
+  throw new Error(`crearManager no envió el slug Serie A esperado: ${JSON.stringify(bodyManager)}`);
+}
 
 // Contrato del draft inicial: openInitialPacks entrega 5 sobres × 5 cartas de la
 // liga elegida (25 en la grilla al abrir todos). El onboarding NO debe tocar la
@@ -164,6 +183,16 @@ for (const b of refuerzos) {
   }
 }
 console.log(`✔ Contrato draft/open-pack: ${cartasReveladas} cartas por openInitialPacks, ${bodiesOpenPack.length} open-pack SOLO en refuerzo (free=false, manager_id=${localStorage.getItem('manager_id')})`);
+console.log(`✔ Bug club_id: crearManager persistió el slug Serie A (league_id=${bodyManager?.league_id}, club_id=${bodyManager?.club_id})`);
 
 console.log(`✔ Carrera completa por UI: ${tramos} tramos, ${eventos} decisiones, ${temporadas} cierres de temporada`);
 console.log('  Pantalla final:', document.querySelector('h1')?.textContent.trim());
+
+// Cierre explícito: jsdom en modo `pretendToBeVisual` mantiene un loop de rAF
+// activo que impide que Node salga solo — la corrida pasa pero el proceso
+// queda vivo y el harness en un pipeline nunca termina. window.close() frena
+// el loop visual y el setTimeout deja vaciarse stdout por si queda algún
+// timer de supabase-js/GoTrue. Los caminos de error ya salen por top-level
+// await rejection (exit 1), así que solo el éxito llega acá.
+dom.window.close();
+setTimeout(() => process.exit(0), 200);

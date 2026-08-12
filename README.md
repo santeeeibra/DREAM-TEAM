@@ -1,6 +1,6 @@
 # Dream Team — MVP del ciclo completo
 
-Reinicio disciplinado. El loop entero está jugable: **crear DT → 3 sobres → armar 11 → 8 temporadas por tramos con eventos → resumen → sobre de refuerzo → fin de carrera (despido o contrato cumplido)**.
+Reinicio disciplinado. El loop entero está jugable: **crear DT en una de 3 ligas → draft inicial (5 sobres × 5 cartas de tu liga) → armar 11 → 8 temporadas por tramos con eventos → resumen → sobre de refuerzo → fin de carrera (despido o contrato cumplido)**.
 
 ## Correr
 
@@ -8,6 +8,7 @@ Reinicio disciplinado. El loop entero está jugable: **crear DT → 3 sobres →
 npm install
 npm run dev        # juego en localhost (Vite)
 npm run sim        # harness headless: 200 carreras completas, reporte de balance
+                   # opcional: npm run sim -- --liga=laliga --club=barcelona
 npm run audit      # detecta módulos huérfanos (código construido y nunca cableado)
 node scripts/smoke-ui.js          # juega una carrera entera por la UI en jsdom
 node scripts/build-standalone.js  # dist/dream-team.html (un solo archivo, sin servidor)
@@ -32,6 +33,9 @@ src/engine/     LÓGICA PURA — cero imports de Phaser, Supabase o DOM. Corre e
   candidatosEvento.js  ÚNICO camino para obtener un evento (§3, antipatrón 1 y 3)
   narrador.js        prompt + validación estricta de la IA (sin fetch: testeable headless)
   carrera.js         orquestador / máquina de fases
+src/data/       repos Supabase: leagues.js (3 ligas × 20 clubes, ids estables),
+                cardsRepo.js (draft real openInitialPacks), supabaseClient.js
+src/packOpening/  draftSquad.js — lógica pura del draft inicial: 25 cartas en 5 sobres
 src/ui/main.js  capa visual: sólo lee el motor, no calcula reglas
 src/net/        fetch al proxy (impuro)
 api/evento.js   proxy serverless de GROQ (la key nunca sale al front)
@@ -64,10 +68,10 @@ Las decisiones mueven la aguja ~42 puntos de supervivencia: el juego se puede ju
 
 ## Lo que queda para la fase 2 (fuera de este MVP, a propósito)
 
-- **Persistencia Supabase**: la carrera es serializable salvo el objeto `rng` (guardar `rng.state` + seed alcanza para reanudar). Falta el esquema y el guardado por tramo.
+- **Persistencia Supabase**: el onboarding ya persiste (managers con `league_id`/`club_id`, `user_cards` del draft, lineups). Lo que falta es la persistencia de la carrera por tramo; es serializable salvo el objeto `rng` (guardar `rng.state` + seed alcanza para reanudar).
 - **Escenas Phaser**: hoy la capa visual es DOM. El motor no cambia cuando se migre; se reemplaza `src/ui/`.
 - **Resumen narrativo de cierre de temporada con GROQ** (contrato ya diseñado, mismo proxy).
-- **Dataset real de jugadores**: `src/data/nombres.js` genera el pool. El shape de carta (`{id,nombre,pos,rating,edad,rareza}`) ya es el real, así que cargar EA FC26 es reemplazar el generador, no tocar el motor.
+- **Dataset real de jugadores**: listo — el pool del draft sale del catálogo real de `cards` en Supabase (`src/data/cardsRepo.js`), filtrado por `league_id` de la liga elegida. `nombres.js` queda solo para el fallback offline (`sobresLocal.js`) y para generar nombres del harness.
 - **n8n**: correr `npm run sim` + `npm run audit` en cada push y postear el reporte.
 - Mercado de pases, copa nacional, química (descartada del MVP a propósito).
 

@@ -20,7 +20,10 @@ proxy serverless (`api/evento.js`). La API key nunca llega al cliente.
 | `src/net/evento.js` | Hace el fetch a `/api/evento`. Impuro. Timeout 3500ms. |
 | `api/evento.js` | Proxy serverless Vercel. Falla ruidosa si falta `GROQ_API_KEY`. |
 | `src/engine/cartas.js` | Formatea cartas desde Supabase. Calcula `valorDeVenta`. |
-| `src/engine/sobresLocal.js` | Mock local de `open_pack`. Draft inicial garantiza POR/DEF/MED/DEL. |
+| `src/data/leagues.js` | Las 3 ligas activas (Premier/LaLiga/Serie A) × 20 clubes con ids estables (`club_id`). Fuente única: draft, motor, dropdown, escudos. |
+| `src/data/cardsRepo.js` | Draft inicial real: `openInitialPacks` (25 cartas de la liga del DT guardadas y separadas en 5 sobres) y `getManagerCards`. |
+| `src/packOpening/draftSquad.js` | Lógica pura del draft: mínimos por posición + sorteo ponderado por banda, 25 cartas, `splitIntoPacks` de 5. |
+| `src/engine/sobresLocal.js` | Fallback offline del draft/refuerzo (sin Supabase). Lee `SOBRES` de balance. |
 | `src/ui/cartas.css` | Todo el visual de cartas: rarezas, reveal, foil, foto. |
 | `src/ui/main.js` | Capa visual. Solo lee el motor y llama a sus funciones. |
 

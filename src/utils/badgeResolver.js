@@ -7,6 +7,21 @@
 // dropdown.
 const THESPORTSDB_KEY = '3'; // clave pública de pruebas de TheSportsDB
 
+// Nombres EA de fantasía (FC24) → nombre real que conoce TheSportsDB.
+// leagues.js guarda como `club.name` el nombre impreso en la carta
+// ("Bergamo Calcio", "Milano FC", "Latium"…), pero la búsqueda por nombre de
+// TheSportsDB no encuentra esos nombres de fantasía: el escudo se busca con
+// el nombre real del club y el label del dropdown sigue mostrando el nombre
+// EA (el que ve el jugador).
+const CLUB_BADGE_ALIAS = {
+  // Serie A
+  'Bergamo Calcio': 'Atalanta',
+  'Latium': 'Lazio',
+  'Lombardia FC': 'Inter Milan',
+  'Milano FC': 'AC Milan',
+  'SSC Napoli': 'Napoli',
+};
+
 // ids estables de TheSportsDB para las ligas del catálogo (leagues.js).
 // Resolver por id (lookupleague.php?id=) es mucho más confiable que buscar
 // por nombre: el buscador de la API no encuentra nombres en español como
@@ -67,7 +82,10 @@ async function resolveConCache(cache, nombre, url, extraerBadge) {
 }
 
 export function getClubBadgeUrl(clubName) {
-  const url = `https://www.thesportsdb.com/api/v1/json/${THESPORTSDB_KEY}/searchteams.php?t=${encodeURIComponent(clubName)}`;
+  // El escudo se busca con el nombre real (alias EA → TheSportsDB); el cache
+  // queda keyeado por el nombre del catálogo para no duplicar entradas.
+  const nombreReal = CLUB_BADGE_ALIAS[clubName] ?? clubName;
+  const url = `https://www.thesportsdb.com/api/v1/json/${THESPORTSDB_KEY}/searchteams.php?t=${encodeURIComponent(nombreReal)}`;
   return resolveConCache(
     clubBadgeCache,
     clubName,
@@ -76,7 +94,15 @@ export function getClubBadgeUrl(clubName) {
     // respuesta real de este endpoint hoy trae el escudo en "strBadge"
     // (y a veces solo "strLogo"): probamos los tres por si el campo
     // cambia según la versión de la API.
-    (data) => data?.teams?.[0]?.strTeamBadge || data?.teams?.[0]?.strBadge || data?.teams?.[0]?.strLogo,
+    (data) => {
+      const badge = data?.teams?.[0]?.strTeamBadge || data?.teams?.[0]?.strBadge || data?.teams?.[0]?.strLogo;
+      if (!badge) {
+        // Diagnóstico: si un club (con o sin alias) no resuelve escudo, la
+        // URL intentada queda acá para agregar el caso que falte en el futuro.
+        console.warn(`[badgeResolver] TheSportsDB no devolvió escudo para "${clubName}" → ${url}`);
+      }
+      return badge;
+    },
   );
 }
 
