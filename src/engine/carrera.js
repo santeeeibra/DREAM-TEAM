@@ -1,7 +1,7 @@
 // PURA. Orquestador del loop completo. Es la única memoria entre tramos.
 // Máquina de fases: sobres → armar11 → tramo → evento → (…) → resumen → refuerzo → … → fin
 import { createRng } from './rng.js';
-import { CARRERA, TRAMO, TEMPORADA, LIGA, FUERZA_POR_TIER, TIER_LIGA, TIER_LIGA_DEFAULT, DESPIDO, MODO, DIFICULTAD, PRESION_DIFICIL, EPICAS_DIFICIL, PRESION_INICIAL_TIER, PRESION_INICIAL_DIFICIL_DEFAULT } from './balance.js';
+import { CARRERA, TRAMO, TEMPORADA, LIGA, FUERZA_POR_TIER, TIER_LIGA, TIER_LIGA_DEFAULT, DESPIDO, MODO, MODO_JUEGO, BUDGET, DIFICULTAD, PRESION_DIFICIL, EPICAS_DIFICIL, PRESION_INICIAL_TIER, PRESION_INICIAL_DIFICIL_DEFAULT } from './balance.js';
 import { createEstado, aplicarEfectos, resetRatingDelta } from './state.js';
 import { crearLiga, simularTramo, miPosicion, posiciones, fuerzaDeEquipo, getEstiloRival } from './liga.js';
 import { ratingOnce, autoOnce, onceCompleto } from './once.js';
@@ -85,7 +85,7 @@ export function cargarCarrera(managerDB, plantelDB, temporadasDB = []) {
 
 export function iniciarCarrera({
   seed = Date.now(), dt = 'DT', club = 'Club Atlético Viedma', cartasInicialesDB = null, modo = MODO.FACIL,
-  leagueId = null, clubId = null,
+  leagueId = null, clubId = null, modoJuego = MODO_JUEGO.LIGA,
 } = {}) {
   const rng = createRng(seed);
   // Sobres iniciales: los inyecta la UI desde Supabase (openInitialPacks) o, si vienen
@@ -106,12 +106,17 @@ export function iniciarCarrera({
     ? (PRESION_INICIAL_TIER[clubIdFinal] ?? PRESION_INICIAL_DIFICIL_DEFAULT)
     : undefined;
 
+  const estadoOverrides = {
+    ...(presionInicial !== undefined ? { presion: presionInicial } : {}),
+    ...(modoJuego === MODO_JUEGO.BUDGET ? { money: BUDGET.MONEY_INICIAL } : {}),
+  };
+
   return {
-    seed, rng, dt, club, clubId: clubIdFinal, leagueId: leagueIdFinal, modo,
+    seed, rng, dt, club, clubId: clubIdFinal, leagueId: leagueIdFinal, modo, modoJuego,
     fase: FASES.SOBRES,
     temporada: 1,
     tramo: 0,
-    estado: createEstado(presionInicial !== undefined ? { presion: presionInicial } : {}),
+    estado: createEstado(estadoOverrides),
     plantel: sobres.flat(),
     sobresIniciales: sobres,
     once: [],

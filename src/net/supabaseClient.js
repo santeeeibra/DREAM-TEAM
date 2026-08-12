@@ -79,13 +79,13 @@ export async function fetchAbrirSobre({ managerId, packId, free = false } = {}) 
  * Crea el manager (DT) en la tabla `managers`. Devuelve el id creado o
  * null si no se pudo (sin Supabase configurado o error).
  */
-export async function crearManager({ name, country, league_id, club_id, modo = 'facil' }) {
+export async function crearManager({ name, country, league_id, club_id, modo = 'facil', modo_juego = 'liga' }) {
   await initSupabase();
   if (!supabase) return null;
   try {
     const { data, error } = await supabase
       .from('managers')
-      .insert({ name, country, league_id, club_id, modo })
+      .insert({ name, country, league_id, club_id, modo, modo_juego })
       .select('id')
       .single();
     if (error) {

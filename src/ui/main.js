@@ -560,10 +560,25 @@ const PANTALLAS = {
       const x = porId.get(c.once[i]);
       const pen = x ? penalidad(x.pos, FORMACION[i]) : 0;
       const clase = pen === 0 ? '' : pen === FUERZA.PENALIDAD_POSICION.VECINO ? 'vecino' : 'fuera';
-      return `<div class="slot ${ui.slot === i ? 'activo' : ''} ${clase} ${x ? '' : 'vacio'}" data-accion="slot" data-i="${i}">
-        <div class="sl">${FORMACION[i]}</div>
-        <div class="sr">${x ? ratingEnSlot(x, FORMACION[i]) : '—'}</div>
-        <div class="sn">${x ? esc(x.nombre.split(' ')[0]) : 'vacío'}</div>
+      const efectivo = x ? ratingEnSlot(x, FORMACION[i]) : null;
+      // Puesto sin cubrir: mismo molde de mini-carta, atenuado. Con penalidad se
+      // muestra el rating efectivo + el original tachado (misma semántica que la carta).
+      const num = !x
+        ? '<span class="slot-rating slot-rating-vacio">—</span>'
+        : pen === 0
+          ? `<span class="slot-rating">${efectivo}</span>`
+          : `<span class="slot-rating">${efectivo}</span><span class="slot-orig">${x.rating}</span>`;
+      return `<div class="slot ${ui.slot === i ? 'activo' : ''} ${clase} ${x ? '' : 'vacio'}" data-accion="slot" data-i="${i}"${x && x.nombre ? ` title="${esc(x.nombre)}"` : ''}>
+        <div class="slot-card${x ? '' : ' slot-card-vacio'}" data-rarity="${x ? x.rareza : 'bronce'}">
+          <div class="slot-card-inner">
+            <div class="slot-photo"><img src="${x && x.foto ? esc(x.foto) : SIL_CARTA}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.src='${SIL_CARTA}'"></div>
+            <div class="slot-head">
+              <span class="slot-pos">${FORMACION[i]}</span>
+              <span class="slot-num">${num}</span>
+            </div>
+            <div class="slot-name">${x ? esc(x.nombre) : 'vacío'}</div>
+          </div>
+        </div>
       </div>`;
     };
     const slotElegido = ui.slot !== null ? FORMACION[ui.slot] : null;

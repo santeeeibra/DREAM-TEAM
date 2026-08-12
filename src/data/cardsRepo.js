@@ -121,6 +121,34 @@ async function saveSquad(managerId, cards) {
 // el plantel queda persistido aunque el jugador cierre la pestaña a mitad
 // de la apertura de sobres: la animación solo "reproduce" algo que ya
 // está guardado, nunca al revés.
+// Modo Draft Puro: devuelve `slots` grupos de `opcionesPorSlot` cartas cada uno
+// para que el usuario elija 1 por grupo. NO guarda nada en user_cards — eso
+// lo hace saveDraftChoices() cuando el usuario termina de elegir.
+export async function openDraftPool(managerId, leagueId = null, slots = 15, opcionesPorSlot = 4) {
+  const [pool, idsUsados] = await Promise.all([fetchCardPool(leagueId), fetchOwnedCardIds(managerId)]);
+  const disponibles = pool.filter((c) => !idsUsados.has(c.id));
+  // Fisher-Yates shuffle
+  for (let i = disponibles.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [disponibles[i], disponibles[j]] = [disponibles[j], disponibles[i]];
+  }
+  const grupos = [];
+  for (let i = 0; i < slots; i++) {
+    const opciones = disponibles.slice(i * opcionesPorSlot, (i + 1) * opcionesPorSlot);
+    if (opciones.length >= opcionesPorSlot) grupos.push(opciones);
+  }
+  return grupos;
+}
+
+// Guarda las cartas elegidas en el draft al terminar de elegir las 15.
+export async function saveDraftChoices(managerId, cardIds) {
+  const filas = cardIds.map((card_id) => ({ manager_id: managerId, card_id, acquired_via: 'draft' }));
+  const { error } = await supabase
+    .from('user_cards')
+    .upsert(filas, { onConflict: 'manager_id,card_id', ignoreDuplicates: true });
+  if (error) throw new DataError(error.message, { causa: error });
+}
+
 export async function openInitialPacks(managerId, leagueId = null) {
   const [pool, idsUsados] = await Promise.all([fetchCardPool(leagueId), fetchOwnedCardIds(managerId)]);
 

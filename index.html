@@ -132,24 +132,75 @@ input:focus,select:focus,button:focus-visible{outline:2px solid var(--fluor);out
 .pen-fuera-tx{color:#D6402E}
 .aviso{border-left:3px solid var(--ambar);padding:8px 12px;background:rgba(0,0,0,.25);font-size:13px;margin:0}
 
-/* once */
-.cancha-grid{display:grid;gap:10px;background:
-  linear-gradient(180deg,rgba(111,227,154,.05),transparent),var(--cancha);
-  border:1px solid var(--linea);padding:14px;border-radius:var(--r)}
-.linea-f{display:grid;gap:8px;grid-auto-flow:column;justify-content:center}
-.slot{
-  min-width:78px;padding:8px 6px;text-align:center;border:1px dashed var(--linea);border-radius:3px;
-  background:rgba(0,0,0,.25);cursor:pointer;transition:border-color .15s,background .15s
+/* once: cancha del 11, cada puesto es una mini-carta tipo collector */
+.cancha-grid{
+  position:relative;display:grid;gap:12px;overflow:hidden;
+  background:
+    radial-gradient(120% 80% at 50% -20%, rgba(111,227,154,.14), transparent 55%),
+    radial-gradient(90% 70% at 50% 115%, rgba(111,227,154,.10), transparent 60%),
+    var(--cancha);
+  border:1px solid var(--linea);border-radius:14px;padding:18px 16px
 }
-.slot:hover{border-color:var(--fluor)}
-.slot.activo{border-color:var(--fluor);background:rgba(255,94,26,.10)}
-.slot .sl{font-family:'Barlow Condensed';font-weight:700;font-size:10px;letter-spacing:.14em;color:var(--humo)}
-.slot .sn{font-family:'Barlow Condensed';font-weight:700;font-size:13px;text-transform:uppercase;line-height:1.05}
-.slot .sr{font-family:'Anton';font-size:18px}
-.slot.vecino .sr{color:var(--ambar)}
-.slot.fuera .sr{color:#D6402E}
-.slot.vacio{border-style:dashed;border-color:var(--ambar)}
-.slot.vacio .sn{color:var(--ambar)}
+/* línea media y círculo central del campo */
+.cancha-grid::before{
+  content:"";position:absolute;left:16px;right:16px;top:50%;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(233,255,240,.14),rgba(233,255,240,.22),rgba(233,255,240,.14),transparent)
+}
+.cancha-grid::after{
+  content:"";position:absolute;left:50%;top:50%;width:84px;height:84px;
+  border:1px solid rgba(233,255,240,.13);border-radius:99px;transform:translate(-50%,-50%)
+}
+.linea-f{position:relative;display:grid;gap:10px;grid-auto-flow:column;justify-content:center}
+.slot{width:clamp(64px,10.5vw,100px);cursor:pointer;transition:transform .18s cubic-bezier(.2,.7,.2,1)}
+.slot:hover{transform:translateY(-3px)}
+.slot:hover .slot-card{box-shadow:0 12px 22px rgba(0,0,0,.55),0 0 20px -4px rgba(255,94,26,.4)}
+.slot-card{
+  --r1:var(--bronce-1);--r2:var(--bronce-2);
+  position:relative;border-radius:12px;padding:2px;overflow:hidden;
+  background:linear-gradient(160deg,var(--r2),var(--r1) 45%,#34373f 100%);
+  box-shadow:0 6px 16px rgba(0,0,0,.5);transition:box-shadow .18s
+}
+.slot-card[data-rarity="oro_comun"]{--r1:var(--oro_comun-1);--r2:var(--oro_comun-2)}
+.slot-card[data-rarity="oro_unico"]{--r1:var(--oro_unico-1);--r2:var(--oro_unico-2);box-shadow:0 6px 16px rgba(0,0,0,.5),0 0 16px -4px rgba(255,176,32,.55)}
+.slot-card[data-rarity="epica"]{--r1:var(--epica-1);--r2:var(--epica-2);box-shadow:0 6px 16px rgba(0,0,0,.5),0 0 18px -4px rgba(162,75,240,.65)}
+.slot-card-inner{
+  position:relative;border-radius:10px;overflow:hidden;
+  background:
+    radial-gradient(120% 85% at 50% -20%, color-mix(in srgb,var(--r1) 26%,transparent), transparent 60%),
+    linear-gradient(180deg,var(--card-base) 0%,var(--card-base-2) 100%)
+}
+.slot-photo{position:relative;aspect-ratio:1/1;overflow:hidden;background:#14171d}
+.slot-photo img{width:100%;height:100%;object-fit:cover;object-position:50% 16%;display:block}
+.slot-photo::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(80% 70% at 50% 20%,transparent 42%,rgba(0,0,0,.35) 100%)}
+.slot-head{display:flex;align-items:baseline;justify-content:space-between;gap:4px;padding:6px 8px 2px}
+.slot-pos{font-family:'Barlow Condensed';font-weight:700;font-size:10px;letter-spacing:.16em;color:#d3d6dc}
+.slot-num{position:relative;display:inline-flex;align-items:baseline;gap:3px;line-height:1}
+.slot-rating{font-family:'Anton';font-size:20px;line-height:1;color:var(--r2);
+  text-shadow:0 2px 8px rgba(0,0,0,.75);font-variant-numeric:tabular-nums}
+.slot-orig{font-family:'Anton';font-size:10px;line-height:1;color:#a5aab3;text-decoration:line-through;
+  background:rgba(13,15,19,.85);border-radius:3px;padding:1px 3px;box-shadow:0 1px 3px rgba(0,0,0,.45);font-variant-numeric:tabular-nums}
+.slot-name{font-family:'Barlow Condensed';font-weight:700;font-size:12px;line-height:1.1;text-transform:uppercase;
+  color:var(--card-name);padding:0 8px 7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* rarezas altas: rating con gradiente dorado/violeta (igual que la carta) */
+.slot-card[data-rarity="oro_unico"] .slot-rating,
+.slot-card[data-rarity="epica"] .slot-rating{
+  background:linear-gradient(180deg,var(--r2),var(--r1));-webkit-background-clip:text;background-clip:text;
+  color:transparent;text-shadow:none
+}
+/* penalidad: rating en ámbar (vecino) / rojo (fuera) + anillo tenue */
+.slot.vecino .slot-rating,.slot.fuera .slot-rating{background:none;-webkit-background-clip:initial;background-clip:initial;color:initial;text-shadow:0 2px 8px rgba(0,0,0,.75)}
+.slot.vecino .slot-rating{color:var(--ambar)}
+.slot.fuera .slot-rating{color:#D6402E}
+.slot.vecino .slot-card{outline:1px solid rgba(255,194,75,.5)}
+.slot.fuera .slot-card{outline:1px solid rgba(255,74,74,.55)}
+/* puesto vacío: mismo molde atenuado, posición en ámbar */
+.slot-card-vacio{opacity:.5;filter:grayscale(.7)}
+.slot.vacio .slot-rating,.slot.vacio .slot-name,.slot.vacio .slot-pos{color:var(--ambar)}
+.slot.vacio .slot-card{box-shadow:0 6px 16px rgba(0,0,0,.4)}
+/* selección: anillo fluor + glow */
+.slot.activo .slot-card{outline:2px solid var(--fluor);outline-offset:2px;
+  box-shadow:0 8px 20px rgba(0,0,0,.5),0 0 22px -2px rgba(255,94,26,.55)}
 
 /* evento */
 .evento{border-left:3px solid var(--fluor);animation:entrar .35s cubic-bezier(.2,.8,.2,1)}

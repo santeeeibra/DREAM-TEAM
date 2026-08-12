@@ -108,6 +108,17 @@ export const PROGRESION = {
 
 export const MODO = { FACIL: 'facil', DIFICIL: 'dificil' };
 
+export const MODO_JUEGO = {
+  LIGA:   'liga',
+  GLOBAL: 'global',
+  BUDGET: 'budget',
+  DRAFT:  'draft',
+  PAIS:   'pais',
+};
+
+// Modo Budget: arrancás con poca plata — cada decisión económica duele.
+export const BUDGET = { MONEY_INICIAL: 4 };
+
 // En modo difícil, los efectos de presión de cada evento se reemplazan por:
 // - Si el efecto sube presión: siempre +25 (crítico)
 // - Si el efecto baja presión: siempre -10 (alivio limitado)
