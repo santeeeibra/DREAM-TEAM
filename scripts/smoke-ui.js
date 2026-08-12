@@ -90,7 +90,10 @@ const click = async (accion, extra = '') => {
   await new Promise((r) => setTimeout(r, 0));
 };
 
-// — Crear DT: onboarding → país (dropdown visual, no <select>) → liga → club.
+// — Crear DT: onboarding → nombre → país (dropdown visual) → liga → club.
+const dtInput = document.getElementById('ob-dt');
+dtInput.value = 'Bilardo';
+dtInput.dispatchEvent(new dom.window.Event('input', { bubbles: true })); // actualiza ui.onboarding.nombre
 await click('ob-pais'); // abre el dropdown de país
 await click('ob-pais', '[data-pais="Argentina"]');
 await click('ob-liga', '[data-liga="laliga"]');
@@ -105,7 +108,7 @@ await new Promise((r) => setTimeout(r, 100)); // espera crearManager + draft RES
 // liga elegida (25 en la grilla al abrir todos). El onboarding NO debe tocar la
 // edge open-pack.
 if (localStorage.getItem('manager_id') !== 'smoke-manager') {
-  throw new Error('main.js no persistió manager_id en localStorage');
+  throw new Error('main.js no persistió manager_id en localStorage. Pantalla:\n' + document.body.textContent.slice(0, 400));
 }
 if (bodiesOpenPack.some((b) => b.free === true)) {
   throw new Error('El onboarding llamó open-pack con free:true — debería usar openInitialPacks');
