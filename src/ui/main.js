@@ -826,10 +826,14 @@ const PANTALLAS = {
 };
 
 function render() {
-  tsEntra = tsVistaAnterior !== ui.vista;
+  const cambioVista = tsVistaAnterior !== ui.vista;
+  tsEntra = cambioVista;
   tsVistaAnterior = ui.vista;
   app.innerHTML = PANTALLAS[ui.vista]();
-  window.scrollTo({ top: 0, behavior: 'instant' });
+  // Solo las pantallas arrancan arriba de todo. Una interacción que re-renderiza
+  // la MISMA vista (dropdown de onboarding, elegir jugador en el once, toggle de
+  // tabla, abrir sobre) conserva el scroll — si no, cada click salta al tope.
+  if (cambioVista) window.scrollTo({ top: 0, behavior: 'instant' });
   setTimeout(() => { ui.deltas = null; }, 1800);
 }
 
