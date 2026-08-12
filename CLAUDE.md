@@ -59,7 +59,15 @@
   importador y requieren un fix puntual.
 - Narrativa de eventos (IA): las situaciones de GROQ son "raras", poco inmersivas o
   demasiado simples (ej. "Gakpo necesita calentamiento" como dilema de temporada).
-  Refinar el prompt en `api/evento.js` o `narrador.js`.
+  Refinar el prompt en `api/evento.js` o `narrador.js`. (Es un problema de calidad
+  del relato; ya no hay riesgo de que la IA nombre jugadores en eventos genéricos —
+  eso se resolvió el 2026-08-11.)
+
+## Bugs resueltos (2026-08-11)
+- IA mencionaba jugadores en eventos genéricos → la figura solo se expone con tag
+  `individual` (`src/engine/narrador.js`, guardrail `nombrePropioFiltrado`).
+- Chips de fatiga/presión con signos `+`/`−` confusos → flechas ↑/↓ y color por
+  bueno/malo (`src/ui/main.js`, `MALO_SI_SUBE`).
 
 ## Onboarding
 - Flujo: nombre → país → liga → club → 3 sobres gratis → draft
