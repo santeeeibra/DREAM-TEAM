@@ -59,6 +59,7 @@ export const TRAMO = {
   PRESION_POR_RENDIMIENTO: 7,  // +2: que los malos resultados duelan más
   PRESION_OBJETIVO_LEJOS: 6,   // +2: la presión por objetivo crece más rápido
   PRESION_OBJETIVO_CERCA: -4,
+  PRESION_BRECHA: 3,  // +3 presión por cada puesto de distancia al objetivo (brecha positiva = atrás del objetivo)
 };
 
 export const TEMPORADA = {

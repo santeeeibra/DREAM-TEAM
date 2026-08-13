@@ -233,6 +233,16 @@ export function jugarTramo(c) {
   const { partidos, estadisticas } = simularTramo(c.rng, c.liga, desde, hasta, fuerza, misJugadores);
   c.partidosTemporada.push(...partidos);
   acumularEstadisticas(c, estadisticas);
+
+  // 🟨 Presión por brecha de posición al objective
+  const brecha = miPosicion(c.liga) - c.objetivo;
+  if (brecha > 0) {
+    c.estado.presion += brecha * TRAMO.PRESION_BRECHA;
+  }
+  // Clamp a [0, 100] per arquitectura
+  if (c.estado.presion > 100) c.estado.presion = 100;
+  if (c.estado.presion < 0) c.estado.presion = 0;
+
   c.modificadorTramo = null; // el efecto dura un solo tramo, nunca se acumula
 
   const pts = partidos.reduce((s, p) => s + (p.res === 'G' ? 3 : p.res === 'E' ? 1 : 0), 0);
