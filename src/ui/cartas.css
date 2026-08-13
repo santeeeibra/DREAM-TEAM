@@ -147,3 +147,28 @@
   .flash{animation:cartaFadeFlash 400ms ease forwards}
   @keyframes cartaFadeFlash{0%{opacity:.5}100%{opacity:0}}
 }
+
+/* ---- chip objetivo ---- */
+.chip-objetivo{
+  display:inline-flex;
+  align-items:center;
+  flex-wrap:wrap;
+  padding:4px 8px;
+  border-radius:12px;
+  font-family:'Barlow Condensed';
+  font-weight:700;
+  font-size:12px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  margin-left:8px;
+}
+.chip-objetivo.peligro{
+  color:#D6402E;
+  background:rgba(214,64,46,.15);
+  border:1px solid rgba(214,64,46,.4);
+}
+.chip-objetivo.ok{
+  color:#28a745;
+  background:rgba(40,167,69,.15);
+  border:1px solid rgba(40,167,69,.4);
+}

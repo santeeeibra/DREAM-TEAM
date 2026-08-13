@@ -708,8 +708,14 @@ const PANTALLAS = {
 
   previa: () => {
     const desde = c.partidosTemporada.length + 1;
+    const pos = c.liga ? miPosicion(c.liga) : 20;
+    const obj = c.objetivo;
+    const enPeligro = pos > obj;
+    const chip = `<div class="chip-objetivo ${enPeligro ? 'peligro' : 'ok'}">
+      🎯 Objetivo: Top ${obj} · Posición actual: ${pos}°${enPeligro ? ' ⚠️' : ' ✓'}</div>`;
     return `<div class="stack${tsEntra ? ' ts-anim' : ''}">
       ${marcador()}
+      ${chip}
       <div class="panel stack ts-tramo">
         <div class="ts-tramo-tag"><i></i>Tramo ${c.tramo + 1} de ${LIGA.TRAMOS.length}</div>
         <h2>Fechas <span class="ts-glow">${desde} a ${desde + LIGA.TRAMOS[c.tramo] - 1}</span></h2>

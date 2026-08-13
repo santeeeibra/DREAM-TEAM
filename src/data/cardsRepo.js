@@ -171,12 +171,16 @@ export async function openClubRealSquad(managerId, clubName, leagueId) {
 
   if (clubCards.length) await saveSquad(managerId, clubCards);
 
-  // 2. Sobre de refuerzo: 5 cartas aleatorias de la liga (excluyendo las ya guardadas)
+  // 2. Sobre de refuerzo: 5 cartas aleatorias de la liga (excluyendo las ya guardadas
+// y las del club elegido para evitar repetidos)
   const [pool, idsUsados] = await Promise.all([
     fetchCardPool(leagueId),
     fetchOwnedCardIds(managerId),
   ]);
-  const poolNuevo = pool.filter((c) => !idsUsados.has(c.id));
+  // Agregamos los IDs del club template al conjunto de IDs excluidos
+  const idsDelClub = clubCards.map(c => c.id);
+  const idsExcluidos = new Set([...idsUsados, ...idsDelClub]);
+  const poolNuevo = pool.filter((c) => !idsExcluidos.has(c.id));
   for (let i = poolNuevo.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [poolNuevo[i], poolNuevo[j]] = [poolNuevo[j], poolNuevo[i]];
