@@ -682,7 +682,8 @@ const PANTALLAS = {
       </div>`;
     };
     const slotElegido = ui.slot !== null ? formSlots[ui.slot] : null;
-    const candidatos = ui.slot === null ? [] : [...banco, ...c.once.map((id) => porId.get(id))].filter(Boolean)
+    const ocupante = ui.slot !== null ? c.once[ui.slot] : null;
+    const candidatos = ui.slot === null ? [] : [...banco, ...c.once.map((id) => porId.get(id))].filter((x) => x && x.id !== ocupante)
       .sort((a, b) =>
         penalidad(a.pos, slotElegido) - penalidad(b.pos, slotElegido) ||
         ratingEnSlot(b, slotElegido) - ratingEnSlot(a, slotElegido));
@@ -1133,7 +1134,13 @@ const acciones = {
   'ob-set-modo'(el) { ui.onboarding.modoJuego = el.dataset.modo; _guardarDtDraft(); },
   'volver-onboarding'() { ui.vista = 'onboarding'; render(); },
   'abrir-sobre'(el) { ui.sobresAbiertos.push(Number(el.dataset.i)); },
-  'ir-once'() { ui.vista = 'once'; ui.slot = null; if (!c.once.length) c.once = autoOnce(c.plantel, { formacion: FORMACIONES_SLOTS[c.formacion] || FORMACION }); },
+  'ir-once'() {
+    ui.vista = 'once'; ui.slot = null;
+    const slots = FORMACIONES_SLOTS[c.formacion] || FORMACION;
+    const plantelIds = new Set(c.plantel.map((x) => x.id));
+    const onceValido = c.once.length === slots.length && c.once.every((id) => id && plantelIds.has(id));
+    if (!onceValido) c.once = autoOnce(c.plantel, { formacion: slots });
+  },
   async 'draft-elegir'(el) {
     const dp = ui.draftPuro;
     if (!dp) return;
@@ -1157,7 +1164,9 @@ const acciones = {
       ui.cargando = false;
       ui.draftPuro = null;
       ui.vista = 'once'; ui.slot = null;
-      if (!c.once.length) c.once = autoOnce(c.plantel);
+      const _slots = FORMACIONES_SLOTS[c.formacion] || FORMACION;
+      const _ids = new Set(c.plantel.map((x) => x.id));
+      if (!(c.once.length === _slots.length && c.once.every((id) => id && _ids.has(id)))) c.once = autoOnce(c.plantel, { formacion: _slots });
     }
   },
   slot(el) { const i = Number(el.dataset.i); ui.slot = ui.slot === i ? null : i; },
