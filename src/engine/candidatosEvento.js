@@ -8,7 +8,10 @@ export const MAX_CANDIDATOS = 6;
 // Cupo de repetición por intensidad (§ rediseño v2): alta nunca repite en la
 // carrera, media repite como máximo una vez por temporada, baja hasta 3 veces
 // por temporada. `historial` es la lista { id, temporada } de eventos narrados.
-export const BAJA_MAX_POR_TEMPORADA = 3;
+export const BAJA_MAX_POR_TEMPORADA = 1;
+// Además del cupo por intensidad, ningún evento puede reaparecer si salió en los
+// últimos VENTANA_NO_REPETIR eventos narrados (protege contra "veo siempre lo mismo").
+export const VENTANA_NO_REPETIR = 8;
 
 // Ventana de rotación de figuras: un jugador no vuelve a ser el objetivo de un
 // evento visible hasta que pasaron ROTACION_VENTANA eventos visibles por el medio.
@@ -52,8 +55,13 @@ function usosEnTemporada(historial, id, temporada) {
   return historial.filter((h) => h.id === id && h.temporada === temporada).length;
 }
 
+function apareceEnVentana(e, historial) {
+  return historial.slice(-VENTANA_NO_REPETIR).some((h) => h.id === e.id);
+}
+
 /** true si el evento todavía tiene cupo para volver a salir según su intensidad. */
 function dentroDeCupo(e, historial, temporada) {
+  if (apareceEnVentana(e, historial)) return false;
   if (e.intensidad === INTENSIDAD.ALTA) return !usadoAlgunaVez(historial, e.id);
   if (e.intensidad === INTENSIDAD.MEDIA) return usosEnTemporada(historial, e.id, temporada) === 0;
   return usosEnTemporada(historial, e.id, temporada) < BAJA_MAX_POR_TEMPORADA;
