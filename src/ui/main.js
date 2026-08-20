@@ -144,6 +144,7 @@ const banderaImg = (nombre) => {
 const LIGAS = [
   { id: 'premier',     label: 'Premier League',           logo: 'https://media.api-sports.io/football/leagues/39.png'  },
   { id: 'laliga',      label: 'LaLiga',                   logo: 'https://media.api-sports.io/football/leagues/140.png' },
+  { id: 'liga-profesional', label: 'Liga Profesional', logo: 'https://paladarnegro.net/escudoteca/argentina/liga-profesional/png/bocajuniors.png' },
   { id: 'seriea',      label: 'Serie A',                  logo: 'https://media.api-sports.io/football/leagues/135.png' },
   { id: 'bundesliga',  label: 'Bundesliga',               logo: 'https://media.api-sports.io/football/leagues/78.png'  },
   { id: 'ligapro',     label: 'Liga Profesional',         logo: 'https://media.api-sports.io/football/leagues/128.png' },
@@ -948,11 +949,32 @@ const PANTALLAS = {
   },
 };
 
+function renderBotonNuevaPartida() {
+  let host = document.getElementById('fab-nueva');
+  if (ui.vista === 'onboarding' || ui.vista === 'guia') {
+    if (host) host.remove();
+    return;
+  }
+  if (!host) {
+    host = document.createElement('button');
+    host.id = 'fab-nueva';
+    host.dataset.accion = 'nueva-partida';
+    host.title = 'Empezar una nueva partida';
+    host.style.cssText = 'position:fixed;top:14px;right:14px;z-index:9999;padding:8px 14px;border-radius:4px;background:var(--panel);color:var(--tiza);font-family:"Barlow Condensed",sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.09em;font-size:13px;box-shadow:inset 0 0 0 1px var(--linea);cursor:pointer;';
+    host.textContent = '↺ Nueva partida';
+    document.body.appendChild(host);
+  }
+}
+
 function render() {
   const cambioVista = tsVistaAnterior !== ui.vista;
   tsEntra = cambioVista;
   tsVistaAnterior = ui.vista;
   app.innerHTML = PANTALLAS[ui.vista]();
+  // Botón flotante siempre visible: permite abandonar la carrera en cualquier
+  // momento y volver a onboarding. Oculto en la propia pantalla de onboarding
+  // (no hay a dónde volver) y durante los sobres iniciales de la carrera nueva.
+  renderBotonNuevaPartida();
   // Solo las pantallas arrancan arriba de todo. Una interacción que re-renderiza
   // la MISMA vista (dropdown de onboarding, elegir jugador en el once, toggle de
   // tabla, abrir sobre) conserva el scroll — si no, cada click salta al tope.
@@ -1262,6 +1284,14 @@ const acciones = {
     c = null;
     ui = { ...ui, vista: 'onboarding', tabla: false, sobresAbiertos: [] };
     ui.onboarding.abierto = null;
+  },
+  'nueva-partida'() {
+    if (!confirm('¿Empezar una nueva partida? Se pierde la carrera actual.')) return;
+    localStorage.removeItem('manager_id');
+    localStorage.removeItem('dt_draft');
+    c = null;
+    ui = { ...ui, vista: 'onboarding', tabla: false, sobresAbiertos: [], draftPuro: null };
+    ui.onboarding = { liga: null, clubes: [], clubId: '', nombre: '', pais: '', cargando: false, error: null, enviando: false, abierto: null, modo: 'facil', modoJuego: 'liga', formacion: '4-3-3' };
   },
   'ver-guia'() { ui.vistaAnterior = ui.vista; ui.vista = 'guia'; },
   volver() { ui.vista = ui.vistaAnterior || 'intro'; },

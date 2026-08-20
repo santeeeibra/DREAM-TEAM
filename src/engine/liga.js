@@ -123,7 +123,10 @@ function goles(rng, fuerza, rival, localia, mod = 1) {
 // Los rivales no tienen plantel simulado (solo un número de fuerza agregado),
 // así que goleadores/asistencias solo se atribuyen a MI plantel — no hay
 // jugadores reales del otro lado a los que asignarles el gol.
-const PESO_GOL = { DEL: 6, MED: 2, DEF: 0.4, POR: 0.05 };
+// DEL bajado de 6→3.8 y MED subido a 2.6: el goleador estrella deja de acaparar
+// (~40%→~28% de los goles del equipo). En una temporada de ~60 goles, el pichichi
+// suele quedar en 15-20 y llegar a 25 es la excepción, como en el fútbol real.
+const PESO_GOL = { DEL: 3.8, MED: 2.6, DEF: 0.5, POR: 0.05 };
 const PESO_ASISTENCIA = { DEL: 2, MED: 4, DEF: 1, POR: 0.05 };
 const PROB_ASISTENCIA = 0.78; // el resto son goles individuales, de penal, etc.
 
@@ -148,8 +151,8 @@ export function simularTramo(rng, liga, desde, hasta, fuerzaMia, misJugadores = 
   for (let f = desde; f < hasta; f++) {
     for (const [localId, visitaId] of liga.fixture[f]) {
       const local = liga.equipos[localId], visita = liga.equipos[visitaId];
-      const fl = (local.esMio ? fuerzaMia : local.fuerza) + gauss(rng, 0, 1.2);
-      const fv = (visita.esMio ? fuerzaMia : visita.fuerza) + gauss(rng, 0, 1.2);
+      const fl = (local.esMio ? fuerzaMia : local.fuerza) + gauss(rng, 0, 1.8);
+      const fv = (visita.esMio ? fuerzaMia : visita.fuerza) + gauss(rng, 0, 1.8);
       let gl = goles(rng, fl, fv, FUERZA.LOCALIA);
       let gv = goles(rng, fv, fl, FUERZA.VISITA);
       // Estilo del rival: el fuerte te cierra (menos goles) y te castiga más (más en contra).
