@@ -230,7 +230,11 @@ export function jugarTramo(c) {
   }
 
   const misJugadores = c.once.map((id) => porId.get(id)).filter(Boolean).map((x) => ({ id: x.id, pos: x.pos }));
-  const { partidos, estadisticas } = simularTramo(c.rng, c.liga, desde, hasta, fuerza, misJugadores);
+  // Bug 2: si el slot de ARQ (once[0]) no está ocupado por un POR de verdad,
+  // el equipo entra sin arquero real → la simulación multiplica los goles en contra.
+  const arqCarta = porId.get(c.once[0]);
+  const sinArquero = !arqCarta || arqCarta.pos !== 'POR';
+  const { partidos, estadisticas } = simularTramo(c.rng, c.liga, desde, hasta, fuerza, misJugadores, { sinArquero });
   c.partidosTemporada.push(...partidos);
   acumularEstadisticas(c, estadisticas);
 
@@ -479,21 +483,41 @@ function cerrarTemporada(c) {
   return c;
 }
 
-/** Bisagra entre loop corto y loop largo: el sobre de refuerzo. */
-export function abrirRefuerzo(c) {
-  const cartas = cargarCartasDB(sobreRefuerzo(c.rng, c.ultimaTemporada.posicion));
-  c.refuerzo = cartas;
-  c.fase = FASES.REFUERZO;
-  return cartas;
+// Un jugador es el MISMO si comparte fut_id (id de FUT — ya sea el eaId de la
+// carta o el basePlayerEaId cuando existe). Sin fut_id, cae al nombre normalizado
+// como respaldo. Se usa para no repetir jugadores dentro del sobre ni ofrecer
+// alguien que ya está en el plantel.
+function claveJugador(c) {
+  return c.fut_id ? `fid:${c.fut_id}` : `nom:${(c.nombre || '').toLowerCase().trim()}`;
 }
 
-/** 
+function dedupeYExcluir(cartas, plantel) {
+  const yaEnPlantel = new Set((plantel || []).map(claveJugador));
+  const vistos = new Set();
+  return cartas.filter((c) => {
+    const k = claveJugador(c);
+    if (yaEnPlantel.has(k) || vistos.has(k)) return false;
+    vistos.add(k);
+    return true;
+  });
+}
+
+/** Bisagra entre loop corto y loop largo: el sobre de refuerzo. */
+export function abrirRefuerzo(c) {
+  const futIdsPlantel = (c.plantel || []).map((x) => x.fut_id).filter(Boolean);
+  const cartas = cargarCartasDB(sobreRefuerzo(c.rng, c.ultimaTemporada.posicion, futIdsPlantel));
+  c.refuerzo = dedupeYExcluir(cartas, c.plantel);
+  c.fase = FASES.REFUERZO;
+  return c.refuerzo;
+}
+
+/**
  * cartasCrudasDB es el array que te devolvió supabase.rpc('open_pack')
  */
 export function registrarRefuerzo(c, cartasCrudasDB) {
   // Mismo formateo que abrirRefuerzo: el motor SIEMPRE guarda cartas con
   // shape {id, nombre, pos, rating, edad, rareza}, nunca columnas DB crudas.
-  c.refuerzo = cargarCartasDB(cartasCrudasDB);
+  c.refuerzo = dedupeYExcluir(cargarCartasDB(cartasCrudasDB), c.plantel);
   c.fase = FASES.REFUERZO;
   return c.refuerzo;
 }

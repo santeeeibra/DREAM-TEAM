@@ -229,7 +229,33 @@ export const leagues = [
       { id: 'lorient',     name: 'Lorient' },
     ],
   },
-];
+],
+  // --- Liga Profesional ---
+  // Clubs de la Liga Profesional Argentina.
+  // Nombres exactos de la columna `club` en cards; escudo en escudoteca.js.
+  {
+    id: 'liga-profesional',
+    league: 'Liga Profesional',
+    country: 'Argentina',
+    clubs: [
+      { id: 'boca-juniors', name: 'Boca Juniors' },
+      { id: 'river-plate', name: 'River Plate' },
+      { id: 'independiente', name: 'Independiente' },
+      { id: 'racing-club', name: 'Racing Club' },
+      { id: 'san-lorenzo', name: 'San Lorenzo' },
+      { id: 'velez-sarsfield', name: 'Vélez Sarsfield' },
+      { id: 'rosario-central', name: 'Rosario Central' },
+      { id: 'colon', name: 'Colón' },
+      { id: 'talleres', name: 'Talleres' },
+      { id: 'belgrano', name: 'Belgrano' },
+      { id: 'huracan', name: 'Huracán' },
+      { id: 'tigre', name: 'Tigre' },
+      { id: 'lanus', name: 'Lanús' },
+      { id: 'banfield', name: 'Banfield' },
+      { id: 'argentinos-juniors', name: 'Argentinos Juniors' },
+      { id: 'atltucuman', name: 'Atlético Tucumán' },
+    ],
+  },
 
 // --- Helpers de lookup ---------------------------------------------------
 // El resto del juego (motor, main.js, escenas) usa estos helpers en vez de

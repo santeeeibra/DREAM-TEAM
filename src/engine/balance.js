@@ -41,7 +41,11 @@ export const FUERZA = {
   // Penalización de rating por jugador fuera de su puesto natural, graduada por cercanía
   // de línea. Ver data/posiciones.js:penalidad() para el criterio de qué es "vecino".
   // DFC es exclusivo de DEF (igual que ARQ de POR): ahí un MED/DEL cae directo a FUERA.
-  PENALIDAD_POSICION: { NATURAL: 0, VECINO: 5, FUERA: 12 },
+  PENALIDAD_POSICION: { NATURAL: 0, VECINO: 5, FUERA: 25 },
+  // Si el slot ARQ no está cubierto por un POR real, el equipo concede el doble.
+  // Es un castigo aparte de la penalidad de rating: aunque metas un DEL de arquero
+  // (ya penalizado −25), los goles en contra se multiplican por este factor.
+  SIN_ARQUERO_MULT_GC: 2.5,
   LOCALIA: 1.12,
   VISITA: 0.92,
   GOLES_BASE: 1.35,

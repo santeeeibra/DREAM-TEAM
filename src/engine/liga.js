@@ -145,7 +145,8 @@ function atribuirGol(rng, jugadores) {
  * misJugadores ({id,pos}[], el 11 titular confirmado) se usa solo para
  * repartir goles/asistencias de MIS goles entre mis jugadores.
  */
-export function simularTramo(rng, liga, desde, hasta, fuerzaMia, misJugadores = []) {
+export function simularTramo(rng, liga, desde, hasta, fuerzaMia, misJugadores = [], opciones = {}) {
+  const multGC = opciones.sinArquero ? FUERZA.SIN_ARQUERO_MULT_GC : 1;
   const misPartidos = [];
   const estadisticas = { goleadores: {}, asistencias: {} };
   for (let f = desde; f < hasta; f++) {
@@ -166,6 +167,12 @@ export function simularTramo(rng, liga, desde, hasta, fuerzaMia, misJugadores = 
           gv = goles(rng, fv, fl, FUERZA.VISITA, 1 - estilo.goles_mod);
         }
       }
+      // Bug 2: sin arquero real en el arco propio, los goles CONCEDIDOS por mi
+      // equipo se multiplican. Es aparte de la penalidad de rating: el efecto es
+      // brutal (perdés 4-0 con un DEL entre los palos). Se aplica después del
+      // ajuste por estilo del rival para no ser pisado.
+      if (local.esMio) gv = Math.round(gv * multGC);
+      if (visita.esMio) gl = Math.round(gl * multGC);
       anotar(liga.tabla, localId, gl, gv);
       anotar(liga.tabla, visitaId, gv, gl);
       if (local.esMio || visita.esMio) {
