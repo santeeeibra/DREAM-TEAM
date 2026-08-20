@@ -599,6 +599,301 @@ export const CATALOGO = [
     ],
   }),
 
+  // ══════════════════════ FAMILIA: JUVENILES / CANTERA ══════════════════════
+  p('pibe_debut_pide_titular', {
+    tags: ['individual', 'plantel'],
+    intensidad: INTENSIDAD.MEDIA,
+    filtro: (c) => c.temporada >= 1,
+    titulo: 'El pibe de reserva quiere ser titular',
+    texto: 'Metió tres goles en cuatro partidos de reserva y su representante llamó: o juega el fin de semana o pide salir a préstamo. Tiene 18 años.',
+    opciones: [
+      { id: 'titular', label: 'Ponerlo de titular', resultado: [
+        { prob: 0.5, nota: 'la rompe y se gana el puesto', efectos: { moral: 6, ratingDelta: 2 } },
+        { prob: 0.5, nota: 'se paraliza en el debut', efectos: { moral: -4, ratingDelta: -2, presion: 6 } },
+      ]},
+      { id: 'banco', label: 'Que sume desde el banco', efectos: { moral: -2, presion: 2 } },
+    ],
+  }),
+  p('juvenil_convocado_seleccion', {
+    tags: ['individual', 'plantel'],
+    intensidad: INTENSIDAD.MEDIA,
+    filtro: (c) => c.tramo >= 2,
+    titulo: '{figura} convocado a la Sub-20',
+    texto: 'Se lo lleva el seleccionador juvenil por dos semanas. Vas a perderlo para el próximo tramo, pero volver "internacional" le va a cambiar la cabeza.',
+    opciones: [
+      { id: 'ceder', label: 'Cederlo sin trabas', efectos: { moral: 4, ratingDelta: -1, fatiga: 6 } },
+      { id: 'pelear', label: 'Pedir que no lo lleven', resultado: [
+        { prob: 0.4, nota: 'lo dejan', efectos: { ratingDelta: 1, moral: -3 } },
+        { prob: 0.6, nota: 'igual se lo llevan y quedan resentidos', efectos: { moral: -8, presion: 6 } },
+      ]},
+    ],
+  }),
+
+  // ══════════════════════ FAMILIA: PRENSA / RUEDAS DE PRENSA ══════════════════════
+  p('pregunta_dificil_conferencia', {
+    tags: ['dt', 'prensa'],
+    intensidad: INTENSIDAD.BAJA,
+    filtro: () => true,
+    titulo: 'La pregunta trampa en conferencia',
+    texto: 'El periodista de siempre te lanzó una pregunta cargada sobre el DT rival, buscando titular. Toda la sala espera.',
+    opciones: [
+      { id: 'chicana', label: 'Devolver con una chicana', resultado: [
+        { prob: 0.5, nota: 'la hinchada te banca', efectos: { moral: 5, presion: -3 } },
+        { prob: 0.5, nota: 'el otro DT se calienta y se arma quilombo', efectos: { presion: 12, moral: 2 } },
+      ]},
+      { id: 'diplomacia', label: 'Salida diplomática', efectos: { presion: -4 } },
+    ],
+  }),
+  p('elogio_publico_rival', {
+    tags: ['dt', 'prensa'],
+    intensidad: INTENSIDAD.BAJA,
+    filtro: (c) => !!c.rival,
+    titulo: 'El DT de {rival} te elogió en la previa',
+    texto: 'Dijo que sos "de lo mejor que dio esta liga en años". Puede ser sincero o puede ser una jugada para relajarte antes del partido.',
+    opciones: [
+      { id: 'devolver', label: 'Devolver el elogio', efectos: { moral: 3, presion: -2 } },
+      { id: 'ignorar', label: 'Enfocarse en el partido', efectos: { ratingDelta: 1 } },
+    ],
+  }),
+  p('critica_ex_jugador', {
+    tags: ['dt', 'prensa'],
+    intensidad: INTENSIDAD.BAJA,
+    filtro: (c) => c.temporada >= 2,
+    titulo: 'Un ex ídolo del club te criticó',
+    texto: 'En su columna semanal dice que "el equipo no tiene alma" y que vos no entendés al club. Los hinchas lo respetan mucho.',
+    opciones: [
+      { id: 'responder', label: 'Responderle en conferencia', resultado: [
+        { prob: 0.5, nota: 'quedás como valiente', efectos: { moral: 4, presion: 5 } },
+        { prob: 0.5, nota: 'quedás como agrandado', efectos: { moral: -4, presion: 10 } },
+      ]},
+      { id: 'callar', label: 'No contestar', efectos: { presion: 4 } },
+    ],
+  }),
+
+  // ══════════════════════ FAMILIA: MERCADO / FICHAJES ══════════════════════
+  p('representante_ofrece_veterano', {
+    tags: ['plantel'],
+    intensidad: INTENSIDAD.MEDIA,
+    filtro: (c) => c.tramo <= 1,
+    titulo: 'Ofrecen un nombre grande, pero al límite',
+    texto: 'Un representante te ofrece un ex-crack europeo. Tiene 34, contrato caro, pero sabe ganar finales.',
+    opciones: [
+      { id: 'firmar', label: 'Firmarlo', resultado: [
+        { prob: 0.5, nota: 'aporta liderazgo real', efectos: { ratingDelta: 2, moral: 6, money: -3 } },
+        { prob: 0.5, nota: 'se lesiona en un mes', efectos: { moral: -4, money: -3 } },
+      ]},
+      { id: 'descartar', label: 'No es para nosotros', efectos: {} },
+    ],
+  }),
+  p('rival_intenta_robar_asistente', {
+    tags: ['institucional'],
+    intensidad: INTENSIDAD.MEDIA,
+    filtro: (c) => c.temporada >= 2,
+    titulo: 'Un rival directo quiere a tu ayudante',
+    texto: 'Te avisa el propio ayudante: le ofrecieron el puesto de DT en otro club de la liga. Quiere quedarse pero también quiere una respuesta.',
+    opciones: [
+      { id: 'retener', label: 'Retenerlo con más sueldo', efectos: { money: -4, moral: 4, presion: -3 } },
+      { id: 'dejarir', label: 'Dejarlo ir con la bendición', resultado: [
+        { prob: 0.55, nota: 'lo reemplazás bien', efectos: { moral: -3 } },
+        { prob: 0.45, nota: 'el vestuario lo extraña', efectos: { moral: -8, ratingDelta: -1 } },
+      ]},
+    ],
+  }),
+  p('canje_por_delantero', {
+    tags: ['plantel'],
+    intensidad: INTENSIDAD.MEDIA,
+    filtro: (c) => c.tramo <= 2,
+    titulo: 'Proponen un canje uno por uno',
+    texto: 'Un club te ofrece cambiar un central tuyo por un delantero suyo. Es plata cero, todo trueque.',
+    opciones: [
+      { id: 'aceptar', label: 'Aceptar el canje', resultado: [
+        { prob: 0.5, nota: 'los dos rinden en su nuevo lugar', efectos: { ratingDelta: 1, moral: 3 } },
+        { prob: 0.5, nota: 'el que se fue explota afuera', efectos: { presion: 8, moral: -5 } },
+      ]},
+      { id: 'rechazar', label: 'Rechazarlo', efectos: {} },
+    ],
+  }),
+
+  // ══════════════════════ FAMILIA: HINCHADA / TRIBUNA ══════════════════════
+  p('barra_pide_reunion', {
+    tags: ['hinchada'],
+    intensidad: INTENSIDAD.MEDIA,
+    filtro: (c) => c.presion >= 45,
+    titulo: 'La barra quiere una reunión',
+    texto: 'Los jefes de la hinchada organizada piden verte "de igual a igual" en el predio. No es una amenaza abierta, pero tampoco es una charla amistosa.',
+    opciones: [
+      { id: 'recibir', label: 'Recibirlos y escuchar', resultado: [
+        { prob: 0.55, nota: 'se van tranquilos', efectos: { presion: -8 } },
+        { prob: 0.45, nota: 'se filtra la reunión y hay escándalo', efectos: { presion: 15, moral: -4 } },
+      ]},
+      { id: 'negar', label: 'Negarse a recibirlos', efectos: { presion: 10 } },
+    ],
+  }),
+  p('banderazo_apoyo', {
+    tags: ['hinchada'],
+    intensidad: INTENSIDAD.BAJA,
+    filtro: (c) => c.presion >= 55,
+    titulo: 'Banderazo antes del partido',
+    texto: 'Miles de hinchas fueron al hotel de concentración con banderas y bombos. Se te pusieron la carne de gallina mirándolo por la ventana.',
+    opciones: [
+      { id: 'salir', label: 'Salir a saludar', efectos: { moral: 10, presion: -6, fatiga: 2 } },
+      { id: 'concentracion', label: 'Mantener la concentración', efectos: { ratingDelta: 1, moral: 3 } },
+    ],
+  }),
+  p('silbatina_titular', {
+    tags: ['hinchada', 'individual'],
+    intensidad: INTENSIDAD.MEDIA,
+    filtro: (c) => !!c.figura && c.presion >= 40,
+    titulo: 'La hinchada silbó a {figura}',
+    texto: 'Cada vez que tocaba la pelota, una parte de la tribuna silbaba. El jugador terminó llorando en el vestuario.',
+    opciones: [
+      { id: 'bancar', label: 'Bancarlo públicamente', efectos: { moral: 6, presion: 8, ratingDelta: 1 } },
+      { id: 'suplente', label: 'Mandarlo al banco un tramo', resultado: [
+        { prob: 0.55, nota: 'baja el ruido y se recupera', efectos: { presion: -6, moral: -3 } },
+        { prob: 0.45, nota: 'lo sienten como abandono', efectos: { moral: -8, ratingDelta: -2 } },
+      ]},
+    ],
+  }),
+
+  // ══════════════════════ FAMILIA: ÁRBITRO / VAR ══════════════════════
+  p('penal_dudoso_ultimo_minuto', {
+    tags: ['prensa'],
+    intensidad: INTENSIDAD.BAJA,
+    filtro: (c) => c.tramo >= 1,
+    titulo: 'Penal dudoso en el último minuto',
+    texto: 'El VAR se demoró seis minutos revisando la jugada. El árbitro cobró y perdiste dos puntos. Todos esperan tu reacción.',
+    opciones: [
+      { id: 'estallar', label: 'Estallar en conferencia', resultado: [
+        { prob: 0.5, nota: 'los hinchas te aman', efectos: { moral: 6, presion: -4 } },
+        { prob: 0.5, nota: 'te clavan una multa fuerte', efectos: { money: -5, presion: 4 } },
+      ]},
+      { id: 'mesura', label: 'Ser mesurado', efectos: { presion: 2 } },
+    ],
+  }),
+  p('denuncia_arbitraje_temporada', {
+    tags: ['dt', 'prensa'],
+    intensidad: INTENSIDAD.ALTA,
+    filtro: (c) => c.temporada >= 2 && c.presion >= 55,
+    titulo: 'Los arbitrajes de la temporada',
+    texto: 'Un canal armó un informe con todos los fallos dudosos que sufriste. Te preguntan si vas a hacer una denuncia formal.',
+    opciones: [
+      { id: 'denunciar', label: 'Presentar la denuncia', resultado: [
+        { prob: 0.35, nota: 'la AFA/liga le da bola', efectos: { moral: 8, presion: -8 } },
+        { prob: 0.65, nota: 'te suspenden dos partidos', efectos: { moral: -5, presion: 12, ratingDelta: -2 } },
+      ]},
+      { id: 'archivar', label: 'Archivar el tema', efectos: { presion: 4 } },
+    ],
+  }),
+
+  // ══════════════════════ FAMILIA: CUERPO TÉCNICO / MÉDICO ══════════════════════
+  p('preparador_fisico_renuncia', {
+    tags: ['institucional'],
+    intensidad: INTENSIDAD.MEDIA,
+    filtro: (c) => c.fatiga >= 55,
+    titulo: 'El preparador físico renuncia',
+    texto: 'Se cansó del rejunte de lesiones y de que el cuerpo médico lo culpe. Presentó la renuncia a la mañana.',
+    opciones: [
+      { id: 'aceptar', label: 'Aceptarla y traer otro', resultado: [
+        { prob: 0.5, nota: 'el nuevo baja la fatiga', efectos: { fatiga: -8, money: -3 } },
+        { prob: 0.5, nota: 'el nuevo no engancha', efectos: { fatiga: 5, ratingDelta: -1, money: -3 } },
+      ]},
+      { id: 'retener', label: 'Bajar los brazos y retenerlo', efectos: { presion: 3, moral: 2 } },
+    ],
+  }),
+  p('cuerpo_medico_alerta_carga', {
+    tags: ['plantel'],
+    intensidad: INTENSIDAD.BAJA,
+    filtro: (c) => c.fatiga >= 60,
+    titulo: 'Alerta del cuerpo médico',
+    texto: 'Te muestran los datos GPS: tres titulares están al 92% de carga. Si seguís así, alguno se rompe seguro.',
+    opciones: [
+      { id: 'rotar', label: 'Rotar el próximo tramo', efectos: { fatiga: -10, ratingDelta: -2 } },
+      { id: 'apretar', label: 'Apretar los dientes', resultado: [
+        { prob: 0.45, nota: 'aguantan', efectos: { fatiga: 5 } },
+        { prob: 0.55, nota: 'un titular se lesiona', efectos: { fatiga: 8, moral: -6, ratingDelta: -3 } },
+      ]},
+    ],
+  }),
+
+  // ══════════════════════ FAMILIA: TÁCTICA / ENTRENAMIENTO ══════════════════════
+  p('cambio_de_esquema', {
+    tags: ['dt', 'plantel'],
+    intensidad: INTENSIDAD.MEDIA,
+    filtro: (c) => c.tramo >= 2,
+    titulo: 'Probar un esquema nuevo',
+    texto: 'Tu ayudante insiste con cambiar a línea de 3 en el fondo. El plantel nunca lo entrenó en serio.',
+    opciones: [
+      { id: 'probar', label: 'Meterlo en el próximo partido', resultado: [
+        { prob: 0.45, nota: 'sorprende y funciona', efectos: { ratingDelta: 3, moral: 5 } },
+        { prob: 0.55, nota: 'no se entiende nada', efectos: { ratingDelta: -3, moral: -5, presion: 6 } },
+      ]},
+      { id: 'esperar', label: 'Entrenarlo tres semanas primero', efectos: { fatiga: 4 } },
+    ],
+  }),
+  p('doble_turno_semanal', {
+    tags: ['dt', 'plantel'],
+    intensidad: INTENSIDAD.BAJA,
+    filtro: (c) => c.tramo >= 1 && c.tramo <= 4,
+    titulo: 'Meter doble turno esta semana',
+    texto: 'Venís de un empate y sentís que hay que apretar. El referente del vestuario ya vino a pedirte que no.',
+    opciones: [
+      { id: 'doble', label: 'Doble turno igual', efectos: { fatiga: 10, ratingDelta: 2, moral: -3 } },
+      { id: 'escuchar', label: 'Escuchar al referente', efectos: { moral: 4, ratingDelta: -1 } },
+    ],
+  }),
+  p('pelota_parada_ensayo', {
+    tags: ['dt'],
+    intensidad: INTENSIDAD.BAJA,
+    filtro: () => true,
+    titulo: 'Ensayo de pelota parada',
+    texto: 'Cortás el entrenamiento entero para trabajar solo córners y tiros libres. Los jugadores se aburren, pero puede pagar en un partido cerrado.',
+    opciones: [
+      { id: 'insistir', label: 'Insistir toda la semana', efectos: { ratingDelta: 2, moral: -2 } },
+      { id: 'variar', label: 'Meter juegos también', efectos: { moral: 3, fatiga: -2 } },
+    ],
+  }),
+
+  // ══════════════════════ FAMILIA: INSTITUCIONAL / FUERA DE CANCHA ══════════════════════
+  p('deuda_sueldos_plantel', {
+    tags: ['institucional', 'plantel'],
+    intensidad: INTENSIDAD.ALTA,
+    filtro: (c) => c.money <= 6,
+    titulo: 'Se atrasaron los sueldos del plantel',
+    texto: 'La directiva no pagó a tiempo. El capitán vino a decirte que si no se soluciona esta semana, no entrenan el jueves.',
+    opciones: [
+      { id: 'poner_cara', label: 'Ponerte del lado del plantel', resultado: [
+        { prob: 0.55, nota: 'la directiva paga', efectos: { moral: 8, presion: 8, money: -3 } },
+        { prob: 0.45, nota: 'la directiva te aísla', efectos: { presion: 18, moral: 4 } },
+      ]},
+      { id: 'mediar', label: 'Mediar entre las partes', efectos: { presion: 4, moral: -3 } },
+    ],
+  }),
+  p('inauguracion_estadio_reformado', {
+    tags: ['institucional', 'hinchada'],
+    intensidad: INTENSIDAD.MEDIA,
+    filtro: (c) => c.tramo === 0,
+    titulo: 'Se reinaugura el estadio',
+    texto: 'La obra terminó justo para el próximo partido. Va a estar lleno, con banda en vivo y jugadores históricos en la previa. Y toda la presión.',
+    opciones: [
+      { id: 'motivar', label: 'Usarlo para motivar', efectos: { moral: 8, presion: 6, ratingDelta: 1 } },
+      { id: 'desactivar', label: 'Bajar la ansiedad del plantel', efectos: { presion: -4, moral: 3 } },
+    ],
+  }),
+  p('documental_backstage', {
+    tags: ['institucional', 'plantel'],
+    intensidad: INTENSIDAD.MEDIA,
+    filtro: (c) => c.temporada >= 2,
+    titulo: 'Una plataforma quiere hacer un documental',
+    texto: 'Ofrecen buena plata por seguir al plantel con cámaras adentro del vestuario durante toda la temporada. El plantel está dividido.',
+    opciones: [
+      { id: 'aceptar', label: 'Aceptar el contrato', resultado: [
+        { prob: 0.45, nota: 'da visibilidad y plata', efectos: { money: 10, presion: 6 } },
+        { prob: 0.55, nota: 'se filtran cosas del vestuario', efectos: { money: 10, moral: -8, presion: 15 } },
+      ]},
+      { id: 'rechazar', label: 'Rechazarlo', efectos: { moral: 3 } },
+    ],
+  }),
+
   // ══════════════════════ FAMILIA: GRAVE (modo difícil) ══════════════════════
   // Eventos forzados sin elección A/B: el DT solo puede confirmar.
   // No pasan por IA ni por sorteo con candidatos — el motor los fija directo.
