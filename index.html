@@ -77,7 +77,7 @@ input:focus,select:focus,button:focus-visible{outline:2px solid var(--fluor);out
 .dd-item:hover{background:rgba(255,94,26,.10);color:var(--fluor)}
 .dd-item.activo{color:var(--fluor);font-weight:700;background:rgba(255,94,26,.06)}
 .flag{width:22px;height:15px;object-fit:cover;border-radius:2px;box-shadow:0 0 0 1px rgba(255,255,255,.14)}
-.escudo{width:22px;height:22px;object-fit:contain;flex:none}
+.escudo{width:28px;height:28px;object-fit:contain;flex:none}
 .liga-logo{width:26px;height:26px;object-fit:contain;flex:none}
 
 /* ── SIGNATURE: el marcador ── */
@@ -146,7 +146,7 @@ input:focus,select:focus,button:focus-visible{outline:2px solid var(--fluor);out
 /* cartas: estilos del componente en src/ui/cartas.css (importado desde main.js) */
 .pen-vecino-tx{color:var(--ambar)}
 .pen-fuera-tx{color:#D6402E}
-.aviso{border-left:3px solid var(--ambar);padding:8px 12px;background:rgba(0,0,0,.25);font-size:13px;margin:0}
+.aviso{border-left:3px solid var(--ambar);padding:10px 14px;background:rgba(255,194,75,.08);font-size:13px;margin:0;border-radius:0 6px 6px 0;line-height:1.5}
 
 /* once: cancha del 11, cada puesto es una mini-carta tipo collector */
 .cancha-grid{
@@ -493,7 +493,7 @@ td.n{text-align:right;font-family:'Barlow Condensed';font-weight:700;font-varian
   background:
     radial-gradient(circle,transparent 28px,rgba(255,255,255,.12) 28px,rgba(255,255,255,.12) 29px,transparent 29px) no-repeat 50% 50%/60px 60px,
     radial-gradient(circle,rgba(255,255,255,.20) 3px,transparent 3px) no-repeat 50% 50%/6px 6px,
-    linear-gradient(rgba(255,255,255,.12),rgba(255,255,255,.12)) no-repeat 50% 50%/calc(100% - 32px) 1px,
+    linear-gradient(rgba(255,255,255,.22),rgba(255,255,255,.22)) no-repeat 50% 50%/calc(100% - 32px) 1px,
     linear-gradient(rgba(255,255,255,.10),rgba(255,255,255,.10)) no-repeat 20% 5%/1px 15%,
     linear-gradient(rgba(255,255,255,.10),rgba(255,255,255,.10)) no-repeat 80% 5%/1px 15%,
     linear-gradient(rgba(255,255,255,.10),rgba(255,255,255,.10)) no-repeat 20% 20%/60% 1px,
@@ -504,8 +504,9 @@ td.n{text-align:right;font-family:'Barlow Condensed';font-weight:700;font-varian
     var(--cancha)}
 .sim-ficha{position:absolute;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;
   justify-content:center;font-family:'Barlow Condensed';font-weight:700;font-size:9px;line-height:1;
-  background:var(--fluor);color:var(--noche);cursor:default;z-index:1;transition:box-shadow .3s}
-.sim-ficha.rival{background:rgba(255,255,255,.15);color:var(--humo)}
+  background:var(--fluor);color:#fff;cursor:default;z-index:1;transition:box-shadow .3s;
+  text-shadow:0 1px 3px rgba(0,0,0,.5)}
+.sim-ficha.rival{background:rgba(255,255,255,.08);color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.15);text-shadow:none}
 .sim-ficha::after{content:attr(data-name);position:absolute;bottom:calc(100% + 4px);left:50%;
   transform:translateX(-50%);padding:2px 6px;background:var(--panel);color:var(--tiza);
   font-size:10px;border-radius:4px;white-space:nowrap;opacity:0;pointer-events:none;

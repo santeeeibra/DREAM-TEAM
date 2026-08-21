@@ -133,7 +133,7 @@ function renderSimModal(partido, idx, total, misJugadores, jugadaActual, jugadas
 
   const MY_TOP = { POR: 88, DEF: 73, MED: 53, DEL: 33 };
   const ZONA_TARGET = [88, 73, 53, 33, 10]; // target por zona 0-4
-  const spread = (n) => n <= 1 ? [50] : Array.from({ length: n }, (_, i) => 15 + (70 * i) / (n - 1));
+  const spread = (n) => n <= 1 ? [50] : Array.from({ length: n }, (_, i) => 20 + (60 * i) / (n - 1));
 
   const misFichas = [];
   for (const [pos, jugadores] of Object.entries(posGroups)) {
@@ -781,7 +781,7 @@ const PANTALLAS = {
             <button type="button" class="ob-seg-btn${ob.modo === 'facil' ? ' activo' : ''}" data-accion="ob-modo" data-modo="facil">Accesible</button>
             <button type="button" class="ob-seg-btn${ob.modo === 'dificil' ? ' activo' : ''}" data-accion="ob-modo" data-modo="dificil">Difícil</button>
           </div>
-          <p class="hint">${ob.modo === 'dificil'
+          <p class="${ob.modo === 'dificil' ? 'aviso' : 'hint'}">${ob.modo === 'dificil'
             ? '⚠️ La presión escala fuerte en cada decisión. Sin épicas en el 11, el rendimiento tiene techo.'
             : 'Ideal para conocer el juego. Margen de error generoso, presión suave.'
           }</p>
@@ -1096,7 +1096,7 @@ const PANTALLAS = {
         <p class="hint">${t.pts} puntos · ${t.g}G ${t.e}E ${t.p}P · ${t.gf}:${t.gc} · el club pedía terminar ${t.objetivo}° o mejor.</p>
         <table><tbody>${t.tablaTop5.map((x, i) => `<tr class="${x.nombre === c.club ? 'mio' : ''}"><td class="n">${i + 1}</td><td class="eq">${escudoClub(x.nombre)}<span>${esc(x.nombre)}</span></td><td class="n">${x.pts}</td></tr>`).join('')}</tbody></table>
         ${tablaGoleadores(t.estadisticas)}
-        <div class="row"><button class="btn" data-accion="abrir-refuerzo">Abrir el sobre de refuerzo</button></div>
+        <div class="row"><button class="btn ts-cta" data-accion="abrir-refuerzo">Abrir el sobre de refuerzo</button></div>
       </div>
     </div>`;
   },
