@@ -507,6 +507,17 @@ function bindHoverPreview() {
   });
 }
 
+function bindGraveHoverPreview() {
+  const btn = document.querySelector('.grave-continuar');
+  if (!btn) return;
+  const n = c.eventoActual?.narracion;
+  const paq = n ? paquete(n.paqueteId) : null;
+  if (!paq) return;
+  const opcionCat = paq.opciones[0];
+  btn.addEventListener('mouseenter', () => aplicarHoverPreview(opcionCat));
+  btn.addEventListener('mouseleave', () => limpiarHoverPreview());
+}
+
 function resultadoBloque(efectos, prob, isTopProb) {
   const filas = Object.entries(efectos).map(([k, v]) => statRow(k, v)).filter(Boolean).join('');
   const probPct = prob != null ? Math.round(prob * 100) : null;
@@ -1010,8 +1021,8 @@ const PANTALLAS = {
           <div class="eyebrow" style="color:#ff5b1e">⚠️ Notificación — Temporada ${c.temporada}</div>
           <h2>${esc(n.titulo)}</h2>
           <p>${esc(n.texto)}</p>
-          <div class="consecuencias">${resultadoBloque(opcionCat.efectos, null, false)}</div>
-          <button class="btn" data-accion="elegir" data-op="continuar">Continuar</button>
+          <div class="grave-impacto"><div class="chips grave-chips">${chipsEsperados(opcionCat)}</div></div>
+          <button class="btn grave-continuar" data-accion="elegir" data-op="continuar">Continuar</button>
         </div>
       </div>`;
     }
@@ -1220,6 +1231,7 @@ function render() {
   // Hover preview: si estamos en pantalla de evento, bindea mouseenter/mouseleave
   // en las opciones para previsualizar el efecto en los gauges.
   if (ui.vista === 'evento' || ui.vista === 'grave') bindHoverPreview();
+  if (ui.vista === 'grave') bindGraveHoverPreview();
   // Solo las pantallas arrancan arriba de todo. Una interacción que re-renderiza
   // la MISMA vista (dropdown de onboarding, elegir jugador en el once, toggle de
   // tabla, abrir sobre) conserva el scroll — si no, cada click salta al tope.
@@ -1484,9 +1496,11 @@ const acciones = {
     ui.detalleAbierto.has(id) ? ui.detalleAbierto.delete(id) : ui.detalleAbierto.add(id);
   },
   elegir(el) {
+    const isGrave = el.dataset.op === 'continuar';
     ui.preClick = { moral: c.estado.moral, fatiga: c.estado.fatiga, presion: c.estado.presion, ratingDelta: c.estado.ratingDelta, money: c.estado.money };
     const { deltas } = resolverEvento(c, el.dataset.op);
     ui.deltas = deltas;
+    if (isGrave) { render(); return; }
     ui.vista = c.fase === FASES.FIN ? 'fin' : c.fase === FASES.LESION ? 'lesion' : c.fase === FASES.RESUMEN ? 'resumen' : 'previa';
   },
   async 'abrir-refuerzo'() {
