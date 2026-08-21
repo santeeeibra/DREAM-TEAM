@@ -20,7 +20,7 @@ let ui = {
   vista: 'intro', vistaAnterior: 'intro', slot: null, sobresAbiertos: [], deltas: null, tabla: false,
   sel: new Set(), salen: new Set(), fuenteIA: null, cargando: false, detalleAbierto: new Set(), miEscudo: '',
   onboarding: { liga: null, clubes: [], clubId: '', nombre: '', pais: '', cargando: false, error: null, enviando: false, abierto: null, modo: 'facil', modoJuego: 'liga', formacion: '4-3-3' },
-  draftPuro: null,
+  draftPuro: null, preClick: null,
 };
 // Estado del drag & drop (desktop: HTML5 DnD, mobile: touch drag)
 let dragState = { active: false, playerId: null, sourceType: null, sourceSlotIdx: null, ghost: null, startX: 0, startY: 0, moved: false };
@@ -429,14 +429,7 @@ function splitBar(resultados) {
   </div>`;
 }
 
-// Tira fija arriba de las opciones: qué mueve cada variable, siempre a la vista
-// en el momento de decidir (antes esto solo vivía en la guía, un tap aparte).
-function leyendaVars() {
-  const orden = ['moral', 'fatiga', 'presion', 'ratingDelta', 'money'];
-  return `<div class="leyenda-vars">${orden.map((k) =>
-    `<div class="leyenda-item"><span class="li-ico">${ICONO[k]}</span><span class="li-tx"><b>${NOMBRE_VAR[k]}</b> ${EXPLICACION_VAR[k]}</span></div>`
-  ).join('')}</div>`;
-}
+
 
 // Promedio ponderado por probabilidad de cada efecto: reduce dos (o más)
 // bloques de números a UNA sola foto de "para dónde empuja" la opción, en vez
@@ -464,6 +457,54 @@ function chipsEsperados(opcionCat) {
   const entradas = Object.entries(v).filter(([, val]) => Math.abs(val) >= 0.05);
   if (!entradas.length) return `<span class="chip">Sin cambios</span>`;
   return entradas.map(([k, val]) => chipEsperado(k, val)).join('');
+}
+
+// ── Hover preview: preview de gauges al pasar mouse sobre una opción ──
+function aplicarHoverPreview(opcionCat) {
+  if (!opcionCat) return;
+  const deltas = valorEsperado(opcionCat);
+  if (!deltas || !Object.keys(deltas).length) return;
+  const gauges = document.querySelectorAll('.gauge[data-key]');
+  gauges.forEach(gEl => {
+    const k = gEl.getAttribute('data-key');
+    const d = deltas[k];
+    if (d == null) return;
+    gEl.classList.add('preview');
+    // Ghost: muestra el valor futuro (actual + delta esperado)
+    const vActual = c.estado[k];
+    const vFuturo = Math.round((vActual + d) * 10) / 10;
+    const txt = k === 'money'
+      ? (vFuturo < 1 ? Math.round(vFuturo * 1000) + 'K' : (vFuturo % 1 < 0.05 ? Math.round(vFuturo) + 'M' : vFuturo.toFixed(1) + 'M'))
+      : vFuturo;
+    let ghost = gEl.querySelector('.gauge-ghost');
+    if (!ghost) {
+      ghost = document.createElement('span');
+      ghost.className = 'gauge-ghost';
+      gEl.querySelector('.gauge-arc-wrap').appendChild(ghost);
+    }
+    ghost.textContent = signoDelta(k, d) + Math.abs(txt);
+    ghost.style.color = (MALO_SI_SUBE.has(k) ? d < 0 : d > 0) ? 'var(--led)' : 'var(--rojo)';
+  });
+}
+function limpiarHoverPreview() {
+  document.querySelectorAll('.gauge.preview').forEach(g => {
+    g.classList.remove('preview');
+    const ghost = g.querySelector('.gauge-ghost');
+    if (ghost) ghost.remove();
+  });
+}
+function bindHoverPreview() {
+  const n = c.eventoActual?.narracion;
+  const paq = n ? paquete(n.paqueteId) : null;
+  if (!paq) return;
+  document.querySelectorAll('.opcion-card').forEach(card => {
+    const btn = card.querySelector('.opcion-main');
+    if (!btn) return;
+    const opId = btn.getAttribute('data-id');
+    const opcionCat = paq.opciones.find(x => x.id === opId);
+    card.addEventListener('mouseenter', () => aplicarHoverPreview(opcionCat));
+    card.addEventListener('mouseleave', () => limpiarHoverPreview());
+  });
 }
 
 function resultadoBloque(efectos, prob, isTopProb) {
@@ -534,14 +575,14 @@ function marcador() {
     const dv = k === 'money'
       ? (v < 1 ? Math.round(v * 1000) + 'K' : (v % 1 < 0.05 ? Math.round(v) + 'M' : v.toFixed(1) + 'M'))
       : v;
-    return `<div class="gauge ${critico ? 'bad' : alerta ? 'warn' : ''}">
+    return `<div class="gauge ${critico ? 'bad' : alerta ? 'warn' : ''}" data-key="${k}" title="${NOMBRE_VAR[k]} — ${EXPLICACION_VAR[k]} — actual: ${dv}">
       <div class="gauge-arc-wrap">
         <svg class="gauge-arc-svg" viewBox="0 0 64 36" fill="none">
           <path d="M6 32 A26 26 0 0 1 58 32" stroke="rgba(255,255,255,.09)" stroke-width="5" stroke-linecap="round" fill="none"/>
           <path d="M6 32 A26 26 0 0 1 58 32" stroke="${stroke}" stroke-width="5" stroke-linecap="round" fill="none"
             style="stroke-dasharray:${circum};stroke-dashoffset:${offset};transition:stroke-dashoffset .6s cubic-bezier(.2,.7,.2,1),stroke .3s"/>
         </svg>
-        ${d ? `<span class="gauge-delta ${d === 0 ? '' : (MALO_SI_SUBE.has(k) ? d < 0 : d > 0) ? 'pos' : 'neg'}">${signoDelta(k, d)}${Math.abs(d)}</span>` : ''}
+        ${d ? `<span class="gauge-delta ${ui.preClick ? 'pour' : ''} ${d === 0 ? '' : (MALO_SI_SUBE.has(k) ? d < 0 : d > 0) ? 'pos' : 'neg'}" style="${ui.preClick ? `animation-delay:${['money','moral','fatiga','presion','ratingDelta'].indexOf(k) * 50}ms` : ''}">${signoDelta(k, d)}${Math.abs(d)}</span>` : ''}
       </div>
       <div class="gauge-arc-val">${dv}</div>
       <div class="gauge-lbl">${ICONO[k]} ${NOMBRE_VAR[k]}</div>
@@ -969,7 +1010,6 @@ const PANTALLAS = {
           <div class="eyebrow" style="color:#ff5b1e">⚠️ Notificación — Temporada ${c.temporada}</div>
           <h2>${esc(n.titulo)}</h2>
           <p>${esc(n.texto)}</p>
-          ${leyendaVars()}
           <div class="consecuencias">${resultadoBloque(opcionCat.efectos, null, false)}</div>
           <button class="btn" data-accion="elegir" data-op="continuar">Continuar</button>
         </div>
@@ -982,7 +1022,6 @@ const PANTALLAS = {
         <div class="eyebrow">Temporada ${c.temporada} · Decisión ${c.tramo + 1}</div>
         <h2>${esc(n.titulo)}</h2>
         <p>${esc(n.texto)}</p>
-        ${leyendaVars()}
         <div class="stack">
           ${n.opciones.map((o) => {
             const opcionCat = p.opciones.find((x) => x.id === o.id);
@@ -1178,11 +1217,14 @@ function render() {
   // momento y volver a onboarding. Oculto en la propia pantalla de onboarding
   // (no hay a dónde volver) y durante los sobres iniciales de la carrera nueva.
   renderBotonNuevaPartida();
+  // Hover preview: si estamos en pantalla de evento, bindea mouseenter/mouseleave
+  // en las opciones para previsualizar el efecto en los gauges.
+  if (ui.vista === 'evento' || ui.vista === 'grave') bindHoverPreview();
   // Solo las pantallas arrancan arriba de todo. Una interacción que re-renderiza
   // la MISMA vista (dropdown de onboarding, elegir jugador en el once, toggle de
   // tabla, abrir sobre) conserva el scroll — si no, cada click salta al tope.
   if (cambioVista) window.scrollTo({ top: 0, behavior: 'instant' });
-  setTimeout(() => { ui.deltas = null; }, 1800);
+  setTimeout(() => { ui.deltas = null; ui.preClick = null; }, 1400);
 }
 
 // ───────────────────────── acciones ─────────────────────────
@@ -1442,6 +1484,7 @@ const acciones = {
     ui.detalleAbierto.has(id) ? ui.detalleAbierto.delete(id) : ui.detalleAbierto.add(id);
   },
   elegir(el) {
+    ui.preClick = { moral: c.estado.moral, fatiga: c.estado.fatiga, presion: c.estado.presion, ratingDelta: c.estado.ratingDelta, money: c.estado.money };
     const { deltas } = resolverEvento(c, el.dataset.op);
     ui.deltas = deltas;
     ui.vista = c.fase === FASES.FIN ? 'fin' : c.fase === FASES.LESION ? 'lesion' : c.fase === FASES.RESUMEN ? 'resumen' : 'previa';

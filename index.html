@@ -118,7 +118,23 @@ input:focus,select:focus,button:focus-visible{outline:2px solid var(--fluor);out
 .gauge-hint{font-family:'Barlow Condensed';font-size:9px;color:var(--humo);opacity:.5;text-align:center;white-space:nowrap;margin-top:1px}
 .gauge.bad .gauge-hint{color:var(--rojo);opacity:.85} .gauge.warn .gauge-hint{color:var(--ambar);opacity:.75}
 .gauge-delta{position:absolute;top:0;left:50%;font-family:'Barlow Condensed';font-weight:700;font-size:13px;pointer-events:none;animation:flotar 1.6s ease forwards}
+.gauge-delta.pour{animation-name:volar;animation-duration:1.1s;animation-timing-function:cubic-bezier(.15,.9,.2,1)}
 @keyframes flotar{0%{opacity:0;transform:translateX(-50%) translateY(4px)}18%{opacity:1;transform:translateX(-50%) translateY(0)}75%{opacity:1;transform:translateX(-50%) translateY(-6px)}100%{opacity:0;transform:translateX(-50%) translateY(-12px)}}
+@keyframes volar{0%{opacity:0;transform:translateX(-50%) translateY(50px) scale(.7)}15%{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}75%{opacity:1;transform:translateX(-50%) translateY(-3px)}100%{opacity:0;transform:translateX(-50%) translateY(-10px)}}
+
+/* gauge hover preview: cuando el mouse está sobre una opción, los gauges muestran sombra de valor futuro */
+.gauge{transition:filter .2s cubic-bezier(.2,.7,.2,1),transform .2s cubic-bezier(.2,.7,.2,1)}
+.gauge.preview{filter:drop-shadow(0 0 6px rgba(255,94,26,.2));transform:scale(1.03)}
+.gauge.preview .gauge-arc-svg path:last-child{opacity:.45 !important}
+.gauge-ghost{
+  position:absolute;top:0;left:50%;
+  font-family:'Barlow Condensed';font-weight:700;font-size:11px;
+  pointer-events:none;opacity:0;
+  transition:opacity .25s cubic-bezier(.2,.7,.2,1),transform .25s cubic-bezier(.2,.7,.2,1);
+  transform:translateX(-50%) translateY(2px);z-index:1;
+}
+.gauge.preview .gauge-ghost{opacity:.65;transform:translateX(-50%) translateY(0)}
+
 .pos{color:var(--led)} .neg{color:var(--rojo)}
 
 /* cinta de fixture */
@@ -248,23 +264,14 @@ input:focus,select:focus,button:focus-visible{outline:2px solid var(--fluor);out
 .evento{border-left:3px solid var(--fluor);animation:entrar .35s cubic-bezier(.2,.8,.2,1)}
 @keyframes entrar{from{opacity:0;transform:translateY(10px)}}
 
-/* leyenda fija de variables, siempre visible arriba de las opciones */
-.leyenda-vars{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;-webkit-overflow-scrolling:touch}
-.leyenda-item{
-  flex:none;display:flex;align-items:center;gap:6px;
-  background:rgba(255,255,255,.03);border:1px solid var(--linea);border-radius:99px;
-  padding:6px 12px 6px 9px;font-size:12.5px;color:var(--humo);
-}
-.leyenda-item b{color:var(--tiza);font-weight:700;margin-right:2px}
-.li-ico{font-size:14px;line-height:1}
-
 /* tarjeta de opción: cabecera clickeable (elige) + toggle separado (detalle) */
 .opcion-card{border:1px solid var(--linea);border-radius:var(--r);background:rgba(255,255,255,.02);overflow:hidden}
 .opcion-main{
   display:block;width:100%;text-align:left;padding:14px;background:transparent;
-  transition:border-color .15s,background .15s;
+  transition:border-color .15s,background .15s,transform .2s cubic-bezier(.2,.7,.2,1),box-shadow .25s;
 }
-.opcion-main:hover{background:rgba(255,94,26,.06)}
+.opcion-main:hover{background:rgba(255,94,26,.06);transform:translateY(-1px)}
+.opcion-main:active{transform:scale(.985);transition-duration:.08s}
 .opcion-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
 .opcion-label{font-weight:600}
 .riesgo-tag{font-family:'Barlow Condensed';font-size:11px;font-weight:700;letter-spacing:.07em;
@@ -280,7 +287,8 @@ input:focus,select:focus,button:focus-visible{outline:2px solid var(--fluor);out
 
 .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 .chip{font-family:'Barlow Condensed';font-weight:700;font-size:13px;letter-spacing:.04em;
-  padding:2px 8px;border-radius:99px;background:rgba(255,255,255,.06)}
+  padding:2px 8px;border-radius:99px;background:rgba(255,255,255,.06);
+  transition:background .15s,color .2s}
 .chip.pos{color:var(--led)} .chip.neg{color:var(--rojo)}
 .consecuencias{display:flex;flex-direction:column;gap:6px;padding:12px 14px;background:rgba(0,0,0,.15)}
 /* split bar */
