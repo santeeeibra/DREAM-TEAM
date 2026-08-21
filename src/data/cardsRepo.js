@@ -52,7 +52,7 @@ export async function borrarCartasDeManager(managerId) {
 // pantalla de apertura para mostrar cada carta (nombre, foto, rating, etc).
 // `league_id` viaja en cada carta: el motor la guarda en el shape normalizado.
 const COLUMNAS_CARTA =
-  'id, name, club, position, overall_rating, rarity, photo_url, fut_id, uses_generated_avatar, club_badge_url, nation_flag_url, league_logo_url, league_id';
+  'id, name, club, position, overall_rating, rarity, photo_url, fut_id, uses_generated_avatar, club_badge_url, nation_flag_url, league_logo_url, league_id, date_of_birth';
 
 // Trae el catálogo de cartas activas. Con `leagueId` (slug de cards.league_id,
 // ej. 'premier' | 'laliga' | 'seriea') filtra el pool a una liga: el draft
@@ -134,6 +134,7 @@ function normalizarParaUI(c) {
     pos:         c.position ?? c.pos ?? '',
     foto:        c.photo_url ?? c.foto ?? null,
     rareza:      c.rarity ?? c.rareza ?? 'bronce',
+    date_of_birth: c.date_of_birth ?? null,
     ultimoDelta: 0,
   };
 }

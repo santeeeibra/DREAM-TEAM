@@ -101,7 +101,7 @@ export function iniciarCarrera({
     sobres = cartasInicialesDB?.length
       ? cartasInicialesDB.map((s) => cargarCartasDB(s))
       : [[]];
-    plantelFinal = [...plantelBase.map((c) => ({ edad: 24, ultimoDelta: 0, ...c })), ...sobres.flat()];
+    plantelFinal = [...plantelBase.map((c) => ({ ultimoDelta: 0, ...c, edad: c.date_of_birth ? Math.floor((Date.now() - new Date(c.date_of_birth).getTime()) / 31557600000) : (c.edad || 24) })), ...sobres.flat()];
   } else {
     // Sobres iniciales: los inyecta la UI desde Supabase (openInitialPacks) o fallback local.
     sobres = cartasInicialesDB?.length
