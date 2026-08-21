@@ -12,7 +12,7 @@ export function cargarCartasDB(cartasDB) {
     rating: c.overall_rating,
     rareza: c.rarity,
     league_id: c.league_id,
-    edad: c.edad || 24, // Valor default hasta que la DB tenga edad real
+    edad: c.date_of_birth ? Math.floor((Date.now() - new Date(c.date_of_birth).getTime()) / 31557600000) : (c.edad || 24),
     foto: c.photo_url || c.foto || null,
     ultimoDelta: 0
   }));

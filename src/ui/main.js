@@ -340,7 +340,6 @@ const banderaImg = (nombre) => {
 const LIGAS = [
   { id: 'premier',     label: 'Premier League',           logo: 'https://media.api-sports.io/football/leagues/39.png'  },
   { id: 'laliga',      label: 'LaLiga',                   logo: 'https://media.api-sports.io/football/leagues/140.png' },
-  { id: 'liga-profesional', label: 'Liga Profesional', logo: 'https://paladarnegro.net/escudoteca/argentina/liga-profesional/png/bocajuniors.png' },
   { id: 'seriea',      label: 'Serie A',                  logo: 'https://media.api-sports.io/football/leagues/135.png' },
   { id: 'bundesliga',  label: 'Bundesliga',               logo: 'https://media.api-sports.io/football/leagues/78.png'  },
   { id: 'ligapro',     label: 'Liga Profesional',         logo: 'https://media.api-sports.io/football/leagues/128.png' },
