@@ -390,9 +390,9 @@ function signoDelta(k, v) {
 }
 
 function chip(k, v) {
-  if (v === 0) return `<span class="chip">${ICONO[k]} 0</span>`;
+  if (v === 0) return `<span class="chip">${ICONO[k]} ${NOMBRE_VAR[k]} ±0</span>`;
   const bueno = MALO_SI_SUBE.has(k) ? v < 0 : v > 0;
-  return `<span class="chip ${bueno ? 'pos' : 'neg'}">${ICONO[k]} ${signoDelta(k, v)}${Math.abs(v)}</span>`;
+  return `<span class="chip ${bueno ? 'pos' : 'neg'}">${ICONO[k]} ${NOMBRE_VAR[k]} ${signoDelta(k, v)}${Math.abs(v)}</span>`;
 }
 
 const STAT_MAX = { money: 10, moral: 15, fatiga: 15, presion: 15, ratingDelta: 5 };
@@ -446,10 +446,10 @@ function valorEsperado(opcionCat) {
 
 function chipEsperado(k, v) {
   const r = Math.round(v * 10) / 10;
-  if (Math.abs(r) < 0.05) return `<span class="chip">${ICONO[k]} ±0</span>`;
+  if (Math.abs(r) < 0.05) return `<span class="chip">${ICONO[k]} ${NOMBRE_VAR[k]} ±0</span>`;
   const bueno = MALO_SI_SUBE.has(k) ? r < 0 : r > 0;
   const mag = Number.isInteger(r) ? Math.abs(r) : Math.abs(r).toFixed(1);
-  return `<span class="chip ${bueno ? 'pos' : 'neg'}" title="Promedio esperado según probabilidad de cada resultado">${ICONO[k]} ${signoDelta(k, r)}${mag}</span>`;
+  return `<span class="chip ${bueno ? 'pos' : 'neg'}" title="Promedio esperado según probabilidad de cada resultado">${ICONO[k]} ${NOMBRE_VAR[k]} ${signoDelta(k, r)}${mag}</span>`;
 }
 
 function chipsEsperados(opcionCat) {
@@ -1044,7 +1044,7 @@ const PANTALLAS = {
             </div>`;
           }).join('')}
         </div>
-        <div class="hint">Los íconos de cada opción son el promedio esperado, ponderado por probabilidad. Tocá "ver resultados posibles" para el detalle exacto de cada chance.</div>
+
       </div>
     </div>`;
   },
