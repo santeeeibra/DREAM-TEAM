@@ -421,6 +421,53 @@ td.n{text-align:right;font-family:'Barlow Condensed';font-weight:700;font-varian
 @media (max-width:560px){
   .ts-cta::after{display:none}
 }
+/* ── Simulación visual de partido (fichas) ── */
+.sim-overlay{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;
+  background:rgba(8,11,9,.92);backdrop-filter:blur(6px);animation:simFade .3s ease both}
+@keyframes simFade{from{opacity:0}to{opacity:1}}
+.sim-modal{width:min(96vw,520px);max-height:92vh;overflow-y:auto;display:flex;flex-direction:column;gap:14px;
+  background:var(--panel);border:1px solid var(--linea);border-radius:8px;padding:18px;
+  box-shadow:0 20px 60px rgba(0,0,0,.7);animation:tsEnt .4s cubic-bezier(.2,.75,.25,1) both}
+.sim-header{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.sim-header h3{margin:0;font-size:18px}
+.sim-header .sim-marcador{font-family:'Anton';font-size:22px;color:var(--fluor)}
+.sim-cancha{position:relative;display:grid;grid-template-columns:repeat(5,1fr);gap:4px;
+  min-height:200px;padding:12px 6px;border-radius:8px;overflow:hidden;
+  background:
+    linear-gradient(180deg,rgba(111,227,154,.06),rgba(111,227,154,.02)),
+    var(--cancha);
+  border:1px solid var(--linea)}
+.sim-cancha::before{content:"";position:absolute;left:50%;top:8px;bottom:8px;width:1px;
+  background:rgba(233,255,240,.12)}
+.sim-zona{display:flex;flex-direction:column;align-items:center;gap:6px;padding:6px 2px;position:relative}
+.sim-zona-lbl{font-family:'Barlow Condensed';font-weight:700;font-size:9px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--humo);opacity:.6;text-align:center}
+.sim-ficha{width:100%;max-width:72px;padding:5px 3px;border-radius:5px;text-align:center;
+  font-family:'Barlow Condensed';font-weight:700;font-size:11px;line-height:1.2;
+  background:rgba(255,94,26,.12);border:1px solid rgba(255,94,26,.3);color:var(--tiza);
+  transition:transform .5s cubic-bezier(.2,.8,.2,1),box-shadow .5s}
+.sim-ficha.rival{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.12);color:var(--humo)}
+.sim-ficha.active{box-shadow:0 0 14px rgba(255,94,26,.6);transform:scale(1.08);z-index:2}
+.sim-ficha-pos{font-size:9px;letter-spacing:.12em;color:var(--humo);display:block}
+.sim-narr{min-height:44px;padding:10px 12px;background:rgba(0,0,0,.25);border-radius:6px;
+  font-size:14px;line-height:1.4;color:var(--tiza);border-left:3px solid var(--fluor);
+  transition:opacity .3s}
+.sim-narr.fade{opacity:0}
+.sim-resultado{text-align:center;padding:14px;border-radius:6px;
+  background:rgba(255,94,26,.08);border:1px solid rgba(255,94,26,.2)}
+.sim-resultado h2{margin:0 0 6px}
+.sim-progreso{display:flex;gap:4px;justify-content:center}
+.sim-progreso i{width:8px;height:8px;border-radius:99px;background:rgba(255,255,255,.12)}
+.sim-progreso i.done{background:var(--fluor)}
+.sim-progreso i.on{background:var(--fluor);box-shadow:0 0 8px rgba(255,94,26,.7);animation:tsPulso 2.2s ease-in-out infinite}
+.chip-objetivo{font-family:'Barlow Condensed';font-weight:700;font-size:13px;letter-spacing:.05em;
+  padding:6px 12px;border-radius:99px;background:rgba(111,227,154,.08);border:1px solid rgba(111,227,154,.3);color:var(--led)}
+.chip-objetivo.peligro{background:rgba(255,74,74,.08);border-color:rgba(255,74,74,.3);color:var(--rojo)}
+@media (max-width:560px){
+  .sim-modal{padding:14px 12px}
+  .sim-cancha{grid-template-columns:repeat(5,1fr);min-height:160px;gap:2px;padding:8px 4px}
+  .sim-ficha{font-size:10px;max-width:60px;padding:4px 2px}
+}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>

@@ -62,6 +62,176 @@ const HINT_VAR = {
 const SIL_CARTA = "data:image/svg+xml;utf8," + encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a3f49"/><stop offset="1" stop-color="#20242b"/></linearGradient></defs><rect width="200" height="200" fill="#181b21"/><circle cx="100" cy="78" r="40" fill="url(#g)"/><path d="M30 200c0-42 32-66 70-66s70 24 70 66z" fill="url(#g)"/></svg>');
 
+// ───────────────────────── simulación visual de partido ─────────────────────────
+const ZONA_POR_POS = { POR: 0, DEF: 1, MED: 2, DEL: 3 };
+const ZONA_LABELS = ['DEF', 'MED₁', 'MEDIO', 'MED₂', 'ATQ'];
+
+function generarJugadas(partido, misJugadores) {
+  const jugadas = [];
+  const { gf, gc, rival, localia } = partido;
+  const total = gf + gc;
+  const numJugadas = Math.min(8, Math.max(5, total * 2 + 2));
+  let golesMios = 0, golesRival = 0;
+  const delanteros = misJugadores.filter((j) => j.pos === 'DEL');
+  const medios = misJugadores.filter((j) => j.pos === 'MED');
+  const defensas = misJugadores.filter((j) => j.pos === 'DEF');
+  const arquero = misJugadores.find((j) => j.pos === 'POR');
+  const pick = (arr) => arr.length ? arr[Math.floor(Math.random() * arr.length)] : misJugadores[0];
+
+  for (let i = 0; i < numJugadas; i++) {
+    const minuto = Math.round(((i + 1) / (numJugadas + 1)) * 90);
+    const necesitaGolMio = golesMios < gf && (numJugadas - i) <= (gf - golesMios + gc - golesRival);
+    const necesitaGolRival = golesRival < gc && (numJugadas - i) <= (gc - golesRival);
+
+    if (necesitaGolMio && (Math.random() > 0.4 || !necesitaGolRival)) {
+      const autor = pick(delanteros.length ? delanteros : medios.length ? medios : misJugadores);
+      golesMios++;
+      jugadas.push({ min: minuto, tipo: 'gol', equipo: 'mio', zona: 4, jugador: autor,
+        texto: `⚽ ${minuto}' ¡GOL! ${autor.nombre} no perdona` });
+    } else if (necesitaGolRival) {
+      golesRival++;
+      const defensor = pick(defensas.length ? defensas : misJugadores);
+      jugadas.push({ min: minuto, tipo: 'gol', equipo: 'rival', zona: 0, jugador: defensor,
+        texto: `⚽ ${minuto}' Gol de ${rival}. ${defensor.nombre} no llega a cortar` });
+    } else {
+      const plantillas = [
+        () => { const j = pick(medios.length ? medios : misJugadores); return { zona: 2, jugador: j, texto: `🏃 ${minuto}' ${j.nombre} conduce por el medio` }; },
+        () => { const j = pick(delanteros.length ? delanteros : misJugadores); return { zona: 3, jugador: j, texto: `⚡ ${minuto}' ${j.nombre} se infiltra por la banda` }; },
+        () => { const j = pick(defensas.length ? defensas : misJugadores); return { zona: 1, jugador: j, texto: `🛡️ ${minuto}' ${j.nombre} corta el avance rival` }; },
+        () => { if (!arquero) { const j = pick(misJugadores); return { zona: 0, jugador: j, texto: `🧤 ${minuto}' Atajadón del arquero` }; } return { zona: 0, jugador: arquero, texto: `🧤 ${minuto}' ${arquero.nombre} despeja con seguridad` }; },
+        () => ({ zona: 2, jugador: null, texto: `💨 ${minuto}' ${rival} presiona pero no encuentra espacios` }),
+        () => { const j = pick(misJugadores); return { zona: 3, jugador: j, texto: `🎯 ${minuto}' Tiro de ${j.nombre}, se va desviado` }; },
+      ];
+      const p = plantillas[Math.floor(Math.random() * plantillas.length)]();
+      jugadas.push({ min: p.min || minuto, tipo: 'jugada', equipo: 'mio', zona: p.zona, jugador: p.jugador, texto: p.texto });
+    }
+  }
+  // Asegurar que los goles pendientes se meten
+  while (golesMios < gf) {
+    const autor = pick(delanteros.length ? delanteros : misJugadores);
+    golesMios++;
+    jugadas.push({ min: 88, tipo: 'gol', equipo: 'mio', zona: 4, jugador: autor,
+      texto: `⚽ 88' ¡GOL! ${autor.nombre} sentencia el partido` });
+  }
+  while (golesRival < gc) {
+    golesRival++;
+    jugadas.push({ min: 89, tipo: 'gol', equipo: 'rival', zona: 0,
+      texto: `⚽ 89' Gol de ${rival} sobre el final` });
+  }
+  return jugadas;
+}
+
+function renderSimModal(partido, idx, total, misJugadores, jugadaActual, jugadas, mostrandoResultado) {
+  const porZona = [[], [], [], [], []];
+  misJugadores.forEach((j) => {
+    const z = ZONA_POR_POS[j.pos] ?? 2;
+    porZona[z].push(j);
+  });
+  // Rival: fichas genéricas distribuidas
+  const rivalZonas = [['ARQ'], ['DEF', 'DEF'], ['MED'], ['MED'], ['DEL']];
+
+  const fichaActiva = jugadaActual >= 0 && jugadas[jugadaActual]?.jugador?.id;
+
+  const zonas = ZONA_LABELS.map((lbl, zi) => {
+    const misFichas = porZona[zi].map((j) =>
+      `<div class="sim-ficha${j.id === fichaActiva ? ' active' : ''}">
+        <span class="sim-ficha-pos">${j.pos}</span>${esc(j.nombre.split(' ').pop())}
+      </div>`).join('');
+    const rivalFichas = rivalZonas[4 - zi].map((p) =>
+      `<div class="sim-ficha rival"><span class="sim-ficha-pos">${p}</span>Rival</div>`).join('');
+    return `<div class="sim-zona"><div class="sim-zona-lbl">${lbl}</div>${misFichas}${rivalFichas}</div>`;
+  }).join('');
+
+  const marcadorTexto = jugadaActual >= 0
+    ? jugadas.slice(0, jugadaActual + 1).reduce((acc, j) => {
+        if (j.tipo === 'gol') j.equipo === 'mio' ? acc[0]++ : acc[1]++;
+        return acc;
+      }, [0, 0]).join(' - ')
+    : '0 - 0';
+
+  const narrTexto = jugadaActual >= 0 && jugadas[jugadaActual]
+    ? jugadas[jugadaActual].texto
+    : `⏱️ Arranca el partido contra ${partido.rival}`;
+
+  const progreso = Array.from({ length: total }, (_, i) =>
+    `<i class="${i < idx ? 'done' : i === idx ? 'on' : ''}"></i>`).join('');
+
+  if (mostrandoResultado) {
+    const resLabel = partido.res === 'G' ? '¡Victoria!' : partido.res === 'E' ? 'Empate' : 'Derrota';
+    return `<div class="sim-overlay" id="sim-overlay">
+      <div class="sim-modal">
+        <div class="sim-progreso">${progreso}</div>
+        <div class="sim-resultado">
+          <div class="eyebrow">${partido.localia === 'L' ? 'Local' : 'Visitante'} vs ${esc(partido.rival)}</div>
+          <h2 class="res ${partido.res}">${resLabel}</h2>
+          <div class="sim-header"><span></span><span class="sim-marcador">${partido.gf} - ${partido.gc}</span></div>
+        </div>
+        <button class="btn ts-cta" id="sim-continuar">Continuar</button>
+      </div>
+    </div>`;
+  }
+
+  return `<div class="sim-overlay" id="sim-overlay">
+    <div class="sim-modal">
+      <div class="sim-progreso">${progreso}</div>
+      <div class="sim-header">
+        <h3>${partido.localia === 'L' ? 'Local' : 'Visitante'} vs ${esc(partido.rival)}</h3>
+        <span class="sim-marcador">${marcadorTexto}</span>
+      </div>
+      <div class="sim-cancha">${zonas}</div>
+      <div class="sim-narr" id="sim-narr">${narrTexto}</div>
+      <button class="btn ghost" id="sim-skip">Saltar animación</button>
+    </div>
+  </div>`;
+}
+
+async function mostrarSimulacionVisual() {
+  const partidos = c.ultimoTramo.partidos;
+  const porId = new Map(c.plantel.map((x) => [x.id, x]));
+  const misJugadores = c.once.map((id) => porId.get(id)).filter(Boolean);
+
+  for (let idx = 0; idx < partidos.length; idx++) {
+    const partido = partidos[idx];
+    const jugadas = generarJugadas(partido, misJugadores);
+    let skip = false;
+
+    // Render inicial
+    const contenedor = document.createElement('div');
+    contenedor.innerHTML = renderSimModal(partido, idx, partidos.length, misJugadores, -1, jugadas, false);
+    document.body.appendChild(contenedor.firstElementChild);
+
+    const overlay = document.getElementById('sim-overlay');
+    document.getElementById('sim-skip')?.addEventListener('click', () => { skip = true; });
+
+    // Animar jugadas
+    for (let j = 0; j < jugadas.length; j++) {
+      if (skip) break;
+      await new Promise((r) => setTimeout(r, 1500));
+      if (skip) break;
+      overlay.innerHTML = renderSimModal(partido, idx, partidos.length, misJugadores, j, jugadas, false)
+        .replace(/^<div class="sim-overlay" id="sim-overlay">/, '').replace(/<\/div>$/, '');
+      // re-inner: parse only the modal content
+      const tmp = document.createElement('div');
+      tmp.innerHTML = renderSimModal(partido, idx, partidos.length, misJugadores, j, jugadas, false);
+      overlay.replaceChildren(...tmp.firstElementChild.children);
+      document.getElementById('sim-skip')?.addEventListener('click', () => { skip = true; });
+    }
+
+    // Mostrar resultado
+    await new Promise((r) => setTimeout(r, skip ? 300 : 1200));
+    const tmp2 = document.createElement('div');
+    tmp2.innerHTML = renderSimModal(partido, idx, partidos.length, misJugadores, jugadas.length - 1, jugadas, true);
+    overlay.replaceChildren(...tmp2.firstElementChild.children);
+
+    // Esperar click en continuar
+    await new Promise((resolve) => {
+      document.getElementById('sim-continuar')?.addEventListener('click', resolve);
+    });
+
+    overlay.remove();
+  }
+}
+
 // ── onboarding visual ──
 // País de origen: dropdown con bandera (flagcdn.com). El valor guardado es el
 // nombre del país, que es lo que se persiste en `managers.country`.
@@ -723,7 +893,8 @@ const PANTALLAS = {
         <h2>Fechas <span class="ts-glow">${desde} a ${desde + LIGA.TRAMOS[c.tramo] - 1}</span></h2>
         <p class="hint">Se juegan ${LIGA.TRAMOS[c.tramo]} partidos de corrido. Después vas a tener que tomar una decisión.</p>
         <div class="row">
-          <button class="btn ts-cta" data-accion="jugar">Jugar el tramo</button>
+          <button class="btn ts-cta" data-accion="jugar">Simular rápido</button>
+          <button class="btn ghost" data-accion="jugar-visual">▶ Ver partido</button>
           <button class="btn ghost" data-accion="ir-once">Cambiar el 11 · ${c.formacion || '4-3-3'}</button>
         </div>
       </div>
@@ -1214,6 +1385,13 @@ const acciones = {
   jugar() {
     jugarTramo(c);
     ui.deltas = c.ultimoTramo?.deltas || null;
+    ui.vista = c.fase === FASES.FIN ? 'fin' : 'resultados';
+  },
+  async 'jugar-visual'() {
+    jugarTramo(c);
+    ui.deltas = c.ultimoTramo?.deltas || null;
+    render();
+    await mostrarSimulacionVisual();
     ui.vista = c.fase === FASES.FIN ? 'fin' : 'resultados';
   },
   async 'ir-evento'() {

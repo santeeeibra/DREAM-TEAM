@@ -229,7 +229,6 @@ export const leagues = [
       { id: 'lorient',     name: 'Lorient' },
     ],
   },
-],
   // --- Liga Profesional ---
   // Clubs de la Liga Profesional Argentina.
   // Nombres exactos de la columna `club` en cards; escudo en escudoteca.js.
@@ -256,6 +255,7 @@ export const leagues = [
       { id: 'atltucuman', name: 'Atlético Tucumán' },
     ],
   },
+];
 
 // --- Helpers de lookup ---------------------------------------------------
 // El resto del juego (motor, main.js, escenas) usa estos helpers en vez de
