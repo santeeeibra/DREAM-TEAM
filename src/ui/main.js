@@ -22,6 +22,8 @@ let ui = {
   onboarding: { liga: null, clubes: [], clubId: '', nombre: '', pais: '', cargando: false, error: null, enviando: false, abierto: null, modo: 'facil', modoJuego: 'liga', formacion: '4-3-3' },
   draftPuro: null,
 };
+// Estado del drag & drop (desktop: HTML5 DnD, mobile: touch drag)
+let dragState = { active: false, playerId: null, sourceType: null, sourceSlotIdx: null, ghost: null, startX: 0, startY: 0, moved: false };
 // Hidratar draft de DT si existe
 const _dtDraft = (() => { try { return JSON.parse(localStorage.getItem('dt_draft') || 'null'); } catch { return null; } })();
 if (_dtDraft) ui.onboarding = { ...ui.onboarding, ..._dtDraft };
@@ -465,7 +467,7 @@ const LABEL_RAREZA = { bronce: 'Bronce', oro_comun: 'Oro común', oro_unico: 'Or
 
 // slot: si viene, la carta muestra su rating EN ESE PUESTO ("88 → 82") y el motivo del descuento.
 // i: índice dentro de la grilla, maneja el reveal escalonado (--i).
-function carta(x, { sel = false, accion = '', slot = null, bloqueada = false, motivo = '', i = 0 } = {}) {
+function carta(x, { sel = false, accion = '', slot = null, bloqueada = false, motivo = '', i = 0, draggable: drag = false } = {}) {
   const pen = slot ? penalidad(x.pos, slot) : 0;
   const efectivo = slot ? ratingEnSlot(x, slot) : x.rating;
   const clasePen = pen === 0 ? '' : pen === FUERZA.PENALIDAD_POSICION.VECINO ? ' pen-vecino' : ' pen-fuera';
@@ -473,8 +475,9 @@ function carta(x, { sel = false, accion = '', slot = null, bloqueada = false, mo
     ? `<div class="num">${efectivo}</div>`
     : `<div class="num-cambio"><span class="orig">${x.rating}</span><span class="flecha">→</span><span class="efectivo">${efectivo}</span></div>`;
   const attrs = accion && !bloqueada ? `data-accion="${accion}" data-id="${x.id}"` : '';
+  const dragAttrs = drag ? ` draggable="true" data-player-id="${x.id}" data-drop-type="bench"` : '';
   return `<div class="carta-slot" style="--i:${i}">
-    <div class="card${clasePen} ${sel ? 'sel' : ''} ${bloqueada ? 'bloqueada' : ''}" data-rarity="${x.rareza}" ${attrs}>
+    <div class="card${clasePen} ${sel ? 'sel' : ''} ${bloqueada ? 'bloqueada' : ''}" data-rarity="${x.rareza}" ${attrs}${dragAttrs}>
       <div class="card-inner">
         <div class="rays"></div>
         <div class="photo-well"><img src="${x.foto ? esc(x.foto) : SIL_CARTA}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.src='${SIL_CARTA}'"></div>
@@ -839,7 +842,8 @@ const PANTALLAS = {
         : pen === 0
           ? `<span class="slot-rating">${efectivo}</span>`
           : `<span class="slot-rating">${efectivo}</span><span class="slot-orig">${x.rating}</span>`;
-      return `<div class="slot ${ui.slot === i ? 'activo' : ''} ${clase} ${x ? '' : 'vacio'}" data-accion="slot" data-i="${i}"${x && x.nombre ? ` title="${esc(x.nombre)}"` : ''}>
+      const dragAttrs = x ? ` draggable="true" data-player-id="${x.id}" data-drop-type="slot" data-slot-index="${i}"` : '';
+      return `<div class="slot ${ui.slot === i ? 'activo' : ''} ${clase} ${x ? '' : 'vacio'}" data-accion="slot" data-i="${i}"${dragAttrs}${x && x.nombre ? ` title="${esc(x.nombre)}"` : ''}>
         <div class="slot-card${x ? '' : ' slot-card-vacio'}" data-rarity="${x ? x.rareza : 'bronce'}">
           <div class="slot-card-inner">
             <div class="slot-photo"><img src="${x && x.foto ? esc(x.foto) : SIL_CARTA}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.src='${SIL_CARTA}'"></div>
@@ -867,9 +871,13 @@ const PANTALLAS = {
       ${sinArquero ? '<p class="aviso">No tenés ningún arquero disponible. El arco solo lo puede ocupar un POR: conseguí uno antes de empezar.</p>' : ''}
       ${!sinArquero && vacios.length ? `<p class="aviso">Quedan ${vacios.length} puesto(s) sin cubrir. Tocá el puesto vacío para elegir jugador.</p>` : ''}
       <div class="cancha-grid">${lineas.map((l) => `<div class="linea-f">${l.map(slot).join('')}</div>`).join('')}</div>
+      ${banco.length ? `<div class="bench-section">
+        <div class="eyebrow">Suplentes (${banco.length})</div>
+        <div class="bench-row">${banco.map((x, i) => carta(x, { draggable: true, i })).join('')}</div>
+      </div>` : ''}
       <p class="hint">${slotElegido
         ? `Elegí quién juega de <b>${slotElegido}</b>. Cada carta muestra su rating real y el que rinde en este puesto: <span class="pen-vecino-tx">ámbar −${FUERZA.PENALIDAD_POSICION.VECINO}</span> si es una línea vecina, <span class="pen-fuera-tx">rojo −${FUERZA.PENALIDAD_POSICION.FUERA}</span> si está fuera de posición.`
-        : 'Tocá un puesto para cambiar al jugador. Cambiá la formación con los botones de arriba.'}</p>
+        : 'Arrastrá un jugador sobre otro para intercambiarlos, o tocar un puesto para cambiarlo.'}</p>
       ${slotElegido ? `<div class="grid-cartas">${candidatos.map((x, i) => carta(x, { accion: 'poner', slot: slotElegido, i })).join('')}</div>` : ''}
       <div class="row">
         <button class="btn" data-accion="confirmar-once">${c.temporada === 1 ? 'Empezar la temporada' : 'Confirmar y seguir'}</button>
@@ -1484,6 +1492,138 @@ app.addEventListener('click', async (e) => {
   if (r instanceof Promise) await r;
   render();
 });
+
+// ───────────────────────── drag & drop (once) ─────────────────────────
+function executeDragSwap(srcType, srcId, srcSlotIdx, dstType, dstId, dstSlotIdx) {
+  if (!c || ui.vista !== 'once') return;
+  if (srcId === dstId) return;
+  if (srcType === 'slot' && dstType === 'slot') {
+    const si = Number(srcSlotIdx), di = Number(dstSlotIdx);
+    if (isNaN(si) || isNaN(di) || si === di) return;
+    const tmp = c.once[si]; c.once[si] = c.once[di]; c.once[di] = tmp;
+  } else if (srcType === 'slot' && dstType === 'bench') {
+    const si = Number(srcSlotIdx);
+    if (isNaN(si)) return;
+    c.once[si] = dstId;
+  } else if (srcType === 'bench' && dstType === 'slot') {
+    const di = Number(dstSlotIdx);
+    if (isNaN(di)) return;
+    c.once[di] = srcId;
+  }
+  ui.slot = null;
+}
+function clearDragVisuals() {
+  document.querySelectorAll('.drag-over').forEach((el) => el.classList.remove('drag-over'));
+  document.querySelectorAll('.dragging').forEach((el) => el.classList.remove('dragging'));
+  if (dragState.ghost) { dragState.ghost.remove(); dragState.ghost = null; }
+  dragState.active = false; dragState.playerId = null; dragState.sourceType = null;
+  dragState.sourceSlotIdx = null; dragState.moved = false; dragState._srcEl = null;
+}
+// Desktop: HTML5 Drag & Drop
+app.addEventListener('dragstart', (e) => {
+  if (ui.vista !== 'once') return;
+  const src = e.target.closest('.slot[data-player-id], .card[data-player-id]');
+  if (!src) return;
+  dragState.active = true; dragState.playerId = src.dataset.playerId;
+  dragState.sourceType = src.dataset.dropType;
+  dragState.sourceSlotIdx = src.dataset.slotIndex ?? null;
+  src.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', dragState.playerId);
+  const blank = document.createElement('canvas'); blank.width = 1; blank.height = 1;
+  e.dataTransfer.setDragImage(blank, 0, 0);
+});
+app.addEventListener('dragover', (e) => {
+  if (!dragState.active) return;
+  const t = e.target.closest('.slot[data-drop-type], .card[data-player-id]');
+  if (!t || t.dataset.playerId === dragState.playerId) return;
+  e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+  document.querySelectorAll('.drag-over').forEach((el) => el.classList.remove('drag-over'));
+  t.classList.add('drag-over');
+});
+app.addEventListener('drop', (e) => {
+  e.preventDefault(); if (!dragState.active) return;
+  const t = e.target.closest('.slot[data-drop-type], .card[data-player-id]');
+  if (!t || t.dataset.playerId === dragState.playerId) { clearDragVisuals(); return; }
+  executeDragSwap(dragState.sourceType, dragState.playerId, dragState.sourceSlotIdx,
+    t.dataset.dropType, t.dataset.playerId, t.dataset.slotIndex ?? null);
+  clearDragVisuals(); render();
+});
+app.addEventListener('dragend', () => { clearDragVisuals(); });
+
+// Mobile: touch drag con long-press + clone flotante
+let _touchTimer = null;
+app.addEventListener('touchstart', (e) => {
+  if (ui.vista !== 'once') return;
+  const src = e.target.closest('.slot[data-player-id], .card[data-player-id]');
+  if (!src) return;
+  const touch = e.touches[0];
+  dragState.startX = touch.clientX; dragState.startY = touch.clientY;
+  dragState.playerId = src.dataset.playerId;
+  dragState.sourceType = src.dataset.dropType;
+  dragState.sourceSlotIdx = src.dataset.slotIndex ?? null;
+  dragState._srcEl = src; dragState.moved = false;
+  // Long-press de 300ms para iniciar drag (no confunde con scroll ni tap)
+  _touchTimer = setTimeout(() => {
+    if (!dragState._srcEl) return;
+    dragState.active = true;
+    const img = src.querySelector('img');
+    const ghost = document.createElement('div');
+    ghost.className = 'drag-ghost';
+    ghost.innerHTML = `<img src="${img ? img.src : ''}" alt="">`;
+    document.body.appendChild(ghost);
+    dragState.ghost = ghost;
+    src.classList.add('dragging');
+    // Haptic feedback si disponible
+    if (navigator.vibrate) navigator.vibrate(30);
+  }, 300);
+}, { passive: true });
+
+app.addEventListener('touchmove', (e) => {
+  if (!dragState.active) {
+    // Si el usuario se mueve antes del long-press, cancelar
+    const touch = e.touches[0];
+    const dx = Math.abs(touch.clientX - dragState.startX);
+    const dy = Math.abs(touch.clientY - dragState.startY);
+    if (dx > 10 || dy > 10) { clearTimeout(_touchTimer); dragState._srcEl = null; }
+    return;
+  }
+  e.preventDefault();
+  const touch = e.touches[0];
+  if (dragState.ghost) {
+    dragState.ghost.style.left = touch.clientX + 'px';
+    dragState.ghost.style.top = touch.clientY + 'px';
+  }
+  // Hit-test: qué elemento está debajo del dedo
+  if (dragState.ghost) dragState.ghost.style.display = 'none';
+  const under = document.elementFromPoint(touch.clientX, touch.clientY);
+  if (dragState.ghost) dragState.ghost.style.display = '';
+  document.querySelectorAll('.drag-over').forEach((el) => el.classList.remove('drag-over'));
+  if (under) {
+    const t = under.closest('.slot[data-drop-type], .card[data-player-id]');
+    if (t && t.dataset.playerId !== dragState.playerId) t.classList.add('drag-over');
+  }
+}, { passive: false });
+
+app.addEventListener('touchend', (e) => {
+  clearTimeout(_touchTimer);
+  if (!dragState.active || !dragState.ghost) {
+    clearDragVisuals(); dragState.active = false; dragState._srcEl = null; return;
+  }
+  const touch = e.changedTouches[0];
+  if (dragState.ghost) dragState.ghost.style.display = 'none';
+  const under = document.elementFromPoint(touch.clientX, touch.clientY);
+  if (dragState.ghost) dragState.ghost.style.display = '';
+  if (under) {
+    const t = under.closest('.slot[data-drop-type], .card[data-player-id]');
+    if (t && t.dataset.playerId !== dragState.playerId) {
+      executeDragSwap(dragState.sourceType, dragState.playerId, dragState.sourceSlotIdx,
+        t.dataset.dropType, t.dataset.playerId, t.dataset.slotIndex ?? null);
+      clearDragVisuals(); dragState._srcEl = null; render(); return;
+    }
+  }
+  clearDragVisuals(); dragState._srcEl = null;
+}, { passive: true });
 
 // Ficha viva del onboarding: nombre e inicial se actualizan mientras se tipea,
 // SIN re-renderear (un render() ahí perdería el caret del input).
