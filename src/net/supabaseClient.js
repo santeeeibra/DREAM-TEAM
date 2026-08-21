@@ -76,6 +76,54 @@ export async function fetchAbrirSobre({ managerId, packId, free = false } = {}) 
 }
 
 /**
+ * Trae cartas reales de la tabla `cards` para el sobre de refuerzo.
+ * Devuelve { local: [...], foreign: [...] } o null si no se pudo.
+ * - local: cartas de la liga del DT (leagueId).
+ * - foreign: cartas de otras ligas (refuerzos extranjeros).
+ * - excluir: array de fut_id's que el DT ya tiene (no se incluyen).
+ *
+ * El shape de cada carta es el de la DB cruda (columnas de cardsRepo.js).
+ * El llamador usa cargarCartasDB() para normalizarlo al shape del motor.
+ */
+const COLUMNAS_CARTA_REFUERZO =
+  'id, name, club, position, overall_rating, rarity, photo_url, fut_id, uses_generated_avatar, club_badge_url, nation_flag_url, league_logo_url, league_id, date_of_birth';
+
+export async function fetchCartasPorLiga(leagueId, { excluir = [] } = {}) {
+  await initSupabase();
+  if (!supabase) return null;
+  try {
+    const excluirSet = new Set(excluir);
+    const baseCols = COLUMNAS_CARTA_REFUERZO;
+
+    // Pool local (liga del DT) + pool foreign (otras ligas) en paralelo
+    const localQ = leagueId
+      ? supabase.from('cards').select(baseCols).eq('is_active', true).eq('league_id', leagueId)
+      : supabase.from('cards').select(baseCols).eq('is_active', true);
+    const foreignQ = leagueId
+      ? supabase.from('cards').select(baseCols).eq('is_active', true).neq('league_id', leagueId)
+      : supabase.from('cards').select(baseCols).eq('is_active', false); // empty: no foreign if no leagueId
+
+    const [local, foreign] = await Promise.all([localQ, foreignQ]);
+    if (local.error) {
+      console.warn('[dream-team] fetchCartasPorLiga (local) falló:', local.error.message);
+      return null;
+    }
+    if (foreign.error) {
+      console.warn('[dream-team] fetchCartasPorLiga (foreign) falló:', foreign.error.message);
+      return null;
+    }
+
+    return {
+      local: (local.data || []).filter((c) => !excluirSet.has(c.fut_id)),
+      foreign: (foreign.data || []).filter((c) => !excluirSet.has(c.fut_id)),
+    };
+  } catch (e) {
+    console.warn('[dream-team] fetchCartasPorLiga falló:', e.message);
+    return null;
+  }
+}
+
+/**
  * Crea el manager (DT) en la tabla `managers`. Devuelve el id creado o
  * null si no se pudo (sin Supabase configurado o error).
  */

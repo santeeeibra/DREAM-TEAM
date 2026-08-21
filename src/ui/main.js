@@ -1462,17 +1462,28 @@ const acciones = {
     resolverOferta(c, el.dataset.id, false);
   },
   async 'confirmar-ofertas'() {
-    // Capa exterior: pedimos el sobre a Supabase. Si falla (devuelve null),
-    // el motor genera el sobre local síncrono — la carrera nunca se traba.
-    const { fetchAbrirSobre } = await import('../net/supabaseClient.js');
     const managerId = localStorage.getItem('manager_id');
+
+    // 1. Pedir cartas reales a Supabase para el sobre de refuerzo.
+    //    fetchCartasPorLiga devuelve { local: [...], foreign: [...] } o null.
+    //    Si falla, el motor usa el fallback local síncrono (FOTOS_PRUEBA).
+    const { fetchCartasPorLiga, fetchAbrirSobre } = await import('../net/supabaseClient.js');
+    let pool = null;
+    if (managerId && c.leagueId) {
+      const futIdsPlantel = (c.plantel || []).map((x) => x.fut_id).filter(Boolean);
+      pool = await fetchCartasPorLiga(c.leagueId, { excluir: futIdsPlantel });
+    }
+
+    // 2. Abrir el sobre de refuerzo: Supabase (si managerId) o local.
     const cartasDB = managerId
       ? await fetchAbrirSobre({ managerId, packId: PACK_ID, free: false })
       : null;
     if (cartasDB) registrarRefuerzo(c, cartasDB);
-    else abrirRefuerzo(c);
+    else abrirRefuerzo(c, pool);
+
+    // 3. Cartas extra por ventas de rotación.
     if (c.sobreExtraRotacion > 0) {
-      const extra = cartasExtraRefuerzo(c, c.sobreExtraRotacion);
+      const extra = cartasExtraRefuerzo(c, c.sobreExtraRotacion, pool);
       c.refuerzo = [...(c.refuerzo || []), ...extra];
       c.sobreExtraRotacion = 0;
     }

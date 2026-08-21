@@ -503,9 +503,9 @@ function dedupeYExcluir(cartas, plantel) {
 }
 
 /** Bisagra entre loop corto y loop largo: el sobre de refuerzo. */
-export function abrirRefuerzo(c) {
+export function abrirRefuerzo(c, pool = null) {
   const futIdsPlantel = (c.plantel || []).map((x) => x.fut_id).filter(Boolean);
-  const cartas = cargarCartasDB(sobreRefuerzo(c.rng, c.ultimaTemporada.posicion, futIdsPlantel));
+  const cartas = cargarCartasDB(sobreRefuerzo(c.rng, c.ultimaTemporada.posicion, futIdsPlantel, pool));
   c.refuerzo = dedupeYExcluir(cartas, c.plantel);
   c.fase = FASES.REFUERZO;
   return c.refuerzo;
@@ -597,11 +597,11 @@ export function resolverOferta(c, id, vender) {
   }
 }
 
-/** Genera N cartas extra de refuerzo (local, sin Supabase) para compensar ventas de rotación. */
-export function cartasExtraRefuerzo(c, n) {
+/** Genera N cartas extra de refuerzo para compensar ventas de rotación. */
+export function cartasExtraRefuerzo(c, n, pool = null) {
   const pos = c.ultimaTemporada?.posicion ?? 10;
   const extra = [];
-  for (let i = 0; i < n; i++) extra.push(...cargarCartasDB(sobreRefuerzo(c.rng, pos)));
+  for (let i = 0; i < n; i++) extra.push(...cargarCartasDB(sobreRefuerzo(c.rng, pos, [], pool)));
   return extra;
 }
 

@@ -34,9 +34,9 @@ export const ESTADO_INICIAL = {
 
 // Fuerza de partido = rating del 11 + estos ajustes.
 export const FUERZA = {
-  PESO_MORAL: 0.06,      // (moral-50) * peso  -> ±3
-  PESO_FATIGA: 0.05,     // -fatiga * peso     -> 0..-5
-  PESO_PRESION: 0.02,    // -presion * peso    -> 0..-2
+  PESO_MORAL: 0.15,      // (moral-50) * peso  -> ±7.5
+  PESO_FATIGA: 0.12,     // -fatiga * peso     -> 0..-12
+  PESO_PRESION: 0.05,    // -presion * peso    -> 0..-5
   PESO_MOMENTUM: 0.5,    // momentum ∈ [-3,3]  -> ±1.5
   // Penalización de rating por jugador fuera de su puesto natural, graduada por cercanía
   // de línea. Ver data/posiciones.js:penalidad() para el criterio de qué es "vecino".
