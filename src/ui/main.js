@@ -500,7 +500,7 @@ function bindHoverPreview() {
   document.querySelectorAll('.opcion-card').forEach(card => {
     const btn = card.querySelector('.opcion-main');
     if (!btn) return;
-    const opId = btn.getAttribute('data-id');
+    const opId = btn.getAttribute('data-op');
     const opcionCat = paq.opciones.find(x => x.id === opId);
     card.addEventListener('mouseenter', () => aplicarHoverPreview(opcionCat));
     card.addEventListener('mouseleave', () => limpiarHoverPreview());

@@ -124,7 +124,7 @@ input:focus,select:focus,button:focus-visible{outline:2px solid var(--fluor);out
 
 /* gauge hover preview: cuando el mouse está sobre una opción, los gauges muestran sombra de valor futuro */
 .gauge{transition:filter .2s cubic-bezier(.2,.7,.2,1),transform .2s cubic-bezier(.2,.7,.2,1)}
-.gauge.preview{filter:drop-shadow(0 0 6px rgba(255,94,26,.2));transform:scale(1.03)}
+.gauge.preview{filter:drop-shadow(0 0 10px rgba(255,94,26,.35));transform:scale(1.04)}
 .gauge.preview .gauge-arc-svg path:last-child{opacity:.45 !important}
 .gauge-ghost{
   position:absolute;top:0;left:50%;
@@ -265,12 +265,14 @@ input:focus,select:focus,button:focus-visible{outline:2px solid var(--fluor);out
 @keyframes entrar{from{opacity:0;transform:translateY(10px)}}
 
 /* tarjeta de opción: cabecera clickeable (elige) + toggle separado (detalle) */
-.opcion-card{border:1px solid var(--linea);border-radius:var(--r);background:rgba(255,255,255,.02);overflow:hidden}
+.opcion-card{border:1px solid var(--linea);border-radius:var(--r);background:rgba(255,255,255,.02);
+  overflow:hidden;transition:transform .25s cubic-bezier(.2,.7,.2,1),box-shadow .3s,border-color .25s}
+.opcion-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.25),0 0 0 1px rgba(255,94,26,.15);border-color:rgba(255,94,26,.2)}
 .opcion-main{
   display:block;width:100%;text-align:left;padding:14px;background:transparent;
-  transition:border-color .15s,background .15s,transform .2s cubic-bezier(.2,.7,.2,1),box-shadow .25s;
+  transition:border-color .15s,background .15s;
 }
-.opcion-main:hover{background:rgba(255,94,26,.06);transform:translateY(-1px)}
+.opcion-main:hover{background:rgba(255,94,26,.04)}
 .opcion-main:active{transform:scale(.985);transition-duration:.08s}
 .opcion-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
 .opcion-label{font-weight:600}
@@ -279,17 +281,18 @@ input:focus,select:focus,button:focus-visible{outline:2px solid var(--fluor);out
 .riesgo-tag.directo{color:var(--humo)}
 .expected-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .opcion-toggle{
-  display:block;width:100%;text-align:center;padding:9px;font-family:'Barlow Condensed';
-  font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--humo);
-  border-top:1px solid var(--linea);background:rgba(255,255,255,.015);transition:color .15s,background .15s;
+  display:block;width:100%;text-align:center;padding:8px;font-family:'Barlow Condensed';
+  font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--humo);
+  border-top:1px solid var(--linea);background:rgba(255,255,255,.015);
+  transition:color .15s,background .15s,opacity .15s;opacity:.7;
 }
-.opcion-toggle:hover{color:var(--fluor);background:rgba(255,94,26,.06)}
+.opcion-toggle:hover{color:var(--fluor);background:rgba(255,94,26,.06);opacity:1}
 
 .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 .chip{font-family:'Barlow Condensed';font-weight:700;font-size:13px;letter-spacing:.04em;
-  padding:2px 8px;border-radius:99px;background:rgba(255,255,255,.06);
+  padding:4px 10px;border-radius:6px;background:rgba(255,255,255,.06);
   transition:background .15s,color .2s}
-.chip.pos{color:var(--led)} .chip.neg{color:var(--rojo)}
+.chip.pos{color:var(--led);background:rgba(111,227,154,.10)} .chip.neg{color:var(--rojo);background:rgba(255,74,74,.10)}
 .consecuencias{display:flex;flex-direction:column;gap:6px;padding:12px 14px;background:rgba(0,0,0,.15)}
 /* split bar */
 .split-bar-wrap{margin-bottom:8px}
