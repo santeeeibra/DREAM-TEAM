@@ -124,25 +124,47 @@ function generarJugadas(partido, misJugadores) {
 }
 
 function renderSimModal(partido, idx, total, misJugadores, jugadaActual, jugadas, mostrandoResultado) {
-  const porZona = [[], [], [], [], []];
-  misJugadores.forEach((j) => {
-    const z = ZONA_POR_POS[j.pos] ?? 2;
-    porZona[z].push(j);
-  });
-  // Rival: fichas genéricas distribuidas
-  const rivalZonas = [['ARQ'], ['DEF', 'DEF'], ['MED'], ['MED'], ['DEL']];
+  // ── Cancha vertical: fichas con position:absolute ──
+  const posGroups = { POR: [], DEF: [], MED: [], DEL: [] };
+  misJugadores.forEach((j) => { (posGroups[j.pos] || posGroups.MED).push(j); });
 
   const fichaActiva = jugadaActual >= 0 && jugadas[jugadaActual]?.jugador?.id;
+  const jugadaActiva = jugadaActual >= 0 ? jugadas[jugadaActual] : null;
 
-  const zonas = ZONA_LABELS.map((lbl, zi) => {
-    const misFichas = porZona[zi].map((j) =>
-      `<div class="sim-ficha${j.id === fichaActiva ? ' active' : ''}">
-        <span class="sim-ficha-pos">${j.pos}</span>${esc(j.nombre.split(' ').pop())}
-      </div>`).join('');
-    const rivalFichas = rivalZonas[4 - zi].map((p) =>
-      `<div class="sim-ficha rival"><span class="sim-ficha-pos">${p}</span>Rival</div>`).join('');
-    return `<div class="sim-zona"><div class="sim-zona-lbl">${lbl}</div>${misFichas}${rivalFichas}</div>`;
+  const MY_TOP = { POR: 88, DEF: 73, MED: 53, DEL: 33 };
+  const ZONA_TARGET = [88, 73, 53, 33, 10]; // target por zona 0-4
+  const spread = (n) => n <= 1 ? [50] : Array.from({ length: n }, (_, i) => 15 + (70 * i) / (n - 1));
+
+  const misFichas = [];
+  for (const [pos, jugadores] of Object.entries(posGroups)) {
+    const xs = spread(jugadores.length);
+    jugadores.forEach((j, i) => {
+      const top = MY_TOP[pos] ?? 53;
+      const left = xs[i];
+      const isActive = j.id === fichaActiva;
+      const isGol = isActive && jugadaActiva?.tipo === 'gol' && jugadaActiva?.equipo === 'mio';
+      const cls = isActive ? (isGol ? ' active gol' : ' active') : '';
+      let style = `top:${top}%;left:${left}%`;
+      if (isActive && jugadaActiva) {
+        const tTop = ZONA_TARGET[jugadaActiva.zona] ?? 53;
+        style += `;--to-top:${tTop}%;--to-left:50%`;
+      }
+      misFichas.push(`<div class="sim-ficha${cls}" style="${style}" data-name="${esc(j.nombre)}">${esc(j.nombre.split(' ').pop())}</div>`);
+    });
+  }
+
+  const rivalSpec = [
+    { pos: 'POR', top: 8, left: 50 },
+    { pos: 'DEF', top: 22, left: 35 }, { pos: 'DEF', top: 22, left: 65 },
+    { pos: 'MED', top: 45, left: 35 }, { pos: 'MED', top: 45, left: 65 },
+    { pos: 'DEL', top: 65, left: 50 },
+  ];
+  const rivalFichas = rivalSpec.map((r) => {
+    const isRivalGoal = jugadaActiva?.equipo === 'rival' && jugadaActiva?.tipo === 'gol' && r.pos === 'DEL';
+    return `<div class="sim-ficha rival${isRivalGoal ? ' active-rival' : ''}" style="top:${r.top}%;left:${r.left}%" data-name="${r.pos} Rival">${r.pos}</div>`;
   }).join('');
+
+  const zonas = misFichas.join('') + rivalFichas;
 
   const marcadorTexto = jugadaActual >= 0
     ? jugadas.slice(0, jugadaActual + 1).reduce((acc, j) => {
