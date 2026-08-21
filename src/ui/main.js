@@ -182,7 +182,7 @@ function renderSimModal(partido, idx, total, misJugadores, jugadaActual, jugadas
       </div>
       <div class="sim-cancha">${zonas}</div>
       <div class="sim-narr" id="sim-narr">${narrTexto}</div>
-      <button class="btn ghost" id="sim-skip">Saltar animación</button>
+      <div class="row"><button class="btn ghost" id="sim-skip">Saltar animación</button><button class="btn ghost" id="sim-skip-all">Saltar todo</button></div>
     </div>
   </div>`;
 }
@@ -191,8 +191,10 @@ async function mostrarSimulacionVisual() {
   const partidos = c.ultimoTramo.partidos;
   const porId = new Map(c.plantel.map((x) => [x.id, x]));
   const misJugadores = c.once.map((id) => porId.get(id)).filter(Boolean);
+  let skipAll = false;
 
   for (let idx = 0; idx < partidos.length; idx++) {
+    if (skipAll) break;
     const partido = partidos[idx];
     const jugadas = generarJugadas(partido, misJugadores);
     let skip = false;
@@ -204,22 +206,22 @@ async function mostrarSimulacionVisual() {
 
     const overlay = document.getElementById('sim-overlay');
     document.getElementById('sim-skip')?.addEventListener('click', () => { skip = true; });
+    document.getElementById('sim-skip-all')?.addEventListener('click', () => { skip = true; skipAll = true; });
 
     // Animar jugadas
     for (let j = 0; j < jugadas.length; j++) {
-      if (skip) break;
+      if (skip || skipAll) break;
       await new Promise((r) => setTimeout(r, 1500));
-      if (skip) break;
-      overlay.innerHTML = renderSimModal(partido, idx, partidos.length, misJugadores, j, jugadas, false)
-        .replace(/^<div class="sim-overlay" id="sim-overlay">/, '').replace(/<\/div>$/, '');
-      // re-inner: parse only the modal content
+      if (skip || skipAll) break;
       const tmp = document.createElement('div');
       tmp.innerHTML = renderSimModal(partido, idx, partidos.length, misJugadores, j, jugadas, false);
       overlay.replaceChildren(...tmp.firstElementChild.children);
       document.getElementById('sim-skip')?.addEventListener('click', () => { skip = true; });
+      document.getElementById('sim-skip-all')?.addEventListener('click', () => { skip = true; skipAll = true; });
     }
 
     // Mostrar resultado
+    if (skipAll) { overlay.remove(); continue; }
     await new Promise((r) => setTimeout(r, skip ? 300 : 1200));
     const tmp2 = document.createElement('div');
     tmp2.innerHTML = renderSimModal(partido, idx, partidos.length, misJugadores, jugadas.length - 1, jugadas, true);
@@ -1142,6 +1144,7 @@ function renderBotonNuevaPartida() {
     host.style.cssText = 'position:fixed;top:14px;right:14px;z-index:9999;padding:8px 14px;border-radius:4px;background:var(--panel);color:var(--tiza);font-family:"Barlow Condensed",sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.09em;font-size:13px;box-shadow:inset 0 0 0 1px var(--linea);cursor:pointer;';
     host.textContent = '↺ Nueva partida';
     document.body.appendChild(host);
+    host.addEventListener('click', () => { acciones['nueva-partida'](); render(); });
   }
 }
 
