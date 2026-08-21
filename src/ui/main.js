@@ -155,9 +155,10 @@ function renderSimModal(partido, idx, total, misJugadores, jugadaActual, jugadas
 
   const rivalSpec = [
     { pos: 'POR', top: 8, left: 50 },
-    { pos: 'DEF', top: 22, left: 35 }, { pos: 'DEF', top: 22, left: 65 },
-    { pos: 'MED', top: 45, left: 35 }, { pos: 'MED', top: 45, left: 65 },
-    { pos: 'DEL', top: 65, left: 50 },
+    { pos: 'DEF', top: 20, left: 20 }, { pos: 'DEF', top: 20, left: 40 },
+    { pos: 'DEF', top: 20, left: 60 }, { pos: 'DEF', top: 20, left: 80 },
+    { pos: 'MED', top: 38, left: 25 }, { pos: 'MED', top: 38, left: 50 }, { pos: 'MED', top: 38, left: 75 },
+    { pos: 'DEL', top: 56, left: 35 }, { pos: 'DEL', top: 56, left: 50 }, { pos: 'DEL', top: 56, left: 65 },
   ];
   const rivalFichas = rivalSpec.map((r) => {
     const isRivalGoal = jugadaActiva?.equipo === 'rival' && jugadaActiva?.tipo === 'gol' && r.pos === 'DEL';
@@ -295,6 +296,35 @@ function animarJugadaDinamica(cancha, jugada, fichasMap, ball) {
   }
 }
 
+function mostrarCelebracionGol(cancha, jugada) {
+  const COLORES_CONFETI = ['#ff5e1a', '#ffd700', '#ff4a4a', '#6fe39a', '#fff', '#a24bf0', '#efd069'];
+  const celeb = document.createElement('div');
+  celeb.className = 'gol-celebracion';
+  const autorNombre = jugada.jugador?.nombre || jugada.equipo;
+  const minuto = jugada.min || '';
+  celeb.innerHTML = `<div class="gol-texto">G O L</div><div class="gol-autor">${esc(autorNombre)} ${minuto}'</div>`;
+  cancha.appendChild(celeb);
+  const numParticulas = 35;
+  for (let i = 0; i < numParticulas; i++) {
+    const p = document.createElement('div');
+    p.className = 'confeti-particle';
+    p.style.left = (Math.random() * 100) + '%';
+    p.style.backgroundColor = COLORES_CONFETI[Math.floor(Math.random() * COLORES_CONFETI.length)];
+    p.style.setProperty('--dur', (1.6 + Math.random() * 1.2) + 's');
+    p.style.setProperty('--delay', (Math.random() * 0.4) + 's');
+    p.style.setProperty('--fall', (200 + Math.random() * 300) + 'px');
+    p.style.setProperty('--spin', (360 + Math.random() * 720) + 'deg');
+    p.style.width = (4 + Math.random() * 5) + 'px';
+    p.style.height = (6 + Math.random() * 8) + 'px';
+    p.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    cancha.appendChild(p);
+  }
+  setTimeout(() => {
+    celeb.remove();
+    cancha.querySelectorAll('.confeti-particle').forEach(p => p.remove());
+  }, 2800);
+}
+
 function resetFichasPosicion(cancha, ball) {
   cancha.querySelectorAll('.sim-ficha').forEach(f => {
     f.classList.remove('attacking', 'defending', 'scorer', 'rival-attacking');
@@ -388,8 +418,14 @@ async function mostrarSimulacionVisual() {
       // Animar fichas + pelota
       animarJugadaDinamica(cancha, jugada, fichasMap, ball);
 
-      // Esperar duración de la animación
-      await new Promise((r) => setTimeout(r, 1800));
+      // Si es gol, mostrar celebración con confeti
+      if (jugada.tipo === 'gol') {
+        await new Promise((r) => setTimeout(r, 700));
+        mostrarCelebracionGol(cancha, jugada);
+        await new Promise((r) => setTimeout(r, 2600));
+      } else {
+        await new Promise((r) => setTimeout(r, 1800));
+      }
       if (skip || skipAll) break;
 
       // Volver fichas a posiciones base
@@ -1656,7 +1692,6 @@ const acciones = {
     ui.preClick = { moral: c.estado.moral, fatiga: c.estado.fatiga, presion: c.estado.presion, ratingDelta: c.estado.ratingDelta, money: c.estado.money };
     const { deltas } = resolverEvento(c, el.dataset.op);
     ui.deltas = deltas;
-    if (isGrave) { render(); return; }
     ui.vista = c.fase === FASES.FIN ? 'fin' : c.fase === FASES.LESION ? 'lesion' : c.fase === FASES.RESUMEN ? 'resumen' : 'previa';
   },
   async 'abrir-refuerzo'() {
