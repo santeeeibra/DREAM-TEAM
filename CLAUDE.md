@@ -69,6 +69,24 @@
 - Chips de fatiga/presión con signos `+`/`−` confusos → flechas ↑/↓ y color por
   bueno/malo (`src/ui/main.js`, `MALO_SI_SUBE`).
 
+## Decisiones de UI visual (2026-08-21)
+- **Fondos blancos en cartas**: se eliminó `mix-blend-mode: multiply` de
+  `.photo-well img` (`src/ui/cartas.css`) — causaba fantasmas en fondos oscuros.
+  Solo queda `filter: contrast(1.08) brightness(1.03)`.
+- **Fondos por rareza en `.card-inner`**: cada rareza tiene un radial-gradient
+  propio usando `color-mix()` con `--r1`/`--r2`:
+  - bronce: sutil cobrizo (default de `.card-inner`)
+  - oro_comun: dorado opaco, sobrio
+  - oro_unico: dorado brillante con centro luminoso
+  - epica: violeta/magenta oscuro e imponente
+- **Pizarra táctica**: `spread()` en `src/ui/main.js` limitado a 20–80% para
+  evitar desbordamiento de fichas. `.sim-ficha` usa texto blanco con
+  `text-shadow` para legibilidad sobre fondo fluor; `.sim-ficha.rival` usa
+  transparencia sutil + borde para distinguirse.
+- **Tabla de posiciones**: escudos `.escudo` agrandados de 22×22 a 28×28.
+- **CTA de sobre de refuerzo**: botón ahora usa `.ts-cta` para animación de
+  brillo/shine en la recompensa post-temporada.
+
 ## Onboarding
 - Flujo: nombre → país → liga → club → 3 sobres gratis → draft
 - Draft cierra si se acaba el presupuesto (no muestra rondas vacías)

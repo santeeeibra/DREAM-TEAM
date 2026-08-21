@@ -61,9 +61,29 @@
     linear-gradient(180deg,var(--card-base) 0%, var(--card-base-2) 100%);
 }
 
+/* ---- fondos espectaculares por rareza ---- */
+.card[data-rarity="oro_comun"] .card-inner{
+  background:
+    radial-gradient(105% 70% at 50% -8%, color-mix(in srgb,var(--r1) 40%,transparent), transparent 55%),
+    radial-gradient(50% 40% at 50% 95%, color-mix(in srgb,var(--r2) 12%,transparent), transparent 50%),
+    linear-gradient(180deg, color-mix(in srgb,var(--r1) 8%,var(--card-base)) 0%, var(--card-base-2) 100%);
+}
+.card[data-rarity="oro_unico"] .card-inner{
+  background:
+    radial-gradient(60% 45% at 50% 32%, color-mix(in srgb,var(--r2) 30%,transparent), transparent 45%),
+    radial-gradient(115% 80% at 50% -10%, color-mix(in srgb,var(--r1) 55%,transparent), transparent 55%),
+    linear-gradient(180deg, #1a1508 0%, var(--card-base-2) 100%);
+}
+.card[data-rarity="epica"] .card-inner{
+  background:
+    radial-gradient(55% 45% at 50% 38%, color-mix(in srgb,var(--r2) 22%,transparent), transparent 40%),
+    radial-gradient(130% 90% at 50% -15%, color-mix(in srgb,var(--r1) 45%,transparent), transparent 55%),
+    linear-gradient(180deg, #150a24 0%, #0c0614 55%, var(--card-base-2) 100%);
+}
+
 /* ---- pozo de foto: recorte consistente y centrado (arregla el "no centrados") ---- */
 .photo-well{position:relative;aspect-ratio:1/1;overflow:hidden}
-.photo-well img{width:100%;height:100%;object-fit:cover;object-position:50% 16%;display:block;mix-blend-mode:multiply;filter:contrast(1.08) brightness(1.03)}
+.photo-well img{width:100%;height:100%;object-fit:cover;object-position:50% 16%;display:block;filter:contrast(1.08) brightness(1.03)}
 .photo-well::after{content:"";position:absolute;inset:0;pointer-events:none;
   background:radial-gradient(80% 70% at 50% 22%, transparent 42%, rgba(0,0,0,.32) 100%),
             linear-gradient(180deg, transparent 55%, var(--card-base-2) 98%)}

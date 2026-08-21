@@ -27,3 +27,11 @@ Activar solo cuando la tarea toque contexto, skills o la estructura del repo.
 ## Tarea
 - Pensá en contexto como un **presupuesto**. Menos reglas, mejor
   redactadas, que escriban "qué" en vez de "cómo".
+
+## Post-tarea (innegociable)
+- Al terminar **cualquier tarea de implementación**, la IA debe actualizar
+  automáticamente el registro de contexto (CLAUDE.md o .clinerules/) con las
+  modificaciones realizadas, para no perder historial de decisiones arquitectónicas
+  o de UI. Usar el subagente `context-updater` cuando la tarea fue multi-archivo.
+- No documentar fixes one-off; solo patrones, convenciones y decisiones que
+  afecten trabajo futuro.

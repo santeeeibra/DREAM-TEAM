@@ -504,7 +504,8 @@ td.n{text-align:right;font-family:'Barlow Condensed';font-weight:700;font-varian
     var(--cancha)}
 .sim-ficha{position:absolute;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;
   justify-content:center;font-family:'Barlow Condensed';font-weight:700;font-size:9px;line-height:1;
-  background:var(--fluor);color:#fff;cursor:default;z-index:1;transition:box-shadow .3s;
+  background:var(--fluor);color:#fff;cursor:default;z-index:1;
+  transition:top .5s cubic-bezier(.2,.8,.2,1),left .5s cubic-bezier(.2,.8,.2,1),box-shadow .3s;
   text-shadow:0 1px 3px rgba(0,0,0,.5)}
 .sim-ficha.rival{background:rgba(255,255,255,.08);color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.15);text-shadow:none}
 .sim-ficha::after{content:attr(data-name);position:absolute;bottom:calc(100% + 4px);left:50%;
@@ -520,6 +521,20 @@ td.n{text-align:right;font-family:'Barlow Condensed';font-weight:700;font-varian
 @keyframes simSlide{to{top:var(--to-top);left:var(--to-left)}}
 @keyframes simGolPulse{0%,100%{transform:scale(1.2)}50%{transform:scale(1.5);box-shadow:0 0 18px rgba(255,94,26,.8)}}
 @keyframes simRivalGlow{0%,100%{box-shadow:0 0 8px rgba(255,255,255,.2)}50%{box-shadow:0 0 16px rgba(255,255,255,.4)}}
+/* ── Pelota + animación dinámica de jugada ── */
+.sim-ball{position:absolute;width:10px;height:10px;border-radius:50%;background:#fff;
+  box-shadow:0 0 6px rgba(255,255,255,.7),0 0 14px rgba(255,255,255,.3);
+  z-index:5;opacity:0;transition:top .6s cubic-bezier(.2,.8,.2,1),left .6s cubic-bezier(.2,.8,.2,1),opacity .2s;
+  transform:translate(-50%,-50%);pointer-events:none}
+.sim-ball.visible{opacity:1}
+.sim-ball.gol-flash{animation:ballGolFlash .5s ease-out}
+@keyframes ballGolFlash{0%{box-shadow:0 0 6px #fff,0 0 14px #fff}50%{box-shadow:0 0 20px var(--fluor),0 0 40px var(--fluor)}100%{box-shadow:0 0 6px rgba(255,255,255,.7),0 0 14px rgba(255,255,255,.3)}}
+.sim-ficha.attacking{z-index:3;box-shadow:0 0 10px rgba(255,94,26,.5)}
+.sim-ficha.defending{z-index:3;box-shadow:0 0 10px rgba(111,227,154,.5)}
+.sim-ficha.scorer{z-index:4;animation:simGolPulse .35s ease-in-out 3;box-shadow:0 0 16px rgba(255,94,26,.8)}
+.sim-ficha.rival-attacking{z-index:3;animation:simRivalGlow .5s ease-in-out 2}
+.sim-marcador.gol-anim{animation:marcadorPop .4s cubic-bezier(.2,.8,.2,1)}
+@keyframes marcadorPop{0%{transform:scale(1)}50%{transform:scale(1.4);color:#fff}100%{transform:scale(1)}}
 .sim-narr{min-height:44px;padding:10px 12px;background:rgba(0,0,0,.25);border-radius:6px;
   font-size:14px;line-height:1.4;color:var(--tiza);border-left:3px solid var(--fluor);
   transition:opacity .3s}

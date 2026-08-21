@@ -209,6 +209,101 @@ function renderSimModal(partido, idx, total, misJugadores, jugadaActual, jugadas
   </div>`;
 }
 
+// ── animación dinámica: mueve fichas + pelota en lugar de re-render ──
+function animarJugadaDinamica(cancha, jugada, fichasMap, ball) {
+  const MY_TOP = { POR: 88, DEF: 73, MED: 53, DEL: 33 };
+  const ZONA_TARGET_TOP = [88, 73, 53, 33, 10]; // zona 0=DEF propia → 4=arco rival
+
+  // Resetear clases de fichas
+  cancha.querySelectorAll('.sim-ficha').forEach(f => {
+    f.classList.remove('attacking', 'defending', 'scorer', 'rival-attacking');
+  });
+
+  const jugador = jugada.jugador;
+  const esMio = jugada.equipo === 'mio';
+  const esGol = jugada.tipo === 'gol';
+  const zona = jugada.zona ?? 2;
+
+  // Elegir fichas que participan en la jugada
+  const fichasActivas = [];
+  if (jugador && fichasMap.has(jugador.id)) {
+    fichasActivas.push(fichasMap.get(jugador.id));
+  }
+  // Mover 1-2 compañeros cercanos hacia la zona de la jugada
+  const posOrden = ['DEL', 'MED', 'DEF', 'POR'];
+  const posJugador = jugador?.pos || 'MED';
+  const companeros = [];
+  cancha.querySelectorAll('.sim-ficha:not(.rival)').forEach(f => {
+    if (jugador && f.dataset.pid === String(jugador.id)) return;
+    companeros.push(f);
+  });
+  // Elegir hasta 2 compañeros que se sumen al movimiento
+  const shuffled = companeros.sort(() => Math.random() - 0.5).slice(0, 2);
+
+  if (esMio) {
+    // Jugada propia: mover ficha principal hacia la zona
+    const targetTop = ZONA_TARGET_TOP[zona] ?? 53;
+    if (fichasActivas[0]) {
+      const f = fichasActivas[0];
+      f.style.top = targetTop + '%';
+      f.style.left = (40 + Math.random() * 20) + '%';
+      f.classList.add(esGol ? 'scorer' : 'attacking');
+    }
+    // Compañeros se acercan un poco
+    shuffled.forEach(f => {
+      const baseTop = parseFloat(f.dataset.baseTop);
+      const nudge = (targetTop - baseTop) * 0.35;
+      f.style.top = (baseTop + nudge) + '%';
+      f.classList.add('attacking');
+    });
+
+    // Pelota: viaja desde el jugador hasta la zona de peligro
+    if (fichasActivas[0]) {
+      ball.style.top = fichasActivas[0].dataset.baseTop + '%';
+      ball.style.left = fichasActivas[0].dataset.baseLeft + '%';
+      ball.classList.add('visible');
+      requestAnimationFrame(() => {
+        ball.style.top = (esGol ? 6 : targetTop - 8) + '%';
+        ball.style.left = '50%';
+        if (esGol) ball.classList.add('gol-flash');
+      });
+    }
+  } else {
+    // Jugada rival: mover fichas rivales hacia nuestro arco
+    const rivalFichas = [...cancha.querySelectorAll('.sim-ficha.rival')];
+    const delRival = rivalFichas.filter(f => f.textContent.trim() === 'DEL');
+    const movibles = delRival.length ? delRival : rivalFichas.slice(0, 2);
+    movibles.forEach(f => {
+      f.style.top = (esGol ? 82 : 70) + '%';
+      f.classList.add('rival-attacking');
+    });
+    // Defensor nuestro reacciona
+    if (fichasActivas[0]) {
+      fichasActivas[0].classList.add('defending');
+      const baseTop = parseFloat(fichasActivas[0].dataset.baseTop);
+      fichasActivas[0].style.top = Math.min(baseTop + 6, 90) + '%';
+    }
+    // Pelota rival
+    ball.style.top = '45%';
+    ball.style.left = '50%';
+    ball.classList.add('visible');
+    requestAnimationFrame(() => {
+      ball.style.top = (esGol ? 92 : 78) + '%';
+      ball.style.left = (40 + Math.random() * 20) + '%';
+      if (esGol) ball.classList.add('gol-flash');
+    });
+  }
+}
+
+function resetFichasPosicion(cancha, ball) {
+  cancha.querySelectorAll('.sim-ficha').forEach(f => {
+    f.classList.remove('attacking', 'defending', 'scorer', 'rival-attacking');
+    if (f.dataset.baseTop) f.style.top = f.dataset.baseTop + '%';
+    if (f.dataset.baseLeft) f.style.left = f.dataset.baseLeft + '%';
+  });
+  ball.classList.remove('visible', 'gol-flash');
+}
+
 async function mostrarSimulacionVisual() {
   const partidos = c.ultimoTramo.partidos;
   const porId = new Map(c.plantel.map((x) => [x.id, x]));
@@ -221,30 +316,90 @@ async function mostrarSimulacionVisual() {
     const jugadas = generarJugadas(partido, misJugadores);
     let skip = false;
 
-    // Render inicial
+    // Render inicial (una sola vez por partido)
     const contenedor = document.createElement('div');
     contenedor.innerHTML = renderSimModal(partido, idx, partidos.length, misJugadores, -1, jugadas, false);
     document.body.appendChild(contenedor.firstElementChild);
 
     const overlay = document.getElementById('sim-overlay');
+    const cancha = overlay.querySelector('.sim-cancha');
+    const narrEl = document.getElementById('sim-narr');
+    const marcadorEl = overlay.querySelector('.sim-marcador');
+
+    // Agregar pelota al DOM
+    const ball = document.createElement('div');
+    ball.className = 'sim-ball';
+    ball.style.top = '50%';
+    ball.style.left = '50%';
+    cancha.appendChild(ball);
+
+    // Guardar posiciones base de cada ficha + mapear por jugador id
+    const fichasMap = new Map();
+    cancha.querySelectorAll('.sim-ficha:not(.rival)').forEach(f => {
+      f.dataset.baseTop = parseFloat(f.style.top);
+      f.dataset.baseLeft = parseFloat(f.style.left);
+      // Buscar jugador por nombre
+      const nombre = f.dataset.name;
+      const jug = misJugadores.find(j => j.nombre === nombre);
+      if (jug) {
+        f.dataset.pid = jug.id;
+        fichasMap.set(jug.id, f);
+      }
+    });
+    cancha.querySelectorAll('.sim-ficha.rival').forEach(f => {
+      f.dataset.baseTop = parseFloat(f.style.top);
+      f.dataset.baseLeft = parseFloat(f.style.left);
+    });
+
     document.getElementById('sim-skip')?.addEventListener('click', () => { skip = true; });
     document.getElementById('sim-skip-all')?.addEventListener('click', () => { skip = true; skipAll = true; });
 
-    // Animar jugadas
+    // Animar jugadas in-place
+    let golesMios = 0, golesRival = 0;
     for (let j = 0; j < jugadas.length; j++) {
       if (skip || skipAll) break;
-      await new Promise((r) => setTimeout(r, 1500));
+
+      const jugada = jugadas[j];
+
+      // Actualizar marcador acumulado
+      if (jugada.tipo === 'gol') {
+        if (jugada.equipo === 'mio') golesMios++;
+        else golesRival++;
+      }
+
+      // Actualizar texto de narración con fade
+      if (narrEl) {
+        narrEl.classList.add('fade');
+        await new Promise(r => setTimeout(r, 200));
+        narrEl.textContent = jugada.texto;
+        narrEl.classList.remove('fade');
+      }
+
+      // Actualizar marcador visual
+      if (marcadorEl) {
+        marcadorEl.textContent = `${golesMios} - ${golesRival}`;
+        if (jugada.tipo === 'gol') {
+          marcadorEl.classList.remove('gol-anim');
+          void marcadorEl.offsetWidth; // force reflow
+          marcadorEl.classList.add('gol-anim');
+        }
+      }
+
+      // Animar fichas + pelota
+      animarJugadaDinamica(cancha, jugada, fichasMap, ball);
+
+      // Esperar duración de la animación
+      await new Promise((r) => setTimeout(r, 1800));
       if (skip || skipAll) break;
-      const tmp = document.createElement('div');
-      tmp.innerHTML = renderSimModal(partido, idx, partidos.length, misJugadores, j, jugadas, false);
-      overlay.replaceChildren(...tmp.firstElementChild.children);
-      document.getElementById('sim-skip')?.addEventListener('click', () => { skip = true; });
-      document.getElementById('sim-skip-all')?.addEventListener('click', () => { skip = true; skipAll = true; });
+
+      // Volver fichas a posiciones base
+      resetFichasPosicion(cancha, ball);
+      await new Promise((r) => setTimeout(r, 400));
     }
 
     // Mostrar resultado
     if (skipAll) { overlay.remove(); continue; }
-    await new Promise((r) => setTimeout(r, skip ? 300 : 1200));
+    await new Promise((r) => setTimeout(r, skip ? 300 : 800));
     const tmp2 = document.createElement('div');
     tmp2.innerHTML = renderSimModal(partido, idx, partidos.length, misJugadores, jugadas.length - 1, jugadas, true);
     overlay.replaceChildren(...tmp2.firstElementChild.children);
