@@ -541,7 +541,9 @@ export function aplicarRefuerzo(c, idsEntran = [], idsSalen = []) {
     c.estado = r.estado;
   }
   
-  c.plantel = envejecerPlantel(c.rng, c.plantel);
+  const { plantel: nuevos, retirados } = envejecerPlantel(c.rng, c.plantel);
+  c.plantel = nuevos;
+  c.retirados = (c.retirados || []).concat(retirados);
   c.temporada++;
   c.tramo = 0;
   

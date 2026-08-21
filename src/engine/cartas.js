@@ -19,14 +19,38 @@ export function cargarCartasDB(cartasDB) {
 }
 
 export function envejecerPlantel(rng, plantel) {
-  return plantel.map((c) => {
+  const activos = [];
+  const retirados = [];
+  for (const c of plantel) {
     const edad = c.edad + 1;
+    // Retiro: 39+ con probabilidad creciente, 42 = retiro seguro
+    if (edad >= PROGRESION.RETIRO) {
+      const probRetiro = Math.min(1, (edad - PROGRESION.RETIRO + 1) * 0.33);
+      if (rng.float() < probRetiro) {
+        retirados.push(c);
+        // Regen: misma posición, rating bajo, cara genérica
+        activos.push({
+          id: c.id + '-regen',
+          fut_id: null,
+          nombre: 'Regen ' + c.pos,
+          pos: c.pos,
+          rating: Math.max(60, Math.min(72, c.rating - rng.int(10, 18))),
+          rareza: 'bronce',
+          league_id: c.league_id,
+          edad: 18 + rng.int(0, 3),
+          foto: null,
+          ultimoDelta: 0,
+        });
+        continue;
+      }
+    }
     let delta;
     if (edad <= PROGRESION.JOVEN) delta = rng.int(...PROGRESION.SUBIDA);
     else if (edad >= PROGRESION.VETERANO) delta = -rng.int(...PROGRESION.BAJADA);
     else delta = rng.int(...PROGRESION.MESETA);
-    return { ...c, edad, rating: Math.max(45, Math.min(94, c.rating + delta)), ultimoDelta: delta };
-  });
+    activos.push({ ...c, edad, rating: Math.max(45, Math.min(94, c.rating + delta)), ultimoDelta: delta });
+  }
+  return { plantel: activos, retirados };
 }
 
 export function valorDeVenta(carta) {

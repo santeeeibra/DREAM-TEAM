@@ -111,7 +111,7 @@ export const SOBRES = {
 };
 
 export const PROGRESION = {
-  JOVEN: 24, VETERANO: 31,
+  JOVEN: 24, VETERANO: 31, RETIRO: 39,
   SUBIDA: [1, 3], BAJADA: [1, 3], MESETA: [-1, 1],
 };
 
