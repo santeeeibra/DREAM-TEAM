@@ -9,7 +9,7 @@
 // un error por culpa de la narración con IA.
 
 const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
-const GROQ_MODEL = 'llama-3.3-70b-versatile';
+const GROQ_MODEL = 'llama-3.1-8b-instant';
 const TIMEOUT_MS = 2500;
 
 export default async function handler(req, res) {

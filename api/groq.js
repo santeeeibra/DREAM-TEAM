@@ -12,7 +12,7 @@ export function groqConfigurada() {
 }
 
 function modelo() {
-  return process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+  return process.env.GROQ_MODEL || 'llama-3.1-8b-instant';
 }
 
 /** Error cuando GROQ responde con status no-OK o contenido vacío. */
