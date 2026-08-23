@@ -1234,8 +1234,8 @@ const PANTALLAS = {
     const n = c.eventoActual.narracion;
     const p = paquete(n.paqueteId);
 
-    // MAGIA ACÁ: Armamos un prompt en inglés usando el título del evento. 
-    const promptImg = `cinematic dramatic scene, football manager game, ${n.titulo}`;
+ // MAGIA ACÁ: Prompt enfocado en siluetas vectoriales oscuras sin rostros
+ const promptImg = `minimalist flat vector graphic, faceless dark silhouettes, football manager event, dramatic lighting, no faces, solid background, ${n.titulo}`;
     // Usamos Pollinations para generarla al vuelo (800x350px)
     const imgEscena = n.imagen ? esc(n.imagen) : `https://image.pollinations.ai/prompt/${encodeURIComponent(promptImg)}?width=800&height=350&nologo=true`;
 
@@ -1250,7 +1250,7 @@ const PANTALLAS = {
           <h2>${esc(n.titulo)}</h2>
           <p>${esc(n.texto)}</p>
           <div class="grave-impacto"><div class="chips grave-chips">${chipsEsperados(opcionCat)}</div></div>
-          <button class="btn grave-continuar" data-accion="elegir" data-op="continuar">Continuar</button>
+         <button class="btn grave-continuar" data-accion="elegir" data-op="${opcionCat.id}">Continuar</button>
         </div>
       </div>`;
     }
@@ -1288,7 +1288,7 @@ const PANTALLAS = {
       </div>
     </div>`;
   },
-  
+
   resumen: () => {
     const t = c.ultimaTemporada;
     return `<div class="stack${tsEntra ? ' ts-anim' : ''}">
