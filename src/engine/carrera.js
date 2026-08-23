@@ -592,6 +592,7 @@ export function calcularOfertasPlantel(c) {
   const { PROB_OFERTA_JUGADOR_GRANDE, PROB_OFERTA_JUGADOR_MEDIO, MAX_SALIDAS_POR_TEMPORADA, MONEY_VENTA_BASE, MONEY_VENTA_POR_OVR } = ROTACION_PLANTEL;
   const conOferta = c.plantel
     .filter(j => {
+        if (c.once.includes(j.id)) return false;
       const esGrande = j.rating >= 82 && j.edad >= 28;
       const esMedio  = j.rating >= 74 && j.rating < 82;
       const prob = esGrande ? PROB_OFERTA_JUGADOR_GRANDE : esMedio ? PROB_OFERTA_JUGADOR_MEDIO : 0;

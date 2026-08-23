@@ -24,6 +24,36 @@ let ui = {
 };
 // Estado del drag & drop (desktop: HTML5 DnD, mobile: touch drag)
 let dragState = { active: false, playerId: null, sourceType: null, sourceSlotIdx: null, ghost: null, startX: 0, startY: 0, moved: false };
+document.addEventListener('dragstart', (e) => {
+  if (e.target.classList.contains('player-card')) {
+    const playerId = e.target.dataset.id;
+    const player = c.plantel.find(j => j.id === playerId);
+
+    // Crear ghost con imagen real (reemplazar el ghost transparente)
+    dragState.ghost = document.createElement('img');
+    dragState.ghost.src = player.imageUrl || 'src/assets/mascota.png';
+    dragState.ghost.style.position = 'absolute';
+    dragState.ghost.style.zIndex = 1000;
+    dragState.ghost.style.width = '50px';
+    dragState.ghost.style.height = '50px';
+    dragState.ghost.className = 'dragging-card';
+
+    // Eliminar ghost viejos
+    if (dragState.ghost && dragState.ghost.parentNode) {
+      dragState.ghost.parentNode.removeChild(dragState.ghost);
+    }
+
+    // Añadir estilo interactivo
+    dragState.ghost.addEventListener('mouseenter', () => {
+      dragState.ghost.style.boxShadow = '0 0 8px rgba(0,128,255,0.7)';
+    });
+    dragState.ghost.addEventListener('mouseleave', () => {
+      dragState.ghost.style.boxShadow = '0 0 10px rgba(0,0,0,0.3)';
+    });
+
+    document.body.appendChild(dragState.ghost);
+  }
+});
 // Hidratar draft de DT si existe
 const _dtDraft = (() => { try { return JSON.parse(localStorage.getItem('dt_draft') || 'null'); } catch { return null; } })();
 if (_dtDraft) ui.onboarding = { ...ui.onboarding, ..._dtDraft };
