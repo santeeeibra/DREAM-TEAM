@@ -681,6 +681,75 @@ function chipsEsperados(opcionCat) {
   return entradas.map(([k, val]) => chipEsperado(k, val)).join('');
 }
 
+// ── Mapa de emojis para decisiones (estilo COPERO) ──
+const EMOJI_OPCION = {
+  cubrir: '🛡️', bancar: '💪', defender: '🛡️', proteger: '🛡️',
+  bajar: '👇', echar: '🚪', despedir: '🚪',
+  hablar: '🗣️', confrontar: '💢', mediar: '⚖️', intervenir: '🤝',
+  ignorar: '🙈', callar: '🤐', silencio: '🤫', dejar: '🙈',
+  firmar: '✍️', aceptar: '✅', ceder: '🤝',
+  rechazar: '❌', negar: '🚫', resistir: '✊',
+  descartar: '❌', archivar: '📁',
+  investigar: '🔍', reportar: '📢', denunciar: '⚖️',
+  multa: '💸', advertir: '⚠️',
+  rotar: '🔄', mantener: '🎯', preparar: '📋',
+  cambiar_todo: '🔀', arriesgar: '🎲', probar: '🧪',
+  conservador: '🛡️',
+  motivar: '🔥', desactivar: '🧘', concentracion: '🧘',
+  retener: '🔒', negociar: '💼', dejarir: '👋',
+  titular: '⭐', banco: '🪑', suplente: '🪑',
+  bajarlo: '👇', dar_fecha: '⏳',
+  buscar: '🚗', baja: '📋',
+  dejar_ir: '✈️', pelear: '💪',
+  comunicado: '📰', callarte: '🤐',
+  chicana: '😏', diplomacia: '🕊️',
+  devolver: '🤝', responder: '🗣️',
+  estallar: '🔥', mesura: '🧘',
+  ejemplo_publico: '📢', llamar_retar: '📱',
+  pedir_fondos: '💰', hablar_proyecto: '🗣️',
+  poner_cara: '✊',
+  doble: '🏋️', escuchar: '👂',
+  insistir: '🎯', variar: '🎮',
+  esperar: '⏳', jugar_mejores: '⭐', apretar: '💪',
+  honesto: '📋', perdonar: '🤝', distanciarte: '🏃',
+  salir: '🙌', recibir: '🤝',
+  continuar: '➡️',
+  protestar: '📢',
+};
+const EMOJI_OVERRIDE = {
+  'lesion_ocultada:cubrir': '🤫',
+  'lesion_grave:continuar': '🏥',
+  'lesion_figura_prePartido:continuar': '🏥',
+  'lesion_jugador_normal:continuar': '🏥',
+  'suspension_figura_prePartido:continuar': '🟨',
+  'ultimatum_directiva:continuar': '⚠️',
+};
+function getEmoji(eventoId, opcionId) {
+  return EMOJI_OVERRIDE[`${eventoId}:${opcionId}`] || EMOJI_OPCION[opcionId] || '⚡';
+}
+
+function esResultadoPositivo(efectos) {
+  let score = 0;
+  for (const [k, v] of Object.entries(efectos)) {
+    score += MALO_SI_SUBE.has(k) ? -v : v;
+  }
+  return score >= 0;
+}
+
+function decisionResultChips(opcionCat) {
+  if (!opcionCat.resultado) return chipsEsperados(opcionCat);
+  return opcionCat.resultado.map(r => {
+    const positivo = esResultadoPositivo(r.efectos);
+    const probPct = Math.round(r.prob * 100);
+    const nota = r.nota || Object.entries(r.efectos).map(([k, v]) => `${NOMBRE_VAR[k]} ${v > 0 ? '+' : ''}${v}`).join(', ') || 'Sin cambios';
+    return `<div class="decision-result ${positivo ? 'pos' : 'neg'}">
+      <span class="result-icon">${positivo ? '↗' : '↘'}</span>
+      <span class="result-nota">${esc(nota)}</span>
+      <span class="result-prob">${probPct}%</span>
+    </div>`;
+  }).join('');
+}
+
 // ── Hover preview: preview de gauges al pasar mouse sobre una opción ──
 function aplicarHoverPreview(opcionCat) {
   if (!opcionCat) return;
@@ -719,10 +788,8 @@ function bindHoverPreview() {
   const n = c.eventoActual?.narracion;
   const paq = n ? paquete(n.paqueteId) : null;
   if (!paq) return;
-  document.querySelectorAll('.opcion-card').forEach(card => {
-    const btn = card.querySelector('.opcion-main');
-    if (!btn) return;
-    const opId = btn.getAttribute('data-op');
+  document.querySelectorAll('.decision-card').forEach(card => {
+    const opId = card.getAttribute('data-op');
     const opcionCat = paq.opciones.find(x => x.id === opId);
     card.addEventListener('mouseenter', () => aplicarHoverPreview(opcionCat));
     card.addEventListener('mouseleave', () => limpiarHoverPreview());
@@ -730,14 +797,14 @@ function bindHoverPreview() {
 }
 
 function bindGraveHoverPreview() {
-  const btn = document.querySelector('.grave-continuar');
-  if (!btn) return;
+  const card = document.querySelector('.decision-card.grave');
+  if (!card) return;
   const n = c.eventoActual?.narracion;
   const paq = n ? paquete(n.paqueteId) : null;
   if (!paq) return;
   const opcionCat = paq.opciones[0];
-  btn.addEventListener('mouseenter', () => aplicarHoverPreview(opcionCat));
-  btn.addEventListener('mouseleave', () => limpiarHoverPreview());
+  card.addEventListener('mouseenter', () => aplicarHoverPreview(opcionCat));
+  card.addEventListener('mouseleave', () => limpiarHoverPreview());
 }
 
 function resultadoBloque(efectos, prob, isTopProb) {
@@ -1222,54 +1289,49 @@ const PANTALLAS = {
     const n = c.eventoActual.narracion;
     const p = paquete(n.paqueteId);
 
-    // Prompt enfocado en sombras dramáticas tipo novela gráfica, sin caras
-    const promptImg = `dark atmospheric silhouette, graphic novel style illustration, back lit, faceless football manager, solid dark background, ${n.titulo}`;
-    const imgEscena = n.imagen ? esc(n.imagen) : `https://image.pollinations.ai/prompt/${encodeURIComponent(promptImg)}?width=800&height=350&nologo=true`;
-
     // Evento grave: notificación forzada sin elección A/B
     if (p.grave) {
       const opcionCat = p.opciones[0];
+      const opLabel = opcionCat.label || n.opciones?.[0]?.label || 'Continuar';
       return `<div class="stack${tsEntra ? ' ts-anim' : ''}">
         ${marcador()}
         <div class="panel evento stack" style="border-color:rgba(255,91,30,.35)">
           <div class="eyebrow" style="color:#ff5b1e">⚠️ Notificación — Temporada ${c.temporada}</div>
-          <img src="${imgEscena}" class="evento-img" alt="Escena" loading="lazy" onerror="this.style.display='none'">
           <h2>${esc(n.titulo)}</h2>
           <p>${esc(n.texto)}</p>
-          <div class="grave-impacto"><div class="chips grave-chips">${chipsEsperados(opcionCat)}</div></div>
-          <button class="btn grave-continuar" data-accion="elegir" data-op="${opcionCat.id}">Continuar</button>
+          <div class="decision-grid single">
+            <button class="decision-card grave" data-accion="elegir" data-op="${opcionCat.id}">
+              <div class="decision-visual grave-visual">
+                <span class="decision-emoji">${getEmoji(n.paqueteId, opcionCat.id)}</span>
+              </div>
+              <span class="decision-label">${esc(opLabel)}</span>
+              <div class="decision-chips">${chipsEsperados(opcionCat)}</div>
+            </button>
+          </div>
         </div>
       </div>`;
     }
 
-    // Evento normal con decisiones
+    // Evento normal con dos opciones (estilo COPERO)
     return `<div class="stack${tsEntra ? ' ts-anim' : ''}">
       ${marcador()}
       <div class="panel evento stack">
         <div class="eyebrow">Temporada ${c.temporada} · Decisión ${c.tramo + 1}</div>
-        <img src="${imgEscena}" class="evento-img" alt="Escena" loading="lazy" onerror="this.style.display='none'">
         <h2>${esc(n.titulo)}</h2>
         <p>${esc(n.texto)}</p>
-        <div class="stack">
+        <div class="decision-grid">
           ${n.opciones.map((o) => {
             const opcionCat = p.opciones.find((x) => x.id === o.id);
             const variable = !!opcionCat.resultado;
-            const maxProb = variable ? Math.max(...opcionCat.resultado.map(r => r.prob)) : null;
-            const abierto = ui.detalleAbierto.has(o.id);
-            const detalle = variable
-              ? `<div class="consecuencias">${splitBar(opcionCat.resultado)}${opcionCat.resultado.map((r) => resultadoBloque(r.efectos, r.prob, r.prob === maxProb)).join('')}</div>`
-              : `<div class="consecuencias">${resultadoBloque(opcionCat.efectos, null, false)}</div>`;
-            return `<div class="opcion-card">
-              <button class="opcion-main" data-accion="elegir" data-op="${o.id}">
-                <div class="opcion-top">
-                  <span class="opcion-label">${esc(o.label)}</span>
-                  ${variable ? '<span class="riesgo-tag">🎲 resultado incierto</span>' : '<span class="riesgo-tag directo">✓ resultado directo</span>'}
-                </div>
-                <div class="expected-chips">${chipsEsperados(opcionCat)}</div>
-              </button>
-              ${variable ? `<button class="opcion-toggle" data-accion="toggle-detalle" data-op="${o.id}">${abierto ? 'Ocultar el detalle de probabilidades ▲' : `Ver los ${opcionCat.resultado.length} resultados posibles y sus chances ▾`}</button>` : ''}
-              ${variable && abierto ? detalle : ''}
-            </div>`;
+            return `<button class="decision-card" data-accion="elegir" data-op="${o.id}">
+              <span class="decision-label">${esc(o.label)}</span>
+              <div class="decision-visual">
+                <span class="decision-emoji">${getEmoji(n.paqueteId, o.id)}</span>
+              </div>
+              <div class="decision-chips">
+                ${variable ? decisionResultChips(opcionCat) : chipsEsperados(opcionCat)}
+              </div>
+            </button>`;
           }).join('')}
         </div>
       </div>
