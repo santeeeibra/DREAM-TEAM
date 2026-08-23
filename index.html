@@ -311,6 +311,27 @@ input:focus,select:focus,button:focus-visible{outline:2px solid var(--fluor);out
 .grave-impacto{display:flex;justify-content:center;padding:4px 0 10px}
 .grave-chips{justify-content:center}
 .grave-continuar{margin-top:4px}
+/* decision grid – estilo COPERO (dos tarjetas lado a lado) */
+.decision-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}
+.decision-grid.single{grid-template-columns:1fr;max-width:380px;margin-inline:auto}
+@media(max-width:600px){.decision-grid{grid-template-columns:1fr}}
+.decision-card{
+  display:flex;flex-direction:column;gap:10px;padding:18px 16px;
+  border:1px solid var(--linea);border-radius:var(--r);background:rgba(255,255,255,.03);
+  text-align:left;cursor:pointer;
+  transition:transform .2s cubic-bezier(.2,.7,.2,1),box-shadow .25s,border-color .25s}
+.decision-card:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.3),0 0 0 1px rgba(255,94,26,.18);border-color:rgba(255,94,26,.25)}
+.decision-card:active{transform:scale(.97);transition-duration:.08s}
+.decision-card.grave{border-color:rgba(255,91,30,.3);background:rgba(255,91,30,.05)}
+.decision-label{font-weight:700;font-size:15px;line-height:1.3}
+.decision-chips{display:flex;flex-direction:column;gap:6px;margin-top:auto}
+.decision-result{display:flex;align-items:center;gap:8px;padding:5px 10px;border-radius:6px;
+  font-family:'Barlow Condensed';font-size:13px;font-weight:600;letter-spacing:.03em}
+.decision-result.pos{color:var(--led);background:rgba(111,227,154,.08)}
+.decision-result.neg{color:var(--rojo);background:rgba(255,74,74,.08)}
+.result-icon{font-size:15px;flex-shrink:0}
+.result-nota{flex:1}
+.result-prob{opacity:.6;font-size:12px;white-space:nowrap}
 /* stat rows */
 .stat-rows{display:flex;flex-direction:column;gap:5px}
 .stat-row{display:grid;grid-template-columns:64px 1fr 32px;align-items:center;gap:8px}

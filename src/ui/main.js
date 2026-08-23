@@ -681,53 +681,7 @@ function chipsEsperados(opcionCat) {
   return entradas.map(([k, val]) => chipEsperado(k, val)).join('');
 }
 
-// ── Mapa de emojis para decisiones (estilo COPERO) ──
-const EMOJI_OPCION = {
-  cubrir: '🛡️', bancar: '💪', defender: '🛡️', proteger: '🛡️',
-  bajar: '👇', echar: '🚪', despedir: '🚪',
-  hablar: '🗣️', confrontar: '💢', mediar: '⚖️', intervenir: '🤝',
-  ignorar: '🙈', callar: '🤐', silencio: '🤫', dejar: '🙈',
-  firmar: '✍️', aceptar: '✅', ceder: '🤝',
-  rechazar: '❌', negar: '🚫', resistir: '✊',
-  descartar: '❌', archivar: '📁',
-  investigar: '🔍', reportar: '📢', denunciar: '⚖️',
-  multa: '💸', advertir: '⚠️',
-  rotar: '🔄', mantener: '🎯', preparar: '📋',
-  cambiar_todo: '🔀', arriesgar: '🎲', probar: '🧪',
-  conservador: '🛡️',
-  motivar: '🔥', desactivar: '🧘', concentracion: '🧘',
-  retener: '🔒', negociar: '💼', dejarir: '👋',
-  titular: '⭐', banco: '🪑', suplente: '🪑',
-  bajarlo: '👇', dar_fecha: '⏳',
-  buscar: '🚗', baja: '📋',
-  dejar_ir: '✈️', pelear: '💪',
-  comunicado: '📰', callarte: '🤐',
-  chicana: '😏', diplomacia: '🕊️',
-  devolver: '🤝', responder: '🗣️',
-  estallar: '🔥', mesura: '🧘',
-  ejemplo_publico: '📢', llamar_retar: '📱',
-  pedir_fondos: '💰', hablar_proyecto: '🗣️',
-  poner_cara: '✊',
-  doble: '🏋️', escuchar: '👂',
-  insistir: '🎯', variar: '🎮',
-  esperar: '⏳', jugar_mejores: '⭐', apretar: '💪',
-  honesto: '📋', perdonar: '🤝', distanciarte: '🏃',
-  salir: '🙌', recibir: '🤝',
-  continuar: '➡️',
-  protestar: '📢',
-};
-const EMOJI_OVERRIDE = {
-  'lesion_ocultada:cubrir': '🤫',
-  'lesion_grave:continuar': '🏥',
-  'lesion_figura_prePartido:continuar': '🏥',
-  'lesion_jugador_normal:continuar': '🏥',
-  'suspension_figura_prePartido:continuar': '🟨',
-  'ultimatum_directiva:continuar': '⚠️',
-};
-function getEmoji(eventoId, opcionId) {
-  return EMOJI_OVERRIDE[`${eventoId}:${opcionId}`] || EMOJI_OPCION[opcionId] || '⚡';
-}
-
+// ── Helpers para decisiones estilo COPERO (sin emojis) ──
 function esResultadoPositivo(efectos) {
   let score = 0;
   for (const [k, v] of Object.entries(efectos)) {
@@ -1296,14 +1250,11 @@ const PANTALLAS = {
       return `<div class="stack${tsEntra ? ' ts-anim' : ''}">
         ${marcador()}
         <div class="panel evento stack" style="border-color:rgba(255,91,30,.35)">
-          <div class="eyebrow" style="color:#ff5b1e">⚠️ Notificación — Temporada ${c.temporada}</div>
+          <div class="eyebrow" style="color:#ff5b1e">Notificación — Temporada ${c.temporada}</div>
           <h2>${esc(n.titulo)}</h2>
           <p>${esc(n.texto)}</p>
           <div class="decision-grid single">
             <button class="decision-card grave" data-accion="elegir" data-op="${opcionCat.id}">
-              <div class="decision-visual grave-visual">
-                <span class="decision-emoji">${getEmoji(n.paqueteId, opcionCat.id)}</span>
-              </div>
               <span class="decision-label">${esc(opLabel)}</span>
               <div class="decision-chips">${chipsEsperados(opcionCat)}</div>
             </button>
@@ -1325,9 +1276,6 @@ const PANTALLAS = {
             const variable = !!opcionCat.resultado;
             return `<button class="decision-card" data-accion="elegir" data-op="${o.id}">
               <span class="decision-label">${esc(o.label)}</span>
-              <div class="decision-visual">
-                <span class="decision-emoji">${getEmoji(n.paqueteId, o.id)}</span>
-              </div>
               <div class="decision-chips">
                 ${variable ? decisionResultChips(opcionCat) : chipsEsperados(opcionCat)}
               </div>
