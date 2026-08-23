@@ -1503,6 +1503,45 @@ const _guardarDtDraft = () => {
   localStorage.setItem('dt_draft', JSON.stringify({ nombre: ob.nombre, pais: ob.pais, liga: ob.liga, clubId: ob.clubId, modo: ob.modo, modoJuego: ob.modoJuego, formacion: ob.formacion }));
 };
 const acciones = {
+  'nueva-partida': () => {
+    c = iniciarCarrera(ui.onboarding);
+    ui.vista = 'draft';
+    ui.onboarding.abierto = null;
+    localStorage.removeItem('dt_draft');
+    render();
+  },
+  'ob-modo': (el) => {
+    ui.onboarding.modo = el.dataset.modo;
+    render();
+    _guardarDtDraft();
+  },
+  'ob-formacion': (el) => {
+    ui.onboarding.formacion = el.dataset.id;
+    render();
+    _guardarDtDraft();
+  },
+  'confirmar-ofertas': async () => {
+    await ACCIONES['confirmar-ofertas']();
+  },
+  'vender-oferta': (el) => {
+    const fn = acciones[el.dataset.accion];
+    if (!fn) return;
+    const r = fn(el);
+  },
+};
+
+// Función para guardar el draft del DT
+const _guardarDtDraft = () => {
+  localStorage.setItem('dt_draft', JSON.stringify({
+    nombre: ui.onboarding.nombre,
+    pais: ui.onboarding.pais,
+    liga: ui.onboarding.liga,
+    clubId: ui.onboarding.clubId,
+    modo: ui.onboarding.modo,
+    modoJuego: ui.onboarding.modoJuego,
+    formacion: ui.onboarding.formacion
+  }));
+};
   'ob-modo'(el) { ui.onboarding.modo = el.dataset.modo; render(); _guardarDtDraft(); },
   'ob-formacion'(el) { ui.onboarding.formacion = el.dataset.id; render(); _guardarDtDraft(); },
   'ob-pais'(el) {

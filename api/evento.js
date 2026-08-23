@@ -3,6 +3,9 @@
 // no cae en silencio a otro modelo.
 import { pedirGroq, groqConfigurada, GroqError } from './groq.js';
 
+// Cambiar el modelo obsoleto por uno válido y actual
+const MODELO_ACTUAL = 'llama-3.3-70b-versatile';
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Usá POST' });
 

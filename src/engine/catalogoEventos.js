@@ -34,15 +34,15 @@ export const CATALOGO = [
       {
         id: 'cubrir', label: 'Buscar al responsable puertas adentro',
         resultado: [
-          { prob: 0.6, nota: 'Saltó la ficha del culpable', efectos: { ratingDelta: 1, fatiga: 4 } },
-          { prob: 0.4, nota: 'Generás paranoia en el grupo', efectos: { ratingDelta: -3, presion: 15, moral: -6 }, tramo: { fuerza: -3 } },
+          { prob: 0.6, nota: 'Saltó la ficha del culpable', efectos: { ratingDelta: 1, fatiga: 4, moral: -2 } },
+          { prob: 0.4, nota: 'Generás paranoia en el grupo', efectos: { ratingDelta: -3, presion: 15, moral: -8 }, tramo: { fuerza: -3 } },
         ],
       },
       {
         id: 'bajar', label: 'Bajarle la espuma al tema',
         resultado: [
-          { prob: 0.7, nota: 'El plantel se enfoca en el partido', efectos: { moral: -10, ratingDelta: -1 } },
-          { prob: 0.3, nota: 'Te toman el tiempo y vuelve a pasar', efectos: { moral: -10, ratingDelta: -1, presion: 12 } },
+          { prob: 0.7, nota: 'El plantel se enfoca en el partido', efectos: { moral: -8, ratingDelta: -1, fatiga: 2 } },
+          { prob: 0.3, nota: 'Te toman el tiempo y vuelve a pasar', efectos: { moral: -12, ratingDelta: -1, presion: 12, fatiga: 4 } },
         ],
       },
     ],
@@ -57,15 +57,15 @@ export const CATALOGO = [
       {
         id: 'echar', label: 'Expulsar al detonante del conflicto',
         resultado: [
-          { prob: 0.5, nota: 'el plantel acepta la autoridad del DT', efectos: { moral: 8, ratingDelta: -3 } },
-          { prob: 0.5, nota: 'se fracturan bandos internamente', efectos: { moral: -6, presion: 8, ratingDelta: -3 } },
+          { prob: 0.5, nota: 'el plantel acepta la autoridad del DT', efectos: { moral: 6, ratingDelta: -3, fatiga: 2 } },
+          { prob: 0.5, nota: 'se fracturan bandos internamente', efectos: { moral: -8, presion: 8, ratingDelta: -3, fatiga: 4 } },
         ],
       },
       {
         id: 'perdonar', label: 'Cerrar el conflicto sin expulsiones',
         resultado: [
-          { prob: 0.6, nota: 'la crisis baja de tono', efectos: { moral: 4, fatiga: -2 } },
-          { prob: 0.4, nota: 'la tensión persiste en los entrenamientos', efectos: { moral: -8, presion: 6 } },
+          { prob: 0.6, nota: 'la crisis baja de tono', efectos: { moral: 2, fatiga: -2, presion: -2 } },
+          { prob: 0.4, nota: 'la tensión persiste en los entrenamientos', efectos: { moral: -10, presion: 6, fatiga: 4 } },
         ],
       },
     ],
