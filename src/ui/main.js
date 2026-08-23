@@ -1773,7 +1773,7 @@ const acciones = {
     aplicarRefuerzo(c, [...ui.sel], [...ui.salen]);
     ui.vista = 'once'; ui.slot = null;
   },
-  'elegir-reemplazo'(el) {
+'elegir-reemplazo'(el) {
     const { deltas } = elegirReemplazoLesion(c, el.dataset.id || null);
     ui.deltas = deltas;
     ui.vista = 'previa';
@@ -1788,7 +1788,7 @@ const acciones = {
           <p>Nombre: ${reemplazoData.nombre || 'Desconocido'}</p>
           <p>Posición: ${reemplazoData.posicion || 'Sin datos'}</p>
           <p>Años en plantel: ${reemplazoData.temporadaActual || 'Desconocido'}</p>
-          ${muestraPenalizacion ? <p class="advance-penalizacion">Penalización extra por ser forward joven</p> : ''}
+          ${muestraPenalizacion ? '<p class="advance-penalizacion">Penalización extra por ser forward joven</p>' : ''}
         </div>
       `;
     }
