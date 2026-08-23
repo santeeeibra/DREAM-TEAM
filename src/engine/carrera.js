@@ -97,6 +97,17 @@ export function iniciarCarrera({
   // Modo Club Real: plantelBase trae el plantel del club real ya normalizado.
   // cartasInicialesDB contiene solo el sobre de refuerzo (1 pack de 5 cartas).
   let sobres, plantelFinal;
+/* Implementación de getJugadorPorId */
+
+function getJugadorPorId(id) {
+  // Buscamos en el plantel actual
+  return ui.onboarding.clubes.find(club => {
+    const jugador = club.jugadores.find(j => j.id === id);
+    if (jugador) return jugador;
+  });
+}
+
+
   if (plantelBase?.length) {
     sobres = cartasInicialesDB?.length
       ? cartasInicialesDB.map((s) => cargarCartasDB(s))
@@ -406,6 +417,17 @@ export function resolverEvento(c, opcionId) {
   if (c.tramo >= LIGA.TRAMOS.length) cerrarTemporada(c);
   else c.fase = FASES.TRAMO;
   return { carrera: c, deltas: r.deltas };
+  // Asegurarnos de que el reemplazo es un forward joven si es posible
+  const reemplazoData = getJugadorPorId(reemplazoId);
+
+  if (reemplazoData && remplazoData.posicion === 'DEL' && reemplazoData.temporadaActual < 3) {
+    // Penalización adicional para forwards juveniles
+    c.ratingDelta -= 5;
+    c.fatiga += 15;
+    console.log(`Penalización extra para forward ${reemplazoData.nombre} (temporada: ${reemplazoData.temporadaActual})`);
+  }
+
+
 }
 
 /**

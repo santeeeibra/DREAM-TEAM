@@ -28,21 +28,21 @@ export const CATALOGO = [
     tags: ['individual', 'vestuario'],
     intensidad: INTENSIDAD.ALTA,
     filtro: (c) => !!c.figura && !!c.rival,
-    titulo: 'Llegó tarde y oliendo a fiesta',
-    texto: '{figura} apareció pasada la medianoche, después de estar en un boliche. Mañana jugás con {rival} y todo el plantel ya se enteró.',
+    titulo: '{figura} salió la noche antes del clásico',
+    texto: 'El periodista del canal más visto lo filmó saliendo de un boliche a las 3 AM, con la cara del rival aún pegada en las redes. Mañana es el clásico contra {rival} y la prensa ya armó la nota. El plantel entero te mira para ver qué hacés.',
     opciones: [
       {
-        id: 'cubrir', label: 'Cubrirlo y que juegue igual',
+        id: 'cubrir', label: 'Protegerlo públicamente y bancarlo',
         resultado: [
-          { prob: 0.6, nota: 'rinde normal, nadie se entera afuera', efectos: { ratingDelta: 1, fatiga: 4 } },
-          { prob: 0.4, nota: 'sale mal y explota en la prensa', efectos: { ratingDelta: -3, presion: 15, moral: -6 }, tramo: { fuerza: -3 } },
+          { prob: 0.6, nota: 'rinde normal, la historia muere en 48 horas', efectos: { ratingDelta: 1, fatiga: 4 } },
+          { prob: 0.4, nota: 'sale mal: titular en todos los noticieros', efectos: { ratingDelta: -3, presion: 15, moral: -6 }, tramo: { fuerza: -3 } },
         ],
       },
       {
-        id: 'bajar', label: 'Dejarlo afuera del banco',
+        id: 'bajar', label: 'Sacarlo del plantel como ejemplo',
         resultado: [
-          { prob: 0.7, nota: 'el plantel se enfoca igual', efectos: { moral: -10, ratingDelta: -1 } },
-          { prob: 0.3, nota: 'igual se filtra a la prensa', efectos: { moral: -10, ratingDelta: -1, presion: 12 } },
+          { prob: 0.7, nota: 'el grupo entiende que no hay atajos', efectos: { moral: -10, ratingDelta: -1 } },
+          { prob: 0.3, nota: 'el filtrado llega igual y se suma la sanción', efectos: { moral: -10, ratingDelta: -1, presion: 12 } },
         ],
       },
     ],
@@ -51,21 +51,21 @@ export const CATALOGO = [
     tags: ['vestuario'],
     intensidad: INTENSIDAD.ALTA,
     filtro: (c) => c.moral <= 50,
-    titulo: 'Se fueron a las manos en el vestuario',
-    texto: 'Dos titulares terminaron a las trompadas después de la derrota. Los separaron entre todos, pero ambos te piden que eches al otro.',
+    titulo: 'Escándalo en el vestuario post-partido',
+    texto: 'Dos titulares se agarraron a las piñas en el pasillo del vestuario después de la goleada. Los separó elutilero, pero la grieta quedó abierta. Cada uno te pide que eches al otro del grupo.',
     opciones: [
       {
-        id: 'echar', label: 'Echar al que empezó todo',
+        id: 'echar', label: 'Expulsar al detonante del conflicto',
         resultado: [
-          { prob: 0.5, nota: 'el plantel lo acepta', efectos: { moral: 8, ratingDelta: -3 } },
-          { prob: 0.5, nota: 'el plantel se divide', efectos: { moral: -6, presion: 8, ratingDelta: -3 } },
+          { prob: 0.5, nota: 'el plantel acepta la autoridad del DT', efectos: { moral: 8, ratingDelta: -3 } },
+          { prob: 0.5, nota: 'se fracturan bandos internamente', efectos: { moral: -6, presion: 8, ratingDelta: -3 } },
         ],
       },
       {
-        id: 'perdonar', label: 'Hablar con los dos y perdonar',
+        id: 'perdonar', label: 'Cerrar el conflicto sin expulsiones',
         resultado: [
-          { prob: 0.6, nota: 'se calma', efectos: { moral: 4, fatiga: -2 } },
-          { prob: 0.4, nota: 'sigue la tensión toda la temporada', efectos: { moral: -8, presion: 6 } },
+          { prob: 0.6, nota: 'la crisis baja de tono', efectos: { moral: 4, fatiga: -2 } },
+          { prob: 0.4, nota: 'la tensión persiste en los entrenamientos', efectos: { moral: -8, presion: 6 } },
         ],
       },
     ],
@@ -74,21 +74,21 @@ export const CATALOGO = [
     tags: ['vestuario', 'prensa'],
     intensidad: INTENSIDAD.MEDIA,
     filtro: (c) => c.tramo >= 1,
-    titulo: 'El capitán habló de más en la radio',
-    texto: 'Dijo en una nota que "el equipo no juega bien por el sistema". No te avisó antes. Ahora todos esperan tu respuesta.',
+    titulo: 'El capitán cuestionó tu esquema en la radio',
+    texto: 'En una entrevista post-partido dijo que "hay jugadores incómodos con el sistema" y que "hay que ser honestos con la gente". La interpretación de la prensa fue un mazazo: te están descolgando en vivo.',
     opciones: [
       {
-        id: 'confrontar', label: 'Confrontarlo puertas adentro',
+        id: 'confrontar', label: 'Bajar línea fuerte en el vestuario',
         resultado: [
-          { prob: 0.7, nota: 'se arregla', efectos: { moral: 5, presion: -3 } },
-          { prob: 0.3, nota: 'se va con el problema al presidente', efectos: { moral: -6, presion: 10 } },
+          { prob: 0.7, nota: 'el capitán acepta y baja la intensidad', efectos: { moral: 5, presion: -3 } },
+          { prob: 0.3, nota: 'escala al presidente directamente', efectos: { moral: -6, presion: 10 } },
         ],
       },
       {
-        id: 'ignorar', label: 'Dejarlo pasar sin decir nada',
+        id: 'ignorar', label: 'Hablarlo a solas y escuchar su postura',
         resultado: [
-          { prob: 0.55, nota: 'se olvida', efectos: { presion: -2 } },
-          { prob: 0.45, nota: 'otros empiezan a hablar también', efectos: { moral: -7, presion: 6 } },
+          { prob: 0.55, nota: 'encuentran un punto medio', efectos: { presion: -2 } },
+          { prob: 0.45, nota: 'otros jugadores empiezan a cuestionar también', efectos: { moral: -7, presion: 6 } },
         ],
       },
     ],
@@ -97,12 +97,12 @@ export const CATALOGO = [
     tags: ['plantel', 'hinchada'],
     intensidad: INTENSIDAD.ALTA,
     filtro: (c) => c.temporada >= 3,
-    titulo: 'El histórico del club te pidió firmar',
-    texto: 'Ya no rinde como antes, pero es un símbolo y quiere retirarse con esta camiseta. La hinchada lo sabe y lo espera.',
+    titulo: 'Ídolo de plantel pide retirarse',
+    texto: 'El capitán más querido del plantel se acercó a vos para decirte que esta es su última temporada. No rinde como antes, pero es símbolo y la hinchada lo exige. La dirigencia debe decidir si renovar o dejar ir.',
     opciones: [
-      { id: 'firmar', label: 'Firmarlo para que cierre acá', efectos: { presion: -10, moral: 12, ratingDelta: -2 } },
+      { id: 'firmar', label: 'Renovarlo por una temporada más', efectos: { presion: -10, moral: 12, ratingDelta: -2 } },
       {
-        id: 'rechazar', label: 'Rechazarlo, priorizar el rendimiento',
+        id: 'rechazar', label: 'Facilitar su retiro con dignidad',
         resultado: [
           { prob: 0.4, nota: 'la hinchada lo entiende', efectos: { presion: 2, moral: -3 } },
           { prob: 0.6, nota: 'presión por "traicionar al ídolo"', efectos: { presion: 20, moral: -8 } },
@@ -279,18 +279,18 @@ export const CATALOGO = [
     tags: ['individual', 'mercado'],
     intensidad: INTENSIDAD.MEDIA,
     filtro: (c) => !!c.figura && c.temporada >= 2,
-    titulo: '{figura} filtró que no renueva',
-    texto: 'Quiere duplicar el sueldo o se va libre a fin de año. El club no tiene ese presupuesto y vos te enteraste por la prensa.',
+    titulo: '{figura} demanda aumento salarial',
+    texto: 'El jugador demanda duplicar su sueldo o se irá libre al finalizar el contrato. El club no tiene ese presupuesto y te enteraste a través de la prensa.',
     opciones: [
       {
-        id: 'pedir_fondos', label: 'Pedirle el esfuerzo al presidente',
+        id: 'pedir_fondos', label: 'Solicitarle aumento salarial al presidente',
         resultado: [
           { prob: 0.5, nota: 'consiguen los fondos', efectos: { money: -8, moral: 6 } },
           { prob: 0.5, nota: 'te dicen que lo vendas', efectos: { presion: 10, moral: -4 } },
         ],
       },
       {
-        id: 'hablar_proyecto', label: 'Convencerlo con el proyecto deportivo',
+        id: 'hablar_proyecto', label: 'Gestionar su continuidad en el club',
         resultado: [
           { prob: 0.6, nota: 'convencido, sigue', efectos: { moral: 5 } },
           { prob: 0.4, nota: 'igual se va, mal parado', efectos: { money: 10, ratingDelta: -5, moral: -6 } },
@@ -302,8 +302,8 @@ export const CATALOGO = [
     tags: ['individual'],
     intensidad: INTENSIDAD.MEDIA,
     filtro: (c) => !!c.figura && c.tramo >= 2,
-    titulo: '{figura} jugó lesionado sin avisarte',
-    texto: 'Te confesó después de la derrota que sintió un tirón en la entrada en calor y no dijo nada. Te pide que no lo expongas.',
+    titulo: '{figura} oculta su condición física',
+    texto: 'Después de la derrota, el jugador confesó que sintió un tirón en la entrada en calor pero prefirió no decir nada para poder jugar el próximo partido. Te pide que no lo expongas ante el cuerpo médico.',
     opciones: [
       {
         id: 'cubrir', label: 'Cubrirlo frente al cuerpo médico',
@@ -313,7 +313,7 @@ export const CATALOGO = [
         ],
       },
       {
-        id: 'honesto', label: 'Ser honesto con el club',
+        id: 'honesto', label: 'Sé honesto con el cuerpo médico',
         resultado: [
           { prob: 0.55, nota: 'el jugador lo entiende', efectos: { presion: -4 } },
           { prob: 0.45, nota: 'te odia para siempre', efectos: { moral: -10 } },
@@ -325,8 +325,8 @@ export const CATALOGO = [
     tags: ['juveniles'],
     intensidad: INTENSIDAD.BAJA,
     filtro: (c) => c.temporada >= 2,
-    titulo: 'Tu juvenil pide salir a préstamo',
-    texto: 'Tiene diecinueve años, no consigue minutos y hay un club esperando para llevárselo seis meses. Vos lo necesitás como recambio.',
+    titulo: 'Tu juvenil sin minutos busca salida',
+    texto: 'El juvenil de 19 años no consigue minutos y un club extranjero quiere quedárselo a préstamo por seis meses. Vos lo necesitás como recambio, pero arriesgás perderlo.',
     opciones: [
       {
         id: 'dejar_ir', label: 'Dejarlo ir a préstamo',
@@ -336,7 +336,7 @@ export const CATALOGO = [
         ],
       },
       {
-        id: 'retener', label: 'Retenerlo en el plantel',
+        id: 'retener', label: 'Retenerlo para el proyecto',
         resultado: [
           { prob: 0.55, nota: 'rinde cuando entra', efectos: { ratingDelta: 2, moral: 2 } },
           { prob: 0.45, nota: 'se cierra emocionalmente', efectos: { moral: -5 } },
