@@ -1747,6 +1747,21 @@ const acciones = {
     const { deltas } = elegirReemplazoLesion(c, el.dataset.id || null);
     ui.deltas = deltas;
     ui.vista = 'previa';
+    // Vista previa de selección de replacement
+    if (ui.vista === 'previa') {
+      const reemplazoData = getJugadorPorId(ui.deltas.reemplazoId);
+      const muestraPenalizacion = reemplazoData && reemplazoData.posicion === 'DEL' && reemplazoData.temporadaActual < 3;
+
+      return `...
+        <div class="previa-details">
+          <strong>Jugador seleccionado:</strong>
+          <p>Nombre: ${reemplazoData.nombre || 'Desconocido'}</p>
+          <p>Posición: ${reemplazoData.posicion || 'Sin datos'}</p>
+          <p>Años en plantel: ${reemplazoData.temporadaActual || 'Desconocido'}</p>
+          ${muestraPenalizacion ? <p class="advance-penalizacion">Penalización extra por ser forward joven</p> : ''}
+        </div>
+      `;
+    }
   },
   tabla() { ui.tabla = !ui.tabla; },
   reiniciar() {
