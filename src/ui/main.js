@@ -1234,6 +1234,11 @@ const PANTALLAS = {
     const n = c.eventoActual.narracion;
     const p = paquete(n.paqueteId);
 
+    // MAGIA ACÁ: Armamos un prompt en inglés usando el título del evento. 
+    const promptImg = `cinematic dramatic scene, football manager game, ${n.titulo}`;
+    // Usamos Pollinations para generarla al vuelo (800x350px)
+    const imgEscena = n.imagen ? esc(n.imagen) : `https://image.pollinations.ai/prompt/${encodeURIComponent(promptImg)}?width=800&height=350&nologo=true`;
+
     // Evento grave: notificación forzada sin elección A/B
     if (p.grave) {
       const opcionCat = p.opciones[0];
@@ -1241,6 +1246,7 @@ const PANTALLAS = {
         ${marcador()}
         <div class="panel evento stack" style="border-color:rgba(255,91,30,.35)">
           <div class="eyebrow" style="color:#ff5b1e">⚠️ Notificación — Temporada ${c.temporada}</div>
+          <img src="${imgEscena}" class="evento-img" alt="Escena" loading="lazy" onerror="this.style.display='none'">
           <h2>${esc(n.titulo)}</h2>
           <p>${esc(n.texto)}</p>
           <div class="grave-impacto"><div class="chips grave-chips">${chipsEsperados(opcionCat)}</div></div>
@@ -1249,10 +1255,12 @@ const PANTALLAS = {
       </div>`;
     }
 
+    // Evento normal con decisiones
     return `<div class="stack${tsEntra ? ' ts-anim' : ''}">
       ${marcador()}
       <div class="panel evento stack">
         <div class="eyebrow">Temporada ${c.temporada} · Decisión ${c.tramo + 1}</div>
+        <img src="${imgEscena}" class="evento-img" alt="Escena" loading="lazy" onerror="this.style.display='none'">
         <h2>${esc(n.titulo)}</h2>
         <p>${esc(n.texto)}</p>
         <div class="stack">
@@ -1268,7 +1276,7 @@ const PANTALLAS = {
               <button class="opcion-main" data-accion="elegir" data-op="${o.id}">
                 <div class="opcion-top">
                   <span class="opcion-label">${esc(o.label)}</span>
-                  ${variable ? `<span class="riesgo-tag">🎲 resultado incierto</span>` : `<span class="riesgo-tag directo">✓ resultado directo</span>`}
+                  ${variable ? '<span class="riesgo-tag">🎲 resultado incierto</span>' : '<span class="riesgo-tag directo">✓ resultado directo</span>'}
                 </div>
                 <div class="expected-chips">${chipsEsperados(opcionCat)}</div>
               </button>
@@ -1277,37 +1285,10 @@ const PANTALLAS = {
             </div>`;
           }).join('')}
         </div>
-
       </div>
     </div>`;
   },
-
-  lesion: () => {
-    const porId = new Map(c.plantel.map((x) => [x.id, x]));
-    const lesionado = porId.get(c.lesionadoId);
-    const onceSet = new Set(c.once);
-    const suplentes = c.plantel.filter((j) => !onceSet.has(j.id));
-    return `<div class="stack${tsEntra ? ' ts-anim' : ''}">
-      ${marcador()}
-      <div class="panel stack" style="border-color:rgba(255,91,30,.35)">
-        <div class="eyebrow" style="color:#ff5b1e">⚠️ Baja obligatoria — Temporada ${c.temporada}</div>
-        <h2>🚑 Lesión de 3 semanas</h2>
-        ${lesionado ? `<p><strong>${esc(lesionado.nombre)}</strong> (${esc(lesionado.pos)} · ${lesionado.rating}) estará fuera el próximo tramo.</p>` : ''}
-        ${suplentes.length === 0
-          ? `<p class="hint">No hay suplentes disponibles. El equipo juega con el plantel corto.</p>
-             <p style="color:#ff5b1e">−2 ratingDelta automático.</p>
-             <button class="btn" data-accion="elegir-reemplazo" data-id="">Continuar</button>`
-          : `<p class="hint">Elegí quién entra al once en su lugar:</p>
-             <div class="stack">${suplentes.map((j) => `
-               <button class="opcion-main" data-accion="elegir-reemplazo" data-id="${j.id}">
-                 <span>${esc(j.nombre)}</span>
-                 <span class="muted">${esc(j.pos)} · ${j.rating}</span>
-               </button>`).join('')}
-             </div>`}
-      </div>
-    </div>`;
-  },
-
+  
   resumen: () => {
     const t = c.ultimaTemporada;
     return `<div class="stack${tsEntra ? ' ts-anim' : ''}">
