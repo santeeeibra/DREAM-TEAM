@@ -690,6 +690,44 @@ function esResultadoPositivo(efectos) {
   return score >= 0;
 }
 
+// ── Funciones para el diseño de decisiones ──
+function renderDecisionOption(option) {
+  const { label, efectos, prob } = option;
+  const probLabel = probLabel(prob);
+  const isPositive = esResultadoPositivo(efectos);
+  const colorClass = isPositive ? 'positive' : 'negative';
+  return `
+    <div class="decision-option ${colorClass}">
+      <h3>${label}</h3>
+      <div class="probability">${probLabel}</div>
+      <div class="effects">${renderEffects(efectos)}</div>
+    </div>
+  `;
+}
+
+function renderEffects(efectos) {
+  return Object.entries(efectos).map(([key, value]) => {
+    const icon = ICONO[key];
+    const name = NOMBRE_VAR[key];
+    const delta = value > 0 ? `+${value}` : value;
+    const direction = MALO_SI_SUBE.has(key) ? (value > 0 ? '↓' : '↑') : (value > 0 ? '↑' : '↓');
+    return `
+      <div class="effect">
+        <span class="icon">${icon}</span>
+        <span class="name">${name}</span>
+        <span class="delta">${delta}</span>
+        <span class="direction">${direction}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+function probLabel(prob) {
+  if (prob >= 0.65) return 'Lo más probable';
+  if (prob >= 0.45) return 'Posible';
+  return 'Menos probable';
+}
+
 function decisionResultChips(opcionCat) {
   if (!opcionCat.resultado) return chipsEsperados(opcionCat);
   return opcionCat.resultado.map(r => {

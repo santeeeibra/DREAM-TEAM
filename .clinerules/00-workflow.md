@@ -1,42 +1,50 @@
-# Modo de trabajo — SIEMPRE ACTIVO
+# Workflow — OBLIGATORIO EN CADA TAREA
 
-Trabajás en Dream Team. Seguí este ciclo en toda tarea, sin excepción.
+## PASO 0 — Antes de cualquier cosa
+Leer `MAPA-CODIGO.md` en la raíz del proyecto.
+Este archivo lista todos los archivos y sus funciones con número de línea.
+Usarlo para ubicar el código relevante SIN hacer búsquedas adicionales.
 
-## Ciclo por tarea
-1. **EXPLORAR** — Solo si el usuario NO especificó archivo y línea exacta.
-    Si el usuario ya dio el archivo y el fragmento a cambiar, ir directo a EDITAR.
-    Usar `graphify query` para orientación rápida antes de leer archivos crudos.
-2. **PLAN** — Solo si la tarea toca 3+ archivos. Para 1-2 archivos, editar directo.
-3. **EDITAR** — `replace_in_file` siempre. Nunca reescribir un archivo entero.
-   Un cambio conceptual por vez.
-4. **VERIFICAR** — Corré el harness / build y leé el error real antes de
-   proponer el siguiente cambio. No encadenes fixes a ciegas.
+Si `MAPA-CODIGO.md` no existe, pedirle al usuario que ejecute:
+`.\generar-mapa.ps1` desde `D:\dev\dream-team`
 
-## Reglas duras
-- No refactorizar nada que no te pedí.
-- No agregar dependencias sin preguntar.
-- No crear archivos nuevos si se puede editar uno existente.
-- Si hay ambigüedad, preguntá UNA cosa concreta. No adivines.
-- Respuestas cortas: sin resúmenes largos, sin explicar lo obvio,
-  sin repetir el código que ya edité.
-- Si un cambio falla 2 veces seguidas, PARÁ y contame qué viste.
-- No des nada por confirmado sin re-verificar en el archivo real.
+## PASO 1 — Identificar el objetivo
+Con el mapa en mano, declarar:
+- Archivo exacto a modificar (con path completo)
+- Número de línea aproximado
+- Nombre de la función/bloque a tocar
 
-## Contexto del proyecto
-- Stack: Vite + DOM (HTML/CSS/JS en `src/ui/`) + Supabase + Vercel.
-  Serverless en `api/`. No hay Phaser: la capa visual es DOM y el motor
-  es lógica pura Node. Si algún día se migra, se reemplaza `src/ui/`.
-- IA runtime: GROQ vía proxy serverless (`api/evento.js`). La key nunca
-  va al cliente.
-- Loop: crear DT en una de 3 ligas → draft inicial de tu liga (3 sobres
-  × 5 cartas, `openInitialPacks`) → armar 11 → temporada por tramos →
-  resumen → sobre de refuerzo (`open-pack`) → siguiente temporada (8 por
-  carrera).
-- Estado del juego: money, moral, fatiga, presión, rating-delta.
-  Fatiga y presión: SUBIR ES MALO.
+Esperar confirmación antes de continuar.
 
-## Antipatrones — si detectás uno, avisá antes de seguir
-- Dos sistemas paralelos haciendo lo mismo sin decidir cuál queda.
-- Fallback silencioso en configuración (en lógica de eventos sí va).
-- Código escrito pero nunca cableado a nada.
-- Mocks con un shape distinto al real.
+## PASO 2 — Leer SOLO lo necesario
+Leer únicamente la función o sección identificada en el mapa.
+Máximo 2 archivos por tarea sin confirmación explícita.
+NUNCA leer main.js completo (1400+ líneas).
+
+## PASO 3 — Proponer el cambio
+Mostrar exactamente qué líneas cambian y cómo.
+Formato: línea actual → línea nueva.
+Esperar "ok" o "adelante" antes de editar.
+
+## PASO 4 — Editar quirúrgicamente
+Usar str_replace apuntando al bloque exacto.
+Si falla el str_replace, leer SOLO las líneas del entorno (±20 líneas)
+y volver a intentar. No leer el archivo completo.
+
+## PASO 5 — Confirmar
+Declarar qué se cambió y en qué líneas.
+No hacer cambios adicionales no solicitados.
+
+---
+
+## Entorno de desarrollo
+- Stack: Vanilla JS ES Modules + HTML5 + CSS puro. Sin frameworks.
+- Modelo: LiteLLM proxy (localhost:4000) con fallback automático
+- Si hay error de conexión, el proxy no está corriendo
+- Proyecto: D:\dev\dream-team
+- Mapa del código: D:\dev\dream-team\MAPA-CODIGO.md
+
+## Reglas de busqueda
+- Buscar siempre en el MAPA-CODIGO.md primero
+- Si necesitas grep: `findstr /s /n "termino" src\*.js`
+- Nunca usar herramientas internas como graphify para buscar código

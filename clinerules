@@ -1,0 +1,53 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║  .clinerules — Dream Team (Modo Carrera DT)                      ║
+# ║  Pegar este archivo en la RAÍZ del repositorio del juego        ║
+# ╚══════════════════════════════════════════════════════════════════╝
+#
+# PROPÓSITO: Con 45+ archivos y 12.000+ líneas, Cline puede intentar
+# leer todo el repo de golpe y colapsar la ventana de contexto.
+# Estas reglas lo fuerzan a trabajar de forma modular y eficiente.
+
+## REGLA 1 — LECTURA MODULAR (la más importante)
+Antes de cualquier tarea, lee SOLO los archivos directamente
+relevantes para esa tarea. Nunca leas más de 4 archivos de código
+fuente en una misma lectura inicial. Si necesitas más contexto,
+pedilo explícitamente antes de actuar.
+
+## REGLA 2 — PROHIBIDO reescribir archivos completos
+Nunca reemplaces un archivo completo. Usa siempre ediciones
+quirúrgicas (str_replace o diff patches) apuntando exactamente
+a la función o bloque que debe cambiar. Si un archivo tiene más
+de 300 líneas, esta regla es OBLIGATORIA.
+
+## REGLA 3 — STACK TECNOLÓGICO
+Este proyecto usa EXCLUSIVAMENTE:
+- Vanilla JavaScript con ES Modules (import/export)
+- HTML5 sin frameworks
+- CSS puro sin preprocesadores
+- Sin TypeScript, sin bundlers, sin npm packages en runtime
+
+No sugerir ni introducir dependencias externas, frameworks,
+ni cambios de arquitectura. Respetar los módulos existentes.
+
+## REGLA 4 — ANTES DE CADA TAREA, DECLARÁ:
+1. Qué archivos vas a leer
+2. Qué archivo(s) vas a modificar
+3. Cuál es el cambio exacto (en una línea)
+
+Luego esperar confirmación antes de proceder.
+
+## REGLA 5 — CONTEXTO DEL PROYECTO
+Es un juego de gestión de fútbol (tipo Modo Carrera / FM).
+Las mecánicas principales incluyen: plantel, transferencias,
+tácticas, simulación de partidos, temporadas, tabla de posiciones.
+Al proponer soluciones, respetar las convenciones de nombres
+y estructura modular ya existentes en el proyecto.
+
+## REGLA 6 — MANEJO DE ERRORES
+Si un archivo a modificar no está en tu contexto actual,
+léelo primero. No asumas la estructura de un archivo
+que no has leído en esta sesión.
+
+## REGLA 7 — RESPUESTAS CORTAS
+Dar respuestas concisas. No incluir explicaciones extensas
+a menos que se pidan. Priorizar código funcional sobre prosa.

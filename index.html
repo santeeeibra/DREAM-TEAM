@@ -311,10 +311,23 @@ input:focus,select:focus,button:focus-visible{outline:2px solid var(--fluor);out
 .grave-impacto{display:flex;justify-content:center;padding:4px 0 10px}
 .grave-chips{justify-content:center}
 .grave-continuar{margin-top:4px}
-/* decision grid – estilo COPERO (dos tarjetas lado a lado) */
-.decision-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}
-.decision-grid.single{grid-template-columns:1fr;max-width:380px;margin-inline:auto}
-@media(max-width:600px){.decision-grid{grid-template-columns:1fr}}
+/* decision grid – estilo COPERO (una tarjeta debajo de la otra) */
+.decision-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  margin-top: 16px;
+}
+.decision-grid.single {
+  grid-template-columns: 1fr;
+  max-width: 380px;
+  margin-inline: auto;
+}
+@media (max-width: 600px) {
+  .decision-grid {
+    grid-template-columns: 1fr;
+  }
+}
 .decision-card{
   display:flex;flex-direction:column;gap:10px;padding:18px 16px;
   border:1px solid var(--linea);border-radius:var(--r);background:rgba(255,255,255,.03);

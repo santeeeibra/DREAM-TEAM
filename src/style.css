@@ -562,6 +562,66 @@ body {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+/* ── Layout de decisiones estilo COPERO ── */
+.decision-grid {
+  display: grid;
+/* ── Layout de decisiones estilo COPERO ── */
+.decision-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.decision-option {
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.decision-option.positive {
+  background-color: #e6f7e6;
+}
+
+.decision-option.negative {
+  background-color: #f7e6e6;
+}
+
+.probability {
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.effects {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.effect {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon {
+  font-size: 1.2em;
+}
+
+.name {
+  flex-grow: 1;
+}
+
+.delta {
+  font-weight: bold;
+}
+
+.direction {
+  font-size: 0.9em;
+  color: #666;
+}
   margin-top: 16px;
 }
 .decision-grid.single {
