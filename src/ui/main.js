@@ -868,7 +868,7 @@ function marcador() {
           <path d="M6 32 A26 26 0 0 1 58 32" stroke="${stroke}" stroke-width="5" stroke-linecap="round" fill="none"
             style="stroke-dasharray:${circum};stroke-dashoffset:${offset};transition:stroke-dashoffset .6s cubic-bezier(.2,.7,.2,1),stroke .3s"/>
         </svg>
-        ${d ? `<span class="gauge-delta ${ui.preClick ? 'pour' : ''} ${d === 0 ? '' : (MALO_SI_SUBE.has(k) ? d < 0 : d > 0) ? 'pos' : 'neg'}" style="${ui.preClick ? `animation-delay:${['money','moral','fatiga','presion','ratingDelta'].indexOf(k) * 50}ms` : ''}">${signoDelta(k, d)}${Math.abs(d)}</span>` : ''}
+        ${d ? `<span class="gauge-delta ${ui.preClick ? 'pour' : ''} ${d === 0 ? '' : (MALO_SI_SUBE.has(k) ? d < 0 : d > 0) ? 'pos' : 'neg'}" style="${ui.preClick ? `animation-delay:${['money','moral','fatiga','presion','ratingDelta'].indexOf(k) * 50}ms` : ''}">${ICONO[k]}</span>` : ''}
       </div>
       <div class="gauge-arc-val">${dv}</div>
       <div class="gauge-lbl">${ICONO[k]} ${NOMBRE_VAR[k]}</div>
@@ -1868,7 +1868,7 @@ const _guardarDtDraft = () => {
     ui.onboarding = { liga: null, clubes: [], clubId: '', nombre: '', pais: '', cargando: false, error: null, enviando: false, abierto: null, modo: 'facil', modoJuego: 'liga', formacion: '4-3-3' };
   },
   'ver-guia'() { ui.vistaAnterior = ui.vista; ui.vista = 'guia'; },
-  volver() { ui.vista = ui.vistaAnterior || 'intro'; },
+  volver() { ui.vista = ui.vistaAnterior || 'intro'; }
 };
 
 app.addEventListener('click', async (e) => {
