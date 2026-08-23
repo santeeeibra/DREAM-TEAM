@@ -28,21 +28,21 @@ export const CATALOGO = [
     tags: ['individual', 'vestuario'],
     intensidad: INTENSIDAD.ALTA,
     filtro: (c) => !!c.figura && !!c.rival,
-    titulo: '{figura} salió la noche antes del clásico',
-    texto: 'El periodista del canal más visto lo filmó saliendo de un boliche a las 3 AM, con la cara del rival aún pegada en las redes. Mañana es el clásico contra {rival} y la prensa ya armó la nota. El plantel entero te mira para ver qué hacés.',
+    titulo: 'HAY UN TOPO: SE FILTRÓ EL EQUIPO',
+    texto: 'Alguien de adentro le vendió el equipo a la prensa antes de la charla técnica. El vestuario está picado y no sabés quién fue el buchón.',
     opciones: [
       {
-        id: 'cubrir', label: 'Protegerlo públicamente y bancarlo',
+        id: 'cubrir', label: 'Buscar al responsable puertas adentro',
         resultado: [
-          { prob: 0.6, nota: 'rinde normal, la historia muere en 48 horas', efectos: { ratingDelta: 1, fatiga: 4 } },
-          { prob: 0.4, nota: 'sale mal: titular en todos los noticieros', efectos: { ratingDelta: -3, presion: 15, moral: -6 }, tramo: { fuerza: -3 } },
+          { prob: 0.6, nota: 'Saltó la ficha del culpable', efectos: { ratingDelta: 1, fatiga: 4 } },
+          { prob: 0.4, nota: 'Generás paranoia en el grupo', efectos: { ratingDelta: -3, presion: 15, moral: -6 }, tramo: { fuerza: -3 } },
         ],
       },
       {
-        id: 'bajar', label: 'Sacarlo del plantel como ejemplo',
+        id: 'bajar', label: 'Bajarle la espuma al tema',
         resultado: [
-          { prob: 0.7, nota: 'el grupo entiende que no hay atajos', efectos: { moral: -10, ratingDelta: -1 } },
-          { prob: 0.3, nota: 'el filtrado llega igual y se suma la sanción', efectos: { moral: -10, ratingDelta: -1, presion: 12 } },
+          { prob: 0.7, nota: 'El plantel se enfoca en el partido', efectos: { moral: -10, ratingDelta: -1 } },
+          { prob: 0.3, nota: 'Te toman el tiempo y vuelve a pasar', efectos: { moral: -10, ratingDelta: -1, presion: 12 } },
         ],
       },
     ],
@@ -51,8 +51,8 @@ export const CATALOGO = [
     tags: ['vestuario'],
     intensidad: INTENSIDAD.ALTA,
     filtro: (c) => c.moral <= 50,
-    titulo: 'Escándalo en el vestuario post-partido',
-    texto: 'Dos titulares se agarraron a las piñas en el pasillo del vestuario después de la goleada. Los separó elutilero, pero la grieta quedó abierta. Cada uno te pide que eches al otro del grupo.',
+    titulo: 'EL VESTUARIO ESTÁ PICADO',
+    texto: 'Dos titulares se agarraron a las piñas en el pasillo del vestuario después de la goleada. Los separó el utilero, pero la grieta quedó abierta. Cada uno te pide que eches al otro del grupo.',
     opciones: [
       {
         id: 'echar', label: 'Expulsar al detonante del conflicto',

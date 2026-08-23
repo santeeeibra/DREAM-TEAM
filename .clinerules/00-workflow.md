@@ -48,3 +48,8 @@ No hacer cambios adicionales no solicitados.
 - Buscar siempre en el MAPA-CODIGO.md primero
 - Si necesitas grep: `findstr /s /n "termino" src\*.js`
 - Nunca usar herramientas internas como graphify para buscar código
+
+## Herramientas permitidas para editar archivos
+- Usar SIEMPRE: write_to_file o apply_diff
+- NUNCA usar: editor, edit_file, o cualquier otra variante
+- Los archivos tienen line endings CRLF (Windows)
