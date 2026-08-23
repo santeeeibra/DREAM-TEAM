@@ -722,12 +722,6 @@ function renderEffects(efectos) {
   }).join('');
 }
 
-function probLabel(prob) {
-  if (prob >= 0.65) return 'Lo más probable';
-  if (prob >= 0.45) return 'Posible';
-  return 'Menos probable';
-}
-
 function decisionResultChips(opcionCat) {
   if (!opcionCat.resultado) return chipsEsperados(opcionCat);
   return opcionCat.resultado.map(r => {
