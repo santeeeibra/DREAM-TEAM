@@ -929,7 +929,6 @@ const PANTALLAS = {
         : ob.clubes.length === 0
           ? 'No hay clubes para esta liga'
           : clubSel ? clubSel.name : 'Elegí tu club';
-    // Ficha viva: cada campo completado se ve reflejado al instante en la tarjeta.
     const nombre = ob.nombre.trim() || 'DT';
     const inicial = (nombre[0] || 'D').toUpperCase();
     const fichaCompleta = !!(ob.nombre.trim() && ob.pais && ob.liga && ob.clubId);
@@ -948,7 +947,6 @@ const PANTALLAS = {
           ${paso('Contrato', !!ob.enviando)}
         </nav>
       </header>
-
       <div class="ob-layout">
         <div class="panel ob-form stack" role="form">
           <label class="eyebrow" for="ob-dt">Tu nombre</label>
@@ -1014,7 +1012,6 @@ const PANTALLAS = {
           ${ob.error ? `<p class="aviso">${esc(ob.error)}</p>` : ''}
           <button class="btn ob-cta" data-accion="ob-confirmar" ${ob.enviando ? 'disabled' : ''}>${ob.enviando ? 'Creando perfil…' : 'Firmar contrato'}</button>
         </div>
-
         <aside class="ob-ficha${fichaCompleta ? ' lista' : ''}" aria-live="polite">
           <div class="ob-ficha-id">
             <div class="ob-ficha-avatar"><span id="ob-ficha-inicial">${inicial}</span></div>
@@ -1057,49 +1054,40 @@ const PANTALLAS = {
       </div>
       <h2>Las cinco variables</h2>
       <p class="hint">Todo lo que te pasa en el club se reduce a estos cinco números. No hay nada oculto: cada decisión te muestra exactamente qué mueve, con los mismos íconos que vas a ver en los eventos.</p>
-
       <div class="panel stack">
         <h3>💰 Plata</h3>
         <p>Lo que tenés para reforzar el plantel. Sube por rendimiento (algo entra cada tramo por sponsors) y por vender jugadores en el sobre de refuerzo; baja cuando fichás o cuando el club te castiga en decisiones caras. No tiene techo de "peligro" — simplemente si no tenés, no podés fichar.</p>
       </div>
-
       <div class="panel stack">
         <h3>😊 Moral</h3>
         <p>Qué tan unido y confiado está el plantel. <b>Sube o baja el rendimiento del equipo directamente</b>: por encima de 50 suma fuerza en cada partido, por debajo resta. También tiende a volver sola hacia el medio (50) con el tiempo — no se queda pegada arriba ni abajo para siempre.</p>
         <p class="hint">Bajo ~40: el equipo empieza a rendir por debajo de su rating real. Es la variable que más rápido te hunde si la descuidás en varias decisiones seguidas.</p>
       </div>
-
       <div class="panel stack">
         <h3>🔋 Fatiga</h3>
         <p>El desgaste físico del plantel. Sube solo con cada tramo jugado (7 partidos cansan, no hay forma de evitarlo del todo) y se resetea fuerte en el receso entre temporadas. <b>Resta fuerza al equipo</b> cuanto más alta está — un plantel reventado juega peor aunque tenga el mismo rating en el papel.</p>
         <p class="hint">Arriba de ~60: empezás a notarlo en los resultados. Las decisiones de "descanso" existen justamente para bajarla a costa de otra cosa (moral, rating del tramo).</p>
       </div>
-
       <div class="panel stack">
         <h3>🔥 Presión</h3>
         <p>Qué tan cerca estás de que te echen. Sube cuando el equipo rinde peor de lo esperado o cuando quedás lejos del objetivo de la temporada; baja cuando lo cumplís o lo superás. <b>Si llega a 100, se termina la carrera ahí mismo — te despiden</b>, sin importar en qué temporada estés.</p>
         <p class="hint">Ojo: el club te exige cada vez más arriba con el paso de las temporadas (el objetivo se aprieta si veniste bien), así que sostener la presión baja se pone más difícil, no más fácil.</p>
       </div>
-
       <div class="panel stack">
         <h3>⭐ Nivel (rating del tramo)</h3>
         <p>Un modificador temporal a la fuerza del equipo que dejan algunas decisiones (fichar a alguien, forzar a un lesionado, meter doble turno de entrenamiento). Se sube y se baja como las otras cuatro, pero <b>se resetea a cero al cerrar cada temporada</b> — no se acumula carrera entera.</p>
       </div>
-
       <div class="sep"></div>
       <h2>Cómo se arma la fuerza del equipo</h2>
       <p>Cada tramo, tu fuerza real para jugar sale de una cuenta simple: <b>rating del 11 titular</b>, ajustado por moral, fatiga, presión y el modificador de nivel. Jugar a alguien fuera de su puesto natural también resta. Por eso un plantel con buen rating puede rendir mal si lo llevás fundido o desmoralizado — y uno más flojo puede sostenerse si lo cuidás.</p>
-
       <div class="sep"></div>
       <h2>El objetivo y el sobre de refuerzo</h2>
       <p>Cada temporada el club te pide terminar en una posición o mejor. Cumplirlo baja mucho la presión; no cumplirlo la sube fuerte. Al cerrar la temporada, tu posición final define la calidad del <b>sobre de refuerzo</b>: cuanto más arriba terminaste, mejores cartas te tocan para la temporada siguiente. Es la bisagra entre jugar bien y crecer el plantel.</p>
-
       <div class="sep"></div>
       <h2>Los íconos en cada decisión</h2>
       <p>Cada opción de un evento muestra sus consecuencias reales al lado del texto — el relato puede sonar dramático, pero los números nunca mienten ni se ocultan:</p>
       <div class="chips">${['money','moral','fatiga','presion','ratingDelta'].map((k)=>chip(k, MALO_SI_SUBE.has(k) ? -1 : 1)).join('')}</div>
       <p class="hint">Verde = te conviene en esa variable. Rojo = te cuesta. Fatiga y presión son al revés de las otras: ahí lo bueno es que <i>bajen</i>.</p>
-
       <div class="row"><button class="btn" data-accion="volver">Entendido</button></div>
     </div>`,
 
@@ -1222,6 +1210,69 @@ const PANTALLAS = {
       </div>
       ${tablaPosiciones()}
       ${tablaGoleadores()}
+    </div>`;
+  },
+
+  evento: () => {
+    if (ui.cargando) {
+      return `<div class="stack${tsEntra ? ' ts-anim' : ''}">${marcador()}
+        <div class="panel evento stack"><div class="eyebrow">Punto de decisión</div>
+        <h2 style="opacity:.4">Pasa algo en el club…</h2><p class="hint">Un segundo.</p></div></div>`;
+    }
+    const n = c.eventoActual.narracion;
+    const p = paquete(n.paqueteId);
+
+    // Prompt enfocado en sombras dramáticas tipo novela gráfica, sin caras
+    const promptImg = `dark atmospheric silhouette, graphic novel style illustration, back lit, faceless football manager, solid dark background, ${n.titulo}`;
+    const imgEscena = n.imagen ? esc(n.imagen) : `https://image.pollinations.ai/prompt/${encodeURIComponent(promptImg)}?width=800&height=350&nologo=true`;
+
+    // Evento grave: notificación forzada sin elección A/B
+    if (p.grave) {
+      const opcionCat = p.opciones[0];
+      return `<div class="stack${tsEntra ? ' ts-anim' : ''}">
+        ${marcador()}
+        <div class="panel evento stack" style="border-color:rgba(255,91,30,.35)">
+          <div class="eyebrow" style="color:#ff5b1e">⚠️ Notificación — Temporada ${c.temporada}</div>
+          <img src="${imgEscena}" class="evento-img" alt="Escena" loading="lazy" onerror="this.style.display='none'">
+          <h2>${esc(n.titulo)}</h2>
+          <p>${esc(n.texto)}</p>
+          <div class="grave-impacto"><div class="chips grave-chips">${chipsEsperados(opcionCat)}</div></div>
+          <button class="btn grave-continuar" data-accion="elegir" data-op="${opcionCat.id}">Continuar</button>
+        </div>
+      </div>`;
+    }
+
+    // Evento normal con decisiones
+    return `<div class="stack${tsEntra ? ' ts-anim' : ''}">
+      ${marcador()}
+      <div class="panel evento stack">
+        <div class="eyebrow">Temporada ${c.temporada} · Decisión ${c.tramo + 1}</div>
+        <img src="${imgEscena}" class="evento-img" alt="Escena" loading="lazy" onerror="this.style.display='none'">
+        <h2>${esc(n.titulo)}</h2>
+        <p>${esc(n.texto)}</p>
+        <div class="stack">
+          ${n.opciones.map((o) => {
+            const opcionCat = p.opciones.find((x) => x.id === o.id);
+            const variable = !!opcionCat.resultado;
+            const maxProb = variable ? Math.max(...opcionCat.resultado.map(r => r.prob)) : null;
+            const abierto = ui.detalleAbierto.has(o.id);
+            const detalle = variable
+              ? `<div class="consecuencias">${splitBar(opcionCat.resultado)}${opcionCat.resultado.map((r) => resultadoBloque(r.efectos, r.prob, r.prob === maxProb)).join('')}</div>`
+              : `<div class="consecuencias">${resultadoBloque(opcionCat.efectos, null, false)}</div>`;
+            return `<div class="opcion-card">
+              <button class="opcion-main" data-accion="elegir" data-op="${o.id}">
+                <div class="opcion-top">
+                  <span class="opcion-label">${esc(o.label)}</span>
+                  ${variable ? '<span class="riesgo-tag">🎲 resultado incierto</span>' : '<span class="riesgo-tag directo">✓ resultado directo</span>'}
+                </div>
+                <div class="expected-chips">${chipsEsperados(opcionCat)}</div>
+              </button>
+              ${variable ? `<button class="opcion-toggle" data-accion="toggle-detalle" data-op="${o.id}">${abierto ? 'Ocultar el detalle de probabilidades ▲' : `Ver los ${opcionCat.resultado.length} resultados posibles y sus chances ▾`}</button>` : ''}
+              ${variable && abierto ? detalle : ''}
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
     </div>`;
   },
 
