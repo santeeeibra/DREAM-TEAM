@@ -28,14 +28,59 @@ function mezclar(array) {
   return copia;
 }
 
-// Probabilidad de cada banda de rareza al abrir un sobre: 15% bronze,
-// 15% silver, 45% gold, 25% special. Devuelve la banda en minúscula para
-// compararla con getTier() (que devuelve 'BRONZE'/'SILVER'/'GOLD'/'SPECIAL').
-export function pickWeightedTier() {
-  const r = Math.random();
-  if (r < 0.15) return 'bronze';
-  if (r < 0.3) return 'silver';
-  if (r < 0.75) return 'gold';
+// Pesos BASE ideales para cada banda de rareza.
+const PESOS_BASE = { bronze: 15, silver: 15, gold: 45, special: 25 };
+const TIERS = ['bronze', 'silver', 'gold', 'special'];
+
+// Elige un tier ponderado, adaptado al pool real: si una banda tiene
+// muy pocas cartas disponibles (≤ umbral), reduce su peso y lo reparte
+// entre las bandas vecinas. Así en ligas chicas (ej. Argentina con solo
+// 3 cartas gold) no se repiten siempre los mismos jugadores.
+// Sin argumento se comporta igual que antes (pesos fijos).
+export function pickWeightedTier(candidatas = null) {
+  const pesos = { ...PESOS_BASE };
+
+  if (candidatas && candidatas.length > 0) {
+    const conteo = { bronze: 0, silver: 0, gold: 0, special: 0 };
+    for (const c of candidatas) {
+      const t = getTier(c.overall_rating).toLowerCase();
+      if (conteo[t] !== undefined) conteo[t]++;
+    }
+
+    // Si un tier tiene ≤ UMBRAL cartas, reducir su peso proporcionalmente
+    const UMBRAL = 4;
+    let pesoSobrante = 0;
+    let tiersConVariedad = 0;
+
+    for (const t of TIERS) {
+      if (conteo[t] === 0) {
+        pesoSobrante += pesos[t];
+        pesos[t] = 0;
+      } else if (conteo[t] <= UMBRAL) {
+        const pesoReal = Math.round(pesos[t] * conteo[t] / (UMBRAL + 1));
+        pesoSobrante += pesos[t] - pesoReal;
+        pesos[t] = pesoReal;
+      } else {
+        tiersConVariedad++;
+      }
+    }
+
+    // Repartir el peso sobrante entre los tiers que tienen variedad
+    if (pesoSobrante > 0 && tiersConVariedad > 0) {
+      const bonus = Math.floor(pesoSobrante / tiersConVariedad);
+      for (const t of TIERS) {
+        if (conteo[t] > UMBRAL) pesos[t] += bonus;
+      }
+    }
+  }
+
+  const total = pesos.bronze + pesos.silver + pesos.gold + pesos.special;
+  const r = Math.random() * total;
+  let acum = 0;
+  for (const t of TIERS) {
+    acum += pesos[t];
+    if (r < acum) return t;
+  }
   return 'special';
 }
 
@@ -93,7 +138,7 @@ export function draftSquad(pool) {
       );
     }
     for (let i = 0; i < minimo; i++) {
-      const banda = pickWeightedTier();
+      const banda = pickWeightedTier(disponibles);
       const carta = elegirCartaPorBanda(disponibles, banda);
       seleccionadas.push(carta);
       idsUsados.add(carta.id);
@@ -111,7 +156,7 @@ export function draftSquad(pool) {
   }
 
   for (let i = 0; i < faltantes; i++) {
-    const banda = pickWeightedTier();
+    const banda = pickWeightedTier(poolRestante);
     const carta = elegirCartaPorBanda(poolRestante, banda);
     seleccionadas.push(carta);
     poolRestante = poolRestante.filter((c) => c.id !== carta.id);
