@@ -8,6 +8,22 @@
 // único `efectos` fijo sino un `resultado` (rama probabilística: 50/50, 60/40, 70/30…)
 // que se sortea recién al resolver la elección (ver resolverOpcion en candidatosEvento.js).
 // Sigue siendo la IA quien narra, nunca quien decide magnitudes o probabilidades.
+//
+// SISTEMA DE FILTROS POR CONDICIÓN:
+// Cada evento tiene un campo `filtro` que recibe el contexto del juego y devuelve true/false.
+// El contexto incluye: { temporada, tramo, posicion, racha, moral, fatiga, presion, money, 
+// figura, rival, plantel, once, ratingDelta, modificadorTramo }
+//
+// Ejemplos de filtros:
+//   filtro: (c) => c.moral < 40              // Crisis de moral
+//   filtro: (c) => c.racha === 'buena'       // Racha ganadora (últimos 5: >=11 pts)
+//   filtro: (c) => c.racha === 'mala'        // Racha perdedora (últimos 5: <=4 pts)
+//   filtro: (c) => c.presion >= 60           // Presión alta
+//   filtro: (c) => c.money <= 10             // Caja baja
+//   filtro: (c) => c.posicion <= 3           // Peleando arriba
+//   filtro: (c) => c.temporada >= 3          // A partir de temp 3
+//   filtro: (c) => !!c.figura && !!c.rival   // Requiere figura y rival
+//   filtro: () => true                       // Siempre disponible (default)
 export const CATALOGO_VERSION = '2.0.0';
 
 export const INTENSIDAD = { ALTA: 'alta', MEDIA: 'media', BAJA: 'baja' };
@@ -448,7 +464,7 @@ export const CATALOGO = [
   p('favorito_no_rinde', {
     tags: ['individual', 'hinchada'],
     intensidad: INTENSIDAD.MEDIA,
-    filtro: (c) => !!c.figura && c.moral <= 55,
+    filtro: (c) => !!c.figura && (c.moral <= 55 || c.racha === 'mala'),
     titulo: '{figura} lleva ocho partidos sin aportar',
     texto: 'Es el jugador que más quiere la hinchada, pero hace rato que no rinde. Si lo sacás del once, te van a silbar en la próxima fecha.',
     opciones: [
@@ -471,7 +487,7 @@ export const CATALOGO = [
   p('formacion_polemica_final', {
     tags: ['tactico'],
     intensidad: INTENSIDAD.ALTA,
-    filtro: (c) => !!c.rival && c.tramo >= 4 && c.posicion <= 5,
+    filtro: (c) => !!c.rival && c.tramo >= 4 && c.posicion <= 5 && c.racha !== 'mala',
     titulo: 'Tenés una final y una idea arriesgada',
     texto: 'El análisis dice que una formación experimental te da más chances contra {rival}. Todos esperan que juegues como siempre.',
     opciones: [
@@ -651,10 +667,38 @@ export const CATALOGO = [
       { id: 'diplomacia', label: 'Salida diplomática', efectos: { presion: -4 } },
     ],
   }),
+  p('racha_ganadora_prensa', {
+    tags: ['dt', 'prensa'],
+    intensidad: INTENSIDAD.BAJA,
+    filtro: (c) => c.racha === 'buena',
+    titulo: 'Te comparan con los grandes',
+    texto: 'Después de cinco fechas invicto, los medios te pusieron en la conversación de los mejores técnicos de la liga. El capitán te pregunta si esto te cambia la cabeza.',
+    opciones: [
+      { id: 'humilde', label: 'Mantener los pies en la tierra', efectos: { moral: 4, presion: -2 } },
+      { id: 'aprovechar', label: 'Aprovechar el momento mediático', resultado: [
+        { prob: 0.6, nota: 'te ganas respeto en el ambiente', efectos: { presion: -5, moral: 3 } },
+        { prob: 0.4, nota: 'generás expectativas que no podés cumplir', efectos: { presion: 12, moral: -2 } },
+      ]},
+    ],
+  }),
+  p('crisis_resultados', {
+    tags: ['dt', 'plantel'],
+    intensidad: INTENSIDAD.MEDIA,
+    filtro: (c) => c.racha === 'mala' && c.presion >= 40,
+    titulo: 'El plantel está contra las cuerdas',
+    texto: 'Cuatro fechas sin ganar y la tribuna ya silba. En el vestuario nadie te mira a los ojos. El presidente te citó para mañana.',
+    opciones: [
+      { id: 'charla_dura', label: 'Reunión dura con el plantel', resultado: [
+        { prob: 0.55, nota: 'reaccionan con carácter', efectos: { moral: 8, presion: -6 } },
+        { prob: 0.45, nota: 'se profundiza la fractura', efectos: { moral: -10, presion: 8 } },
+      ]},
+      { id: 'descanso', label: 'Darles un día libre para resetear', efectos: { moral: 5, fatiga: -8, presion: 3 } },
+    ],
+  }),
   p('elogio_publico_rival', {
     tags: ['dt', 'prensa'],
     intensidad: INTENSIDAD.BAJA,
-    filtro: (c) => !!c.rival,
+    filtro: (c) => !!c.rival && c.racha !== 'mala',
     titulo: 'El DT de {rival} te elogió en la previa',
     texto: 'Dijo que sos "de lo mejor que dio esta liga en años". Puede ser sincero o puede ser una jugada para relajarte antes del partido.',
     opciones: [
@@ -662,10 +706,21 @@ export const CATALOGO = [
       { id: 'ignorar', label: 'Enfocarse en el partido', efectos: { ratingDelta: 1 } },
     ],
   }),
+  p('invicto_largo', {
+    tags: ['dt', 'hinchada'],
+    intensidad: INTENSIDAD.MEDIA,
+    filtro: (c) => c.racha === 'buena' && c.posicion <= 5,
+    titulo: 'Invicto y arriba en la tabla',
+    texto: 'Llevás más de un mes sin perder y el equipo está prendido en la pelea. La hinchada canta tu nombre, pero sabés que una derrota puede cambiar todo.',
+    opciones: [
+      { id: 'disfrutar', label: 'Disfrutar el momento con el plantel', efectos: { moral: 8, presion: -4, fatiga: 3 } },
+      { id: 'mantener_foco', label: 'Mantener el foco y la humildad', efectos: { moral: 3, presion: -2, ratingDelta: 1 } },
+    ],
+  }),
   p('critica_ex_jugador', {
     tags: ['dt', 'prensa'],
     intensidad: INTENSIDAD.BAJA,
-    filtro: (c) => c.temporada >= 2,
+    filtro: (c) => c.temporada >= 2 && (c.racha === 'mala' || c.presion >= 35),
     titulo: 'Un ex ídolo del club te criticó',
     texto: 'En su columna semanal dice que "el equipo no tiene alma" y que vos no entendés al club. Los hinchas lo respetan mucho.',
     opciones: [
@@ -674,6 +729,17 @@ export const CATALOGO = [
         { prob: 0.5, nota: 'quedás como agrandado', efectos: { moral: -4, presion: 10 } },
       ]},
       { id: 'callar', label: 'No contestar', efectos: { presion: 4 } },
+    ],
+  }),
+  p('exigencia_hinchada_titulo', {
+    tags: ['hinchada', 'prensa'],
+    intensidad: INTENSIDAD.MEDIA,
+    filtro: (c) => c.racha === 'buena' && c.posicion <= 3 && c.temporada >= 2,
+    titulo: 'La hinchada ya habla de título',
+    texto: 'Después de tantas fechas ganando, la tribuna canta "campeón" en cada partido. Algunos jugadores te preguntan si es momento de plantearse ganar la liga.',
+    opciones: [
+      { id: 'abrazar_presion', label: 'Abrazar la presión del título', efectos: { moral: 10, presion: 15, ratingDelta: 2 } },
+      { id: 'partido_partido', label: 'Seguir partido a partido', efectos: { moral: 5, presion: -3 } },
     ],
   }),
 
@@ -739,7 +805,7 @@ export const CATALOGO = [
   p('banderazo_apoyo', {
     tags: ['hinchada'],
     intensidad: INTENSIDAD.BAJA,
-    filtro: (c) => c.presion >= 55,
+    filtro: (c) => c.presion >= 55 || c.racha === 'mala',
     titulo: 'Banderazo antes del partido',
     texto: 'Miles de hinchas fueron al hotel de concentración con banderas y bombos. Se te pusieron la carne de gallina mirándolo por la ventana.',
     opciones: [

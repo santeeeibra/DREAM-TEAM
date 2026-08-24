@@ -1187,6 +1187,9 @@ const PANTALLAS = {
     </div>`,
 
   sobres: () => {
+    console.log('[DEBUG] Renderizando vista sobres');
+    console.log('[DEBUG] c.sobresIniciales:', c.sobresIniciales);
+    console.log('[DEBUG] ui.sobresAbiertos:', ui.sobresAbiertos);
     const abiertos = ui.sobresAbiertos;
     const todos = abiertos.length === c.sobresIniciales.length;
     return `<div class="stack">
@@ -1719,15 +1722,24 @@ const acciones = {
   },
   'ob-set-modo'(el) { ui.onboarding.modoJuego = el.dataset.modo; _guardarDtDraft(); },
   'volver-onboarding'() { ui.vista = 'onboarding'; render(); },
-  'abrir-sobre'(el) { 
+  'abrir-sobre'(el) {
+    console.log('[DEBUG] abrir-sobre llamado', { el, dataset: el?.dataset });
     const container = el.closest('.pack-container');
+    console.log('[DEBUG] container encontrado:', container);
+    console.log('[DEBUG] c.sobresIniciales:', c?.sobresIniciales);
     if (container && !container.classList.contains('opening')) {
       container.classList.add('opening');
+      console.log('[DEBUG] Animación iniciada, esperando 800ms...');
       // Esperar a que termine la animación antes de mostrar las cartas
       setTimeout(() => {
-        ui.sobresAbiertos.push(Number(el.dataset.i));
+        const idx = Number(el.dataset.i);
+        console.log('[DEBUG] Agregando índice:', idx);
+        ui.sobresAbiertos.push(idx);
+        console.log('[DEBUG] sobresAbiertos ahora:', ui.sobresAbiertos);
         render();
       }, 800);
+    } else {
+      console.log('[DEBUG] No se agregó animación. container:', !!container, 'opening:', container?.classList.contains('opening'));
     }
   },
   'ir-once'() {
@@ -1900,9 +1912,12 @@ const acciones = {
 };
 
 app.addEventListener('click', async (e) => {
+  console.log('[DEBUG] Click detectado en:', e.target);
   const el = e.target.closest('[data-accion]');
+  console.log('[DEBUG] Elemento con data-accion:', el, el?.dataset?.accion);
   if (!el) return;
   const fn = acciones[el.dataset.accion];
+  console.log('[DEBUG] Función encontrada:', !!fn, 'para acción:', el.dataset.accion);
   if (!fn) return;
   const r = fn(el);
   if (r instanceof Promise) await r;
