@@ -677,8 +677,49 @@ function chipEsperado(k, v) {
 function chipsEsperados(opcionCat) {
   const v = valorEsperado(opcionCat);
   const entradas = Object.entries(v).filter(([, val]) => Math.abs(val) >= 0.05);
-  if (!entradas.length) return `<span class="chip">Sin cambios</span>`;
+  if (!entradas.length) return `<span class="chip neutral">🔒 Sin cambios</span>`;
   return entradas.map(([k, val]) => chipEsperado(k, val)).join('');
+}
+
+// Nueva función: chips para efectos fijos (garantizados)
+function chipsFijos(opcionCat) {
+  if (!opcionCat.efectos || Object.keys(opcionCat.efectos).length === 0) return '';
+  const entradas = Object.entries(opcionCat.efectos).filter(([, val]) => Math.abs(val) >= 0.05);
+  if (!entradas.length) return '';
+  const chips = entradas.map(([k, val]) => {
+    const bueno = MALO_SI_SUBE.has(k) ? val < 0 : val > 0;
+    const mag = Number.isInteger(val) ? Math.abs(val) : Math.abs(val).toFixed(1);
+    return `<span class="chip ${bueno ? 'pos' : 'neg'}">${ICONO[k]} ${NOMBRE_VAR[k]} ${signoDelta(k, val)}${mag}</span>`;
+  }).join('');
+  return `<div class="decision-effects-fixed">${chips}<span class="effect-note">✓ Efectos garantizados</span></div>`;
+}
+
+// Helper para renderizar un sobre animado con partículas y glow
+function renderPack(index, disabled = false, label = '') {
+  const packImagePath = '/src/assets/images/gold_pack.png';
+  return `
+    <div class="pack-container ${disabled ? 'disabled' : ''}" data-accion="${disabled ? '' : 'abrir-sobre'}" data-i="${index}">
+      <div class="pack-glow"></div>
+      <div class="pack-particles">
+        <div class="pack-particle"></div>
+        <div class="pack-particle"></div>
+        <div class="pack-particle"></div>
+        <div class="pack-particle"></div>
+      </div>
+      <img class="pack-image" src="${packImagePath}" alt="Sobre ${index + 1}" draggable="false">
+      <div class="pack-label">${label || `Sobre ${index + 1}`}</div>
+    </div>
+  `;
+}
+
+// Nueva función: renderiza chips dentro de las barras de resultado
+function chipsEnResultado(efectos) {
+  const entradas = Object.entries(efectos).filter(([, val]) => Math.abs(val) >= 0.05);
+  if (!entradas.length) return 'Sin cambios';
+  return entradas.map(([k, val]) => {
+    const mag = Number.isInteger(val) ? Math.abs(val) : Math.abs(val).toFixed(1);
+    return `${ICONO[k]} ${signoDelta(k, val)}${mag}`;
+  }).join('  ');
 }
 
 // ── Helpers para decisiones estilo COPERO (sin emojis) ──
@@ -727,10 +768,11 @@ function decisionResultChips(opcionCat) {
   return opcionCat.resultado.map(r => {
     const positivo = esResultadoPositivo(r.efectos);
     const probPct = Math.round(r.prob * 100);
-    const nota = r.nota || Object.entries(r.efectos).map(([k, v]) => `${NOMBRE_VAR[k]} ${v > 0 ? '+' : ''}${v}`).join(', ') || 'Sin cambios';
+    const nota = r.nota || 'Resultado';
+    const chipsTexto = chipsEnResultado(r.efectos);
     return `<div class="decision-result ${positivo ? 'pos' : 'neg'}">
       <span class="result-icon">${positivo ? '↗' : '↘'}</span>
-      <span class="result-nota">${esc(nota)}</span>
+      <span class="result-nota">${esc(nota)}: ${chipsTexto}</span>
       <span class="result-prob">${probPct}%</span>
     </div>`;
   }).join('');
@@ -1151,10 +1193,8 @@ const PANTALLAS = {
       <div class="eyebrow">Paso 1 de 2 · Plantel inicial</div>
       <h2>Tus ${c.sobresIniciales.length} sobres</h2>
       <p class="hint">Lo que salga acá es con lo que arrancás la temporada 1. No hay repetición.</p>
-      <div class="row">
-        ${c.sobresIniciales.map((_, i) => abiertos.includes(i)
-          ? `<button class="btn ghost" disabled>Sobre ${i + 1} abierto</button>`
-          : `<button class="btn" data-accion="abrir-sobre" data-i="${i}">Abrir sobre ${i + 1}</button>`).join('')}
+      <div class="packs-grid">
+        ${c.sobresIniciales.map((_, i) => renderPack(i, abiertos.includes(i), abiertos.includes(i) ? '✓ Abierto' : `Sobre ${i + 1}`)).join('')}
       </div>
       ${abiertos.length ? `<div class="grid-cartas">${abiertos.flatMap((i) => c.sobresIniciales[i]).map((x, i) => carta(x, { i })).join('')}</div>` : ''}
       ${todos ? `<div class="row"><button class="btn" data-accion="ir-once">Armar el 11</button></div>` : ''}
@@ -1305,12 +1345,19 @@ const PANTALLAS = {
         <div class="decision-grid">
           ${n.opciones.map((o) => {
             const opcionCat = p.opciones.find((x) => x.id === o.id);
-            const variable = !!opcionCat.resultado;
-            return `<button class="decision-card" data-accion="elegir" data-op="${o.id}">
+            const tieneEfectosFijos = opcionCat.efectos && Object.keys(opcionCat.efectos).length > 0;
+            const tieneResultados = !!opcionCat.resultado;
+            const esConservadora = !tieneEfectosFijos && !tieneResultados;
+            const claseAdicional = esConservadora ? ' conservadora' : '';
+            
+            return `<button class="decision-card${claseAdicional}" data-accion="elegir" data-op="${o.id}">
               <span class="decision-label">${esc(o.label)}</span>
-              <div class="decision-chips">
-                ${variable ? decisionResultChips(opcionCat) : chipsEsperados(opcionCat)}
-              </div>
+              ${tieneEfectosFijos ? chipsFijos(opcionCat) : ''}
+              ${tieneResultados ? `<div class="decision-chips">${decisionResultChips(opcionCat)}</div>` : ''}
+              ${esConservadora ? `<div class="decision-effects-neutral">
+                <span class="chip neutral">🔒 Sin cambios</span>
+                <span class="effect-note">(Mantener estado actual)</span>
+              </div>` : ''}
             </button>`;
           }).join('')}
         </div>
@@ -1354,7 +1401,9 @@ const PANTALLAS = {
         <p class="hint">${t.pts} puntos · ${t.g}G ${t.e}E ${t.p}P · ${t.gf}:${t.gc} · el club pedía terminar ${t.objetivo}° o mejor.</p>
         <table><tbody>${t.tablaTop5.map((x, i) => `<tr class="${x.nombre === c.club ? 'mio' : ''}"><td class="n">${i + 1}</td><td class="eq">${escudoClub(x.nombre)}<span>${esc(x.nombre)}</span></td><td class="n">${x.pts}</td></tr>`).join('')}</tbody></table>
         ${tablaGoleadores(t.estadisticas)}
-        <div class="row"><button class="btn ts-cta" data-accion="abrir-refuerzo">Abrir el sobre de refuerzo</button></div>
+        <div class="packs-grid">
+          ${renderPack(0, false, 'Sobre de Refuerzo').replace('data-accion="abrir-sobre"', 'data-accion="abrir-refuerzo"').replace('data-i="0"', '')}
+        </div>
       </div>
     </div>`;
   },
@@ -1670,7 +1719,17 @@ const acciones = {
   },
   'ob-set-modo'(el) { ui.onboarding.modoJuego = el.dataset.modo; _guardarDtDraft(); },
   'volver-onboarding'() { ui.vista = 'onboarding'; render(); },
-  'abrir-sobre'(el) { ui.sobresAbiertos.push(Number(el.dataset.i)); },
+  'abrir-sobre'(el) { 
+    const container = el.closest('.pack-container');
+    if (container && !container.classList.contains('opening')) {
+      container.classList.add('opening');
+      // Esperar a que termine la animación antes de mostrar las cartas
+      setTimeout(() => {
+        ui.sobresAbiertos.push(Number(el.dataset.i));
+        render();
+      }, 800);
+    }
+  },
   'ir-once'() {
     ui.vista = 'once'; ui.slot = null;
     const slots = FORMACIONES_SLOTS[c.formacion] || FORMACION;
@@ -1760,13 +1819,21 @@ const acciones = {
     ui.deltas = deltas;
     ui.vista = c.fase === FASES.FIN ? 'fin' : c.fase === FASES.LESION ? 'lesion' : c.fase === FASES.RESUMEN ? 'resumen' : 'previa';
   },
-  async 'abrir-refuerzo'() {
+  async 'abrir-refuerzo'(el) {
+    // Animación de apertura del sobre
+    const container = el?.closest('.pack-container');
+    if (container && !container.classList.contains('opening')) {
+      container.classList.add('opening');
+      // Esperar a que termine la animación antes de continuar
+      await new Promise(resolve => setTimeout(resolve, 800));
+    }
+    
     calcularOfertasPlantel(c);
     if (c.jugadoresConOferta?.length) {
       ui.vista = 'ofertas';
       return;
     }
-    await ACCIONES['confirmar-ofertas']();
+    await acciones['confirmar-ofertas']();
   },
   'vender-oferta'(el) {
     resolverOferta(c, el.dataset.id, true);
@@ -1839,7 +1906,8 @@ app.addEventListener('click', async (e) => {
   if (!fn) return;
   const r = fn(el);
   if (r instanceof Promise) await r;
-  render();
+  // abrir-sobre maneja su propio render después de la animación
+  if (el.dataset.accion !== 'abrir-sobre') render();
 });
 
 // ───────────────────────── drag & drop (once) ─────────────────────────

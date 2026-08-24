@@ -201,7 +201,7 @@
 
 ### src/engine/catalogoEventos.js
   L17: const p = (id, def) => ({
-  L954: export function paquete(id) {
+  L961: export function paquete(id) {
 
 ### src/engine/eventSlots.js
   L24: function enteroAleatorioEntre(minimo, maximo) {
@@ -226,18 +226,18 @@
   L17: function normalizarNombreClub(nombre) {
   L29: function candidatosRivales(club) {
   L45: export function crearLiga(rng, club, { temporada = 1, posAnterior = null, ovrDT ...
-  L79: function gauss(rng, media, sd) {
-  L83: const clampNum = (v, a, b) => Math.max(a, Math.min(b, v));
-  L86: export function getEstiloRival(rival) {
-  L92: function generarFixture(rng, n) {
-  L110: function tablaVacia(equipos) {
-  L114: function goles(rng, fuerza, rival, localia, mod = 1) {
-  L133: function atribuirGol(rng, jugadores) {
-  L148: export function simularTramo(rng, liga, desde, hasta, fuerzaMia, misJugadores = ...
-  L203: function anotar(tabla, id, gf, gc) {
-  L209: export function posiciones(liga) {
-  L215: export function miPosicion(liga) {
-  L219: export function fuerzaDeEquipo(ratingOnce, estado, momentum) {
+  L84: function gauss(rng, media, sd) {
+  L88: const clampNum = (v, a, b) => Math.max(a, Math.min(b, v));
+  L91: export function getEstiloRival(rival) {
+  L97: function generarFixture(rng, n) {
+  L115: function tablaVacia(equipos) {
+  L119: function goles(rng, fuerza, rival, localia, mod = 1) {
+  L138: function atribuirGol(rng, jugadores) {
+  L153: export function simularTramo(rng, liga, desde, hasta, fuerzaMia, misJugadores = ...
+  L213: function anotar(tabla, id, gf, gc) {
+  L219: export function posiciones(liga) {
+  L225: export function miPosicion(liga) {
+  L229: export function fuerzaDeEquipo(ratingOnce, estado, momentum) {
 
 ### src/engine/narrador.js
   L10: function pistasDeEfectos(efectos) {
@@ -418,23 +418,28 @@
   L660: function valorEsperado(opcionCat) {
   L669: function chipEsperado(k, v) {
   L677: function chipsEsperados(opcionCat) {
-  L685: function esResultadoPositivo(efectos) {
-  L693: function decisionResultChips(opcionCat) {
-  L708: function aplicarHoverPreview(opcionCat) {
-  L734: function limpiarHoverPreview() {
-  L741: function bindHoverPreview() {
-  L753: function bindGraveHoverPreview() {
-  L764: function resultadoBloque(efectos, prob, isTopProb) {
-  L781: const fmtMoney = (v) => 'U$D ' + String(Math.round(v * 1_000_000)).replace(/\B(?...
-  L788: function carta(x, { sel = false, accion = '', slot = null, bloqueada = false, mo...
-  L816: function marcador() {
-  L872: function tablaPosiciones() {
-  L905: function tablaGoleadores(estadisticas) {
-  L1430: function renderBotonNuevaPartida() {
-  L1448: function render() {
-  L1469: const _guardarDtDraft = () => {
-  L1814: function executeDragSwap(srcType, srcId, srcSlotIdx, dstType, dstId, dstSlotIdx)...
-  L1832: function clearDragVisuals() {
+  L685: function chipsFijos(opcionCat) {
+  L698: function renderPack(index, disabled = false, label = '') {
+  L716: function chipsEnResultado(efectos) {
+  L726: function esResultadoPositivo(efectos) {
+  L735: function renderDecisionOption(option) {
+  L749: function renderEffects(efectos) {
+  L766: function decisionResultChips(opcionCat) {
+  L782: function aplicarHoverPreview(opcionCat) {
+  L808: function limpiarHoverPreview() {
+  L815: function bindHoverPreview() {
+  L827: function bindGraveHoverPreview() {
+  L838: function resultadoBloque(efectos, prob, isTopProb) {
+  L855: const fmtMoney = (v) => 'U$D ' + String(Math.round(v * 1_000_000)).replace(/\B(?...
+  L862: function carta(x, { sel = false, accion = '', slot = null, bloqueada = false, mo...
+  L890: function marcador() {
+  L946: function tablaPosiciones() {
+  L979: function tablaGoleadores(estadisticas) {
+  L1511: function renderBotonNuevaPartida() {
+  L1529: function render() {
+  L1550: const _guardarDtDraft = () => {
+  L1913: function executeDragSwap(srcType, srcId, srcSlotIdx, dstType, dstId, dstSlotIdx)...
+  L1931: function clearDragVisuals() {
 
 ### src/utils/badgeGenerator.js
   L16: function hashString(str) {
@@ -482,7 +487,7 @@
   - src/engine/carrera.js (L1)
   - src/engine/index.js (L4)
   - src/engine/leagueTable.js (L119)
-  - src/engine/liga.js (L144)
+  - src/engine/liga.js (L149)
   - src/engine/rng.js (L7)
   - src/engine/seasonOrchestrator.js (L1)
   - src/engine/seasonSimulator.js (L99)
@@ -529,7 +534,7 @@
   - src/engine/balance.js (L35)
   - src/engine/candidatosEvento.js (L98)
   - src/engine/carrera.js (L78)
-  - src/engine/catalogoEventos.js (L54)
+  - src/engine/catalogoEventos.js (L44)
   - src/engine/eventSlots.js (L3)
   - src/engine/leagueTable.js (L5)
   - src/engine/liga.js (L1)
@@ -578,7 +583,7 @@
   - src/engine/candidatosEvento.js (L180)
   - src/engine/carrera.js (L5)
   - src/engine/catalogoEventos.js (L37)
-  - src/engine/liga.js (L88)
+  - src/engine/liga.js (L93)
   - src/engine/narrador.js (L8)
   - src/engine/seasonOrchestrator.js (L28)
   - src/engine/seasonSimulator.js (L12)
@@ -629,6 +634,6 @@
 
 ### Sistema de transferencias
   - src/main.js (L79)
-  - src/engine/catalogoEventos.js (L673)
+  - src/engine/catalogoEventos.js (L680)
   - src/ui/main.js (L89)
 
