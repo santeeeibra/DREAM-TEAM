@@ -945,6 +945,12 @@ function carta(x, { sel = false, accion = '', slot = null, bloqueada = false, mo
 }
 
 // ───────────────────────── el marcador (signature) ─────────────────────────
+const getPrioridad = (k) => {
+  if (k === 'money' || k === 'presion') return 'primario';
+  if (k === 'moral' || k === 'fatiga') return 'secundario';
+  return 'terciario';
+};
+
 function marcador() {
   const pos = c.liga ? miPosicion(c.liga) : null;
   const g = (k) => {
@@ -961,7 +967,7 @@ function marcador() {
     const dv = k === 'money'
       ? (v < 1 ? Math.round(v * 1000) + 'K' : (v % 1 < 0.05 ? Math.round(v) + 'M' : v.toFixed(1) + 'M'))
       : v;
-    return `<div class="gauge ${critico ? 'bad' : alerta ? 'warn' : ''}" data-key="${k}" title="${NOMBRE_VAR[k]} — ${EXPLICACION_VAR[k]} — actual: ${dv}">
+    return `<div class="gauge ${critico ? 'bad' : alerta ? 'warn' : ''} ${getPrioridad(k)}" data-key="${k}" title="${NOMBRE_VAR[k]} — ${EXPLICACION_VAR[k]} — actual: ${dv}">
       <div class="gauge-arc-wrap">
         <svg class="gauge-arc-svg" viewBox="0 0 64 36" fill="none">
           <path d="M6 32 A26 26 0 0 1 58 32" stroke="rgba(255,255,255,.09)" stroke-width="5" stroke-linecap="round" fill="none"/>
