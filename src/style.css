@@ -868,7 +868,9 @@ body {
 /* Contenedor del sobre */
 .pack-container {
   position: relative;
-  display: block;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
   cursor: pointer;
   perspective: 1000px;
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -1138,16 +1140,18 @@ body {
 
 /* Contenedor de grid de sobres */
 .packs-grid {
-  display: flex !important; /* !important para sobrescribir .stack */
-  flex-direction: row !important; /* Forzar horizontal */
-  gap: 32px;
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 40px;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   flex-wrap: nowrap;
-  padding: 32px 0;
+  padding: 40px 20px;
+  min-height: 360px;
+  width: 100%;
+  box-sizing: border-box;
   overflow-x: auto;
   overflow-y: visible;
-  min-height: 320px;
 }
 
 /* Mobile responsive */
