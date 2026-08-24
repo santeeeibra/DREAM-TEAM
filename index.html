@@ -113,7 +113,7 @@ input:focus,select:focus,button:focus-visible{outline:2px solid var(--fluor);out
 .pack-container{
   position:relative;
   flex:0 0 auto;
-  width:clamp(150px,26vw,210px);
+  width:clamp(180px,22%,240px);
   cursor:pointer;
   transition:transform .2s cubic-bezier(.2,.7,.2,1);
 }
@@ -161,6 +161,11 @@ input:focus,select:focus,button:focus-visible{outline:2px solid var(--fluor);out
   opacity:.5;
   transform:scale(.95);
   pointer-events:none;
+}
+.packs-grid + *{
+  margin-top:28px;
+  padding-top:20px;
+  border-top:1px solid var(--linea);
 }
 .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
 .sep{height:1px;background:var(--linea);margin:6px 0}
