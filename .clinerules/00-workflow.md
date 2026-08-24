@@ -1,5 +1,12 @@
 # Workflow — OBLIGATORIO EN CADA TAREA
 
+## PASO -1 — Antes de CUALQUIER cosa (NUEVO)
+Leer `D:\dev\dream-team\.clinerules\00-traductor.md` para traducir el pedido
+del usuario a zona técnica + archivos + reglas.
+
+Si el pedido matchea alguna palabra clave del traductor, seguir directamente
+al PASO 0 con los archivos ya identificados.
+
 ## PASO 0 — Antes de cualquier cosa
 Leer `MAPA-CODIGO.md` en la raíz del proyecto.
 Este archivo lista todos los archivos y sus funciones con número de línea.
@@ -9,7 +16,7 @@ Si `MAPA-CODIGO.md` no existe, pedirle al usuario que ejecute:
 `.\generar-mapa.ps1` desde `D:\dev\dream-team`
 
 ## PASO 1 — Identificar el objetivo
-Con el mapa en mano, declarar:
+Con el traductor + mapa en mano, declarar:
 - Archivo exacto a modificar (con path completo)
 - Número de línea aproximado
 - Nombre de la función/bloque a tocar
@@ -35,6 +42,11 @@ y volver a intentar. No leer el archivo completo.
 Declarar qué se cambió y en qué líneas.
 No hacer cambios adicionales no solicitados.
 
+## PASO 6 — Actualizar documentación
+Si el cambio es significativo (nueva feature, patrón nuevo, decisión arquitectónica):
+- Actualizar `.clinerules/` correspondiente
+- Agregar palabra clave a `00-traductor.md` si hace falta
+
 ---
 
 ## Entorno de desarrollo
@@ -43,6 +55,7 @@ No hacer cambios adicionales no solicitados.
 - Si hay error de conexión, el proxy no está corriendo
 - Proyecto: D:\dev\dream-team
 - Mapa del código: D:\dev\dream-team\MAPA-CODIGO.md
+- Traductor: D:\dev\dream-team\.clinerules\00-traductor.md
 
 ## Reglas de busqueda
 - Buscar siempre en el MAPA-CODIGO.md primero

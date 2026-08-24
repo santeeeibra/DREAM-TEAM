@@ -23,6 +23,18 @@ Activar siempre que toques lógica de juego, estado o temporada.
 - Progresión por tiers (Regional → Segunda → Primera → Élite), 8
   temporadas por carrera; el objetivo es subir un tier por temporada.
 
+## Simulación de resultados
+- **Sistema de volatilidad por crisis** (`src/engine/seasonSimulator.js`):
+  cuando el equipo está en crisis (moral <50, presión >40, fatiga >60), el
+  azar de cada partido se amplifica hasta 1.75× (de ±8 a ±14 puntos de swing).
+  Cada factor de crisis suma ~25% de volatilidad. Los resultados se vuelven
+  más impredecibles: pueden salir sorpresas positivas o desastres.
+- La volatilidad se calcula en `calcularVolatilidadPorCrisis()` y se aplica
+  en `simularJornada()` solo al equipo local cuando está en crisis.
+- **Presión no está en el simulador** (solo moral/fatiga): vive en
+  `careerState.js` a nivel de carrera completa. Por ahora se usa `presion: 0`
+  en el simulador.
+
 ## Efectos numéricos
 - Siempre desde el **catálogo local**. La IA jamás devuelve números que
   toquen el estado. La IA elige y narra; los deltas los pone el catálogo.
