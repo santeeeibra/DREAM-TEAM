@@ -1345,10 +1345,10 @@ const PANTALLAS = {
         <div class="ts-tramo-tag"><i></i>Tramo ${c.tramo + 1} de ${LIGA.TRAMOS.length}</div>
         <h2>Fechas <span class="ts-glow">${desde} a ${desde + LIGA.TRAMOS[c.tramo] - 1}</span></h2>
         <p class="hint">Se juegan ${LIGA.TRAMOS[c.tramo]} partidos de corrido. Después vas a tener que tomar una decisión.</p>
-        <div class="row">
+        <div class="row" style="justify-content:flex-start">
           <button class="btn ts-cta" data-accion="jugar">Simular rápido</button>
-          <button class="btn ghost" data-accion="jugar-visual">▶ Ver partido</button>
-          <button class="btn ghost" data-accion="ir-once">Cambiar el 11 · ${c.formacion || '4-3-3'}</button>
+          <button class="btn secondary" data-accion="jugar-visual">▶ Ver partido</button>
+          <button class="btn tertiary" data-accion="ir-once" style="margin-left:auto">⚙ Cambiar el 11 · ${c.formacion || '4-3-3'}</button>
         </div>
       </div>
       ${tablaPosiciones()}
@@ -1366,7 +1366,7 @@ const PANTALLAS = {
           <span class="eq">${escudoRival(p.rival)}<span>${esc(p.rival)} <span class="muted">(${p.localia})</span></span></span>
           <span class="res-fila"><span class="res ${p.res}">${p.res}</span><span class="num">${p.gf}-${p.gc}</span></span>
         </div>`).join('')}</div>
-        <div class="row"><button class="btn" data-accion="ir-evento">Seguir</button></div>
+        <div class="row" style="width:100%"><button class="btn btn-continuar" data-accion="ir-evento">CONTINUAR A LA DECISIÓN →</button></div>
       </div>
       ${tablaPosiciones()}
       ${tablaGoleadores()}
