@@ -82,6 +82,30 @@ archivos y reglas sin gastar tokens en búsquedas.
 
 ---
 
+### Escudos de clubes / Badges / Logos
+
+**Palabras clave:**
+- "escudo", "badge", "logo", "club"
+- "no carga", "no aparece", "404", "falta"
+- "CDN", "imagen rota", "fallback"
+- "Premier", "LaLiga", "Serie A"
+
+**Zona:** Escudos y fallback  
+**Archivos:**
+- `src/data/escudoteca.js` (mapa nombre → URL)
+- `src/ui/main.js` (funciones escudoDe, escudoRival, escudoClub, L634-663)
+- `src/utils/badgeGenerator.js` (generador SVG de fallback)
+
+**Reglas:** `.clinerules/30-ui.md` → sección "Escudos de clubes"
+
+**Qué toca:**
+- Agregar URLs de escudos nuevos a ESCUDOTECA
+- Alias de nombre para matchear variantes
+- Sistema de fallback automático (onerror → SVG generado)
+- Nunca tocar badgeGenerator.js ni las funciones de renderizado
+
+---
+
 ### Pantallas / Cómo se ve / Visual / Layout
 
 **Palabras clave:**

@@ -3,13 +3,13 @@
 //
 // Fuente principal: Escudoteca Paladar Negro (PNGs hotlinkeables). Refuerzo
 // con media.api-sports.io (el mismo CDN de logos de liga que ya usa la UI)
-// para los clubes que la teca no tiene: Atlético, Girona, Mallorca.
-// Luton Town y Real Oviedo no tienen URL → quedan cubiertos por el fallback
-// SVG generado por nombre (badgeGenerator.js) en la UI.
+// para Atlético y Girona.
 //
 // Las claves incluyen alias de nombre (corto del motor / largo de leagues.js
-// / variantes de la DB) para que el lookup por `cl.name` de Supabase matchee
-// sin importar cómo esté escrito el club.
+// / variantes de la DB / nombres EA de FC24) para que el lookup por `cl.name`
+// de Supabase matchee sin importar cómo esté escrito el club. Si un escudo
+// no existe en ESCUDOTECA o el CDN falla, el sistema de fallback automático
+// en main.js (onerror) genera un SVG con las iniciales del club.
 
 const PALADAR = 'https://paladarnegro.net/escudoteca';
 const APISPORTS = 'https://media.api-sports.io/football/teams';
@@ -18,12 +18,15 @@ const WIKI = 'https://upload.wikimedia.org/wikipedia';
 export const ESCUDOTECA = {
   // ── Premier League ──
   'Manchester City': `${PALADAR}/inglaterra/premier/png/manchestercity.png`,
+  'Man City': `${PALADAR}/inglaterra/premier/png/manchestercity.png`,
   'Arsenal': `${PALADAR}/inglaterra/premier/png/arsenal.png`,
   'Liverpool': `${PALADAR}/inglaterra/premier/png/liverpool.png`,
   'Chelsea': `${PALADAR}/inglaterra/premier/png/chelsea.png`,
   'Manchester United': `${PALADAR}/inglaterra/premier/png/manchesterunited.png`,
+  'Man Utd': `${PALADAR}/inglaterra/premier/png/manchesterunited.png`,
   'Tottenham Hotspur': `${PALADAR}/inglaterra/premier/png/tottenham.png`,
   'Tottenham': `${PALADAR}/inglaterra/premier/png/tottenham.png`,
+  'Spurs': `${PALADAR}/inglaterra/premier/png/tottenham.png`,
   'Aston Villa': `${PALADAR}/inglaterra/premier/png/astonvilla.png`,
   'Newcastle United': `${PALADAR}/inglaterra/premier/png/newcastle.png`,
   'Newcastle': `${PALADAR}/inglaterra/premier/png/newcastle.png`,
@@ -40,6 +43,7 @@ export const ESCUDOTECA = {
   'Wolverhampton Wanderers': `${PALADAR}/inglaterra/premier/png/wolves.png`,
   'Wolverhampton': `${PALADAR}/inglaterra/premier/png/wolves.png`,
   'Nottingham Forest': `${PALADAR}/inglaterra/premier/png/nottingham_forest.png`,
+  "Nott'm Forest": `${PALADAR}/inglaterra/premier/png/nottingham_forest.png`,
   'Bournemouth': `${PALADAR}/inglaterra/premier/png/bournemouth.png`,
   'Leeds United': `${PALADAR}/inglaterra/premier/png/leeds.png`,
   'Leeds': `${PALADAR}/inglaterra/premier/png/leeds.png`,
@@ -51,6 +55,10 @@ export const ESCUDOTECA = {
   'Southampton': `${PALADAR}/inglaterra/premier/png/southampton.png`,
   'Ipswich Town': `${PALADAR}/inglaterra/premier/png/ipswich.png`,
   'Ipswich': `${PALADAR}/inglaterra/premier/png/ipswich.png`,
+  'Coventry City': `${PALADAR}/inglaterra/championship/png/coventry.png`,
+  'Coventry': `${PALADAR}/inglaterra/championship/png/coventry.png`,
+  'Hull City': `${PALADAR}/inglaterra/championship/png/hull.png`,
+  'Hull': `${PALADAR}/inglaterra/championship/png/hull.png`,
 
   // ── LaLiga ──
   'Alavés': `${PALADAR}/espana/laliga/png/alaves.png`,
@@ -60,23 +68,37 @@ export const ESCUDOTECA = {
   'Atlético de Madrid': `${APISPORTS}/530.png`,
   'Atlético Madrid': `${APISPORTS}/530.png`,
   'Barcelona': `${PALADAR}/espana/laliga/png/barcelona.png`,
+  'FC Barcelona': `${PALADAR}/espana/laliga/png/barcelona.png`,
   'Celta de Vigo': `${PALADAR}/espana/laliga/png/celta.png`,
   'Celta': `${PALADAR}/espana/laliga/png/celta.png`,
+  'RC Celta': `${PALADAR}/espana/laliga/png/celta.png`,
   'Elche': `${PALADAR}/espana/laliga/png/elche.png`,
+  'Elche CF': `${PALADAR}/espana/laliga/png/elche.png`,
   'Espanyol': `${PALADAR}/espana/laliga/png/espanyol.png`,
+  'RCD Espanyol': `${PALADAR}/espana/laliga/png/espanyol.png`,
   'Getafe': `${PALADAR}/espana/laliga/png/getafe.png`,
+  'Getafe CF': `${PALADAR}/espana/laliga/png/getafe.png`,
   'Girona': `${APISPORTS}/547.png`,
+  'Girona FC': `${APISPORTS}/547.png`,
   'Levante': `${PALADAR}/espana/laliga/png/levante.png`,
-  'Mallorca': `${APISPORTS}/552.png`,
+  'Levante UD': `${PALADAR}/espana/laliga/png/levante.png`,
+  'Mallorca': `${PALADAR}/espana/laliga/png/mallorca.png`,
+  'RCD Mallorca': `${PALADAR}/espana/laliga/png/mallorca.png`,
   'Osasuna': `${PALADAR}/espana/laliga/png/osasuna.png`,
+  'CA Osasuna': `${PALADAR}/espana/laliga/png/osasuna.png`,
+  'Real Oviedo': `${PALADAR}/espana/laliga/png/realoviedo.png`,
+  'R. Oviedo': `${PALADAR}/espana/laliga/png/realoviedo.png`,
   'Rayo Vallecano': `${PALADAR}/espana/laliga/png/rayovallecano.png`,
   'Real Betis': `${PALADAR}/espana/laliga/png/betis.png`,
   'Betis': `${PALADAR}/espana/laliga/png/betis.png`,
   'Real Madrid': `${PALADAR}/espana/laliga/png/realmadrid.png`,
   'Real Sociedad': `${PALADAR}/espana/laliga/png/realsociedad.png`,
   'Sevilla': `${PALADAR}/espana/laliga/png/sevilla.png`,
+  'Sevilla FC': `${PALADAR}/espana/laliga/png/sevilla.png`,
   'Valencia': `${PALADAR}/espana/laliga/png/valencia.png`,
+  'Valencia CF': `${PALADAR}/espana/laliga/png/valencia.png`,
   'Villarreal': `${PALADAR}/espana/laliga/png/villarreal.png`,
+  'Villarreal CF': `${PALADAR}/espana/laliga/png/villarreal.png`,
 
   // ── Serie A ──
   // Los nombres EA de FC24 (leagues.js) matchean por la clave EA; el alias con

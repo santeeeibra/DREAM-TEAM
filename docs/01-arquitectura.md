@@ -25,7 +25,7 @@ Fuente de verdad (estado/vars): `src/ui/main.js` (primeras líneas) + capas del 
 - `SIL_CARTA` — SVG data-URI, silueta de fallback para cartas sin foto (es el `<img src>` por defecto).
 - `PAISES` / `BANDERAS` — 24 países `[nombre, código ISO]`; dropdown con bandera (flagcdn.com). El valor guardado es el **nombre** del país (se persiste en `managers.country`).
 - `LIGAS` — `premier` / `laliga` / `seriea` (Premier League, LaLiga, Serie A), con logos de api-sports.io (CDN público temporal; `onerror` los oculta). Los clubes de cada liga viven en `src/data/leagues.js` (20 por liga, id estables `club_id`) y son los que ve el jugador en el dropdown y en el draft.
-- `ESCUDOTECA` (`src/data/escudoteca.js`) — único lugar de escudos reales: mapa nombre → URL (Escudoteca Paladar Negro + api-sports.io para Atlético/Girona/Mallorca). Incluye alias de nombre y lookup normalizado `escudoDeNombre(nombre)`. Luton Town y Real Oviedo sin URL → fallback SVG.
+- `ESCUDOTECA` (`src/data/escudoteca.js`) — único lugar de escudos reales: mapa nombre → URL (Escudoteca Paladar Negro + api-sports.io para Atlético/Girona). Incluye alias de nombre (variantes, nombres EA de FC24) y lookup normalizado `escudoDeNombre(nombre)`. Si un escudo no existe o falla el CDN, el sistema de fallback automático genera SVG.
 - `escudoDe(cl)` / `escudoRival(nombre)` / `escudoClub(nombre)` — patrón de fallback: badge real (`badge_url` / `club_badge_url` / `badge` / `ui.miEscudo`) → teca local (`escudoDeNombre`) → si falta o el CDN falla, SVG generado por nombre (`badgeGenerator.js`). **Nunca queda un club sin escudo.**
 
 ## Estado visual (objeto `ui`)
