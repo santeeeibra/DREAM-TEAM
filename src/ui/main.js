@@ -1804,24 +1804,20 @@ const acciones = {
   'ob-set-modo'(el) { ui.onboarding.modoJuego = el.dataset.modo; _guardarDtDraft(); },
   'volver-onboarding'() { ui.vista = 'onboarding'; render(); },
   'abrir-sobre'(el) {
-    console.log('[DEBUG] abrir-sobre llamado', { el, dataset: el?.dataset });
     const container = el.closest('.pack-container');
-    console.log('[DEBUG] container encontrado:', container);
-    console.log('[DEBUG] c.sobresIniciales:', c?.sobresIniciales);
-    if (container && !container.classList.contains('opening')) {
-      container.classList.add('opening');
-      console.log('[DEBUG] Animación iniciada, esperando 800ms...');
-      // Esperar a que termine la animación antes de mostrar las cartas
-      setTimeout(() => {
-        const idx = Number(el.dataset.i);
-        console.log('[DEBUG] Agregando índice:', idx);
+    if (!container || container.classList.contains('opening') || container.classList.contains('disabled')) return;
+    
+    // Iniciar animación épica (1.2s total)
+    container.classList.add('opening');
+    
+    // Esperar a que termine la animación antes de mostrar las cartas
+    setTimeout(() => {
+      const idx = Number(el.dataset.i);
+      if (!ui.sobresAbiertos.includes(idx)) {
         ui.sobresAbiertos.push(idx);
-        console.log('[DEBUG] sobresAbiertos ahora:', ui.sobresAbiertos);
-        render();
-      }, 800);
-    } else {
-      console.log('[DEBUG] No se agregó animación. container:', !!container, 'opening:', container?.classList.contains('opening'));
-    }
+      }
+      render();
+    }, 1200);
   },
   'ir-once'() {
     ui.vista = 'once'; ui.slot = null;
@@ -1913,12 +1909,11 @@ const acciones = {
     ui.vista = c.fase === FASES.FIN ? 'fin' : c.fase === FASES.LESION ? 'lesion' : c.fase === FASES.RESUMEN ? 'resumen' : 'previa';
   },
   async 'abrir-refuerzo'(el) {
-    // Animación de apertura del sobre
     const container = el?.closest('.pack-container');
     if (container && !container.classList.contains('opening')) {
       container.classList.add('opening');
-      // Esperar a que termine la animación antes de continuar
-      await new Promise(resolve => setTimeout(resolve, 800));
+      // Esperar a que termine la animación épica (1.2s) antes de continuar
+      await new Promise(resolve => setTimeout(resolve, 1200));
     }
     
     calcularOfertasPlantel(c);
