@@ -1577,7 +1577,7 @@ const PANTALLAS = {
       <div class="eyebrow">Modo Draft · Carta ${pick + 1} de ${total}</div>
       <h2>Elegí tu carta</h2>
       <p class="hint">Quedan ${total - pick} elecciones. Cada carta que elegís va directo a tu plantel.</p>
-      <div class="grid-cartas" style="grid-template-columns:repeat(auto-fill,minmax(140px,1fr))">
+      <div class="grid-cartas" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr))">
         ${opciones.map((x, i) => `
           <div data-accion="draft-elegir" data-i="${i}" style="cursor:pointer;transition:transform .15s" onmouseenter="this.style.transform='translateY(-4px)'" onmouseleave="this.style.transform=''">
             ${carta(x, { i })}
