@@ -56,7 +56,7 @@ export function crearLiga(rng, club, { temporada = 1, posAnterior = null, ovrDT 
     : 0;
 
   const rivales = rng.shuffle(candidatosRivales(club)).slice(0, LIGA.EQUIPOS - 1);
-  const equipos = [
+  let equipos = [
     { id: 0, nombre: club.name, fuerza: 0, esMio: true, clubId: club.id || null },
     ...rivales.map((r, i) => {
       // Jerarquía real por club: cada rival saca su fuerza de la banda de su
@@ -73,7 +73,12 @@ export function crearLiga(rng, club, { temporada = 1, posAnterior = null, ovrDT 
       };
     }),
   ];
-  return { equipos, fixture: generarFixture(rng, LIGA.EQUIPOS), tabla: tablaVacia(equipos) };
+  // El fixture se arma con la cantidad REAL de equipos. Bundesliga tiene 18,
+  // no 20: si fijamos n=LIGA.EQUIPOS aparecen ids sin fila y simularTramo
+  // explota al leer .esMio de undefined.
+  if (equipos.length % 2 !== 0) equipos = equipos.slice(0, equipos.length - 1);
+  const n = Math.max(2, equipos.length);
+  return { equipos, fixture: generarFixture(rng, n), tabla: tablaVacia(equipos) };
 }
 
 function gauss(rng, media, sd) {
@@ -88,7 +93,7 @@ export function getEstiloRival(rival) {
   return ESTILOS_CLUB[key] ?? { goles_mod: 0, concedidos_mod: 0, presion_extra: 1 };
 }
 
-/** Round-robin (círculo) ida y vuelta: 38 fechas para 20 equipos. */
+/** Round-robin (círculo) ida y vuelta: 2×(n−1) fechas. n tiene que ser par. */
 function generarFixture(rng, n) {
   const ids = rng.shuffle([...Array(n).keys()]);
   const fechas = [];
@@ -149,9 +154,14 @@ export function simularTramo(rng, liga, desde, hasta, fuerzaMia, misJugadores = 
   const multGC = opciones.sinArquero ? FUERZA.SIN_ARQUERO_MULT_GC : 1;
   const misPartidos = [];
   const estadisticas = { goleadores: {}, asistencias: {} };
-  for (let f = desde; f < hasta; f++) {
-    for (const [localId, visitaId] of liga.fixture[f]) {
+  const nFechas = liga.fixture?.length ?? 0;
+  const fin = Math.min(hasta, nFechas);
+  for (let f = desde; f < fin; f++) {
+    const fecha = liga.fixture[f];
+    if (!fecha) continue;
+    for (const [localId, visitaId] of fecha) {
       const local = liga.equipos[localId], visita = liga.equipos[visitaId];
+      if (!local || !visita) continue;
       const fl = (local.esMio ? fuerzaMia : local.fuerza) + gauss(rng, 0, 1.8);
       const fv = (visita.esMio ? fuerzaMia : visita.fuerza) + gauss(rng, 0, 1.8);
       let gl = goles(rng, fl, fv, FUERZA.LOCALIA);
