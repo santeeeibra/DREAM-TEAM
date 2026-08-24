@@ -3,7 +3,7 @@
 //
 // Fuente principal: Escudoteca Paladar Negro (PNGs hotlinkeables). Refuerzo
 // con media.api-sports.io (el mismo CDN de logos de liga que ya usa la UI)
-// para Atlético y Girona.
+// para Atlético, Girona, Mallorca y Real Oviedo.
 //
 // Las claves incluyen alias de nombre (corto del motor / largo de leagues.js
 // / variantes de la DB / nombres EA de FC24) para que el lookup por `cl.name`
@@ -82,12 +82,12 @@ export const ESCUDOTECA = {
   'Girona FC': `${APISPORTS}/547.png`,
   'Levante': `${PALADAR}/espana/laliga/png/levante.png`,
   'Levante UD': `${PALADAR}/espana/laliga/png/levante.png`,
-  'Mallorca': `${PALADAR}/espana/laliga/png/mallorca.png`,
-  'RCD Mallorca': `${PALADAR}/espana/laliga/png/mallorca.png`,
+  'Mallorca': `${APISPORTS}/727.png`,
+  'RCD Mallorca': `${APISPORTS}/727.png`,
   'Osasuna': `${PALADAR}/espana/laliga/png/osasuna.png`,
   'CA Osasuna': `${PALADAR}/espana/laliga/png/osasuna.png`,
-  'Real Oviedo': `${PALADAR}/espana/laliga/png/realoviedo.png`,
-  'R. Oviedo': `${PALADAR}/espana/laliga/png/realoviedo.png`,
+  'Real Oviedo': `${APISPORTS}/720.png`,
+  'R. Oviedo': `${APISPORTS}/720.png`,
   'Rayo Vallecano': `${PALADAR}/espana/laliga/png/rayovallecano.png`,
   'Real Betis': `${PALADAR}/espana/laliga/png/betis.png`,
   'Betis': `${PALADAR}/espana/laliga/png/betis.png`,
