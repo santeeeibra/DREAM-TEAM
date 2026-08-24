@@ -1458,8 +1458,10 @@ const PANTALLAS = {
           <p class="evento-copa-texto">${esc(n.texto)}</p>
           <div class="decision-grid single">
             <button class="decision-card grave" data-accion="elegir" data-op="${opcionCat.id}">
-              <span class="decision-label">${esc(opLabel)}</span>
-              <div class="decision-chips">${chipsEsperados(opcionCat)}</div>
+              <div class="form-field">
+                <span class="decision-label">${esc(opLabel)}</span>
+                <div class="decision-chips">${chipsEsperados(opcionCat)}</div>
+              </div>
             </button>
           </div>
         </div>
@@ -1488,13 +1490,15 @@ const PANTALLAS = {
             const claseAdicional = esConservadora ? ' conservadora' : '';
             
             return `<button class="decision-card${claseAdicional}" data-accion="elegir" data-op="${o.id}">
-              <span class="decision-label">${esc(o.label)}</span>
-              ${tieneEfectosFijos ? chipsFijos(opcionCat) : ''}
-              ${tieneResultados ? `<div class="decision-chips">${decisionResultChips(opcionCat)}</div>` : ''}
-              ${esConservadora ? `<div class="decision-effects-neutral">
-                <span class="chip neutral">🔒 Sin cambios</span>
-                <span class="effect-note">(Mantener estado actual)</span>
-              </div>` : ''}
+              <div class="form-field">
+                <span class="decision-label">${esc(o.label)}</span>
+                ${tieneEfectosFijos ? chipsFijos(opcionCat) : ''}
+                ${tieneResultados ? `<div class="decision-chips">${decisionResultChips(opcionCat)}</div>` : ''}
+                ${esConservadora ? `<div class="decision-effects-neutral">
+                  <span class="chip neutral">🔒 Sin cambios</span>
+                  <span class="effect-note">(Mantener estado actual)</span>
+                </div>` : ''}
+              </div>
             </button>`;
           }).join('')}
         </div>
