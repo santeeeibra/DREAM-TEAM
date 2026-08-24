@@ -1429,9 +1429,11 @@ const PANTALLAS = {
               <div class="evento-copa-avatar-ring"></div>
               <img src="${avatarLockerRoom}" alt="" class="evento-copa-avatar" loading="lazy">
             </div>
-            <div class="eyebrow">Punto de decisión</div>
+            <div class="evento-copa-header-text">
+              <div class="eyebrow">Punto de decisión</div>
+              <h2 class="evento-copa-titulo" style="opacity:.4">Pasa algo en el club…</h2>
+            </div>
           </div>
-          <h2 class="evento-copa-titulo" style="opacity:.4">Pasa algo en el club…</h2>
           <p class="hint">Un segundo.</p>
         </div>
       </div>`;
@@ -1452,9 +1454,11 @@ const PANTALLAS = {
               <div class="evento-copa-avatar-ring grave"></div>
               <img src="${avatarUrl}" alt="" class="evento-copa-avatar" loading="lazy">
             </div>
-            <div class="eyebrow" style="color:#ff5b1e">Notificación — Temporada ${c.temporada}</div>
+            <div class="evento-copa-header-text">
+              <div class="eyebrow" style="color:#ff5b1e">Notificación — Temporada ${c.temporada}</div>
+              <h2 class="evento-copa-titulo">${esc(n.titulo)}</h2>
+            </div>
           </div>
-          <h2 class="evento-copa-titulo">${esc(n.titulo)}</h2>
           <p class="evento-copa-texto">${esc(n.texto)}</p>
           <div class="decision-grid single">
             <button class="decision-card grave" data-accion="elegir" data-op="${opcionCat.id}">
@@ -1477,9 +1481,11 @@ const PANTALLAS = {
             <div class="evento-copa-avatar-ring"></div>
             <img src="${avatarUrl}" alt="" class="evento-copa-avatar" loading="lazy">
           </div>
-          <div class="eyebrow">Temporada ${c.temporada} · Decisión ${c.tramo + 1}</div>
+          <div class="evento-copa-header-text">
+            <div class="eyebrow">Temporada ${c.temporada} · Decisión ${c.tramo + 1}</div>
+            <h2 class="evento-copa-titulo">${esc(n.titulo)}</h2>
+          </div>
         </div>
-        <h2 class="evento-copa-titulo">${esc(n.titulo)}</h2>
         <p class="evento-copa-texto">${esc(n.texto)}</p>
         <div class="decision-grid">
           ${n.opciones.map((o) => {

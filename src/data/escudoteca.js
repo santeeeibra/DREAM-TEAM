@@ -45,6 +45,13 @@ export const ESCUDOTECA = {
   'Leeds': `${PALADAR}/inglaterra/premier/png/leeds.png`,
   'Sunderland': `${PALADAR}/inglaterra/premier/png/sunderland.png`,
 
+  // Clubes faltantes de Premier League
+  'Leicester City': `${PALADAR}/inglaterra/premier/png/leicester.png`,
+  'Leicester': `${PALADAR}/inglaterra/premier/png/leicester.png`,
+  'Southampton': `${PALADAR}/inglaterra/premier/png/southampton.png`,
+  'Ipswich Town': `${PALADAR}/inglaterra/premier/png/ipswich.png`,
+  'Ipswich': `${PALADAR}/inglaterra/premier/png/ipswich.png`,
+
   // ── LaLiga ──
   'Alavés': `${PALADAR}/espana/laliga/png/alaves.png`,
   'D. Alavés': `${PALADAR}/espana/laliga/png/alaves.png`,
