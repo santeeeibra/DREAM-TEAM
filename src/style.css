@@ -93,7 +93,23 @@ body {
 }
 
 .manager-header {
-  text-align: center;
+  text-align: left;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 0 8px 0;
+}
+
+.manager-steps {
+  font-size: 12px;
+  letter-spacing: 1px;
+  gap: 12px;
+}
+.manager-step.activo {
+  color: #d4af37;
+  font-weight: 700;
+}
+.manager-step.pendiente {
+  color: #4a4f6a;
 }
 
 .manager-header h1 {
