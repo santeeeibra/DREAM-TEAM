@@ -10,6 +10,7 @@ import { CLUBES_JUGABLES } from '../data/nombres.js';
 import { escudoDeNombre } from '../data/escudoteca.js';
 import { pedirNarracion } from '../net/evento.js';
 import { generateClubBadgeDataURI } from '../utils/badgeGenerator.js';
+import goldPackImageUrl from '../assets/images/gold_pack.png';
 
 const app = document.getElementById('app');
 // Único pack disponible por ahora (Sobre Dream Team): se usa tanto para los
@@ -696,7 +697,7 @@ function chipsFijos(opcionCat) {
 
 // Helper para renderizar un sobre animado con partículas y glow
 function renderPack(index, disabled = false, label = '') {
-  const packImagePath = '/src/assets/images/gold_pack.png';
+  const packImagePath = goldPackImageUrl;
   return `
     <div class="pack-container ${disabled ? 'disabled' : ''}" data-accion="${disabled ? '' : 'abrir-sobre'}" data-i="${index}">
       <div class="pack-glow"></div>
