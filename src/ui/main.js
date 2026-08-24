@@ -12,6 +12,63 @@ import { pedirNarracion } from '../net/evento.js';
 import { generateClubBadgeDataURI } from '../utils/badgeGenerator.js';
 import goldPackImageUrl from '../assets/images/gold_pack.png';
 
+// Avatares para pantalla de decisiones
+import avatarAgent from '../assets/images/windows-desicion/agent.png';
+import avatarCaptain from '../assets/images/windows-desicion/captain.jpg';
+import avatarCoach from '../assets/images/windows-desicion/coach.jpg';
+import avatarDirector from '../assets/images/windows-desicion/director.jpg';
+import avatarDoctor from '../assets/images/windows-desicion/doctor.jpg';
+import avatarFans from '../assets/images/windows-desicion/fans.png';
+import avatarJournalist from '../assets/images/windows-desicion/journalist.png';
+import avatarLockerRoom from '../assets/images/windows-desicion/locker-room.jpg';
+import avatarPlayer from '../assets/images/windows-desicion/player.png';
+import avatarPresident from '../assets/images/windows-desicion/president.jpg';
+
+// Mapeo de avatares por tag de evento
+const AVATAR_MAP = {
+  agent: avatarAgent,
+  captain: avatarCaptain,
+  coach: avatarCoach,
+  director: avatarDirector,
+  doctor: avatarDoctor,
+  fans: avatarFans,
+  journalist: avatarJournalist,
+  'locker-room': avatarLockerRoom,
+  player: avatarPlayer,
+  president: avatarPresident,
+};
+
+// Sistema de prioridad: tags → avatar (más específico primero)
+const AVATAR_POR_TAG = {
+  medico: 'doctor',
+  mercado: 'agent',
+  individual: 'player',
+  juveniles: 'player',
+  hinchada: 'fans',
+  prensa: 'journalist',
+  dirigencia: 'president',
+  tactico: 'coach',
+  entrenamiento: 'coach',
+  vestuario: 'captain',
+  // Fallback
+  default: 'locker-room'
+};
+
+function obtenerAvatar(tags = []) {
+  if (!tags || tags.length === 0) return AVATAR_MAP[AVATAR_POR_TAG.default];
+  
+  // Buscar el primer tag que tenga un avatar asignado
+  for (const tag of tags) {
+    const avatarKey = AVATAR_POR_TAG[tag];
+    if (avatarKey && AVATAR_MAP[avatarKey]) {
+      return AVATAR_MAP[avatarKey];
+    }
+  }
+  
+  // Fallback
+  return AVATAR_MAP[AVATAR_POR_TAG.default];
+}
+
 const app = document.getElementById('app');
 // Único pack disponible por ahora (Sobre Dream Team): se usa tanto para los
 // 3 sobres gratis del onboarding como para el sobre de refuerzo post-temporada.
@@ -1313,11 +1370,22 @@ const PANTALLAS = {
   evento: () => {
     if (ui.cargando) {
       return `<div class="stack${tsEntra ? ' ts-anim' : ''}">${marcador()}
-        <div class="panel evento stack"><div class="eyebrow">Punto de decisión</div>
-        <h2 style="opacity:.4">Pasa algo en el club…</h2><p class="hint">Un segundo.</p></div></div>`;
+        <div class="panel evento-copa stack">
+          <div class="evento-copa-header">
+            <div class="evento-copa-avatar-wrap">
+              <div class="evento-copa-avatar-ring"></div>
+              <img src="${avatarLockerRoom}" alt="" class="evento-copa-avatar" loading="lazy">
+            </div>
+            <div class="eyebrow">Punto de decisión</div>
+          </div>
+          <h2 class="evento-copa-titulo" style="opacity:.4">Pasa algo en el club…</h2>
+          <p class="hint">Un segundo.</p>
+        </div>
+      </div>`;
     }
     const n = c.eventoActual.narracion;
     const p = paquete(n.paqueteId);
+    const avatarUrl = obtenerAvatar(p.tags || []);
 
     // Evento grave: notificación forzada sin elección A/B
     if (p.grave) {
@@ -1325,10 +1393,16 @@ const PANTALLAS = {
       const opLabel = opcionCat.label || n.opciones?.[0]?.label || 'Continuar';
       return `<div class="stack${tsEntra ? ' ts-anim' : ''}">
         ${marcador()}
-        <div class="panel evento stack" style="border-color:rgba(255,91,30,.35)">
-          <div class="eyebrow" style="color:#ff5b1e">Notificación — Temporada ${c.temporada}</div>
-          <h2>${esc(n.titulo)}</h2>
-          <p>${esc(n.texto)}</p>
+        <div class="panel evento-copa evento-copa-grave stack">
+          <div class="evento-copa-header">
+            <div class="evento-copa-avatar-wrap">
+              <div class="evento-copa-avatar-ring grave"></div>
+              <img src="${avatarUrl}" alt="" class="evento-copa-avatar" loading="lazy">
+            </div>
+            <div class="eyebrow" style="color:#ff5b1e">Notificación — Temporada ${c.temporada}</div>
+          </div>
+          <h2 class="evento-copa-titulo">${esc(n.titulo)}</h2>
+          <p class="evento-copa-texto">${esc(n.texto)}</p>
           <div class="decision-grid single">
             <button class="decision-card grave" data-accion="elegir" data-op="${opcionCat.id}">
               <span class="decision-label">${esc(opLabel)}</span>
@@ -1339,13 +1413,19 @@ const PANTALLAS = {
       </div>`;
     }
 
-    // Evento normal con dos opciones (estilo COPERO)
+    // Evento normal con dos opciones (estilo NOCHE DE COPA)
     return `<div class="stack${tsEntra ? ' ts-anim' : ''}">
       ${marcador()}
-      <div class="panel evento stack">
-        <div class="eyebrow">Temporada ${c.temporada} · Decisión ${c.tramo + 1}</div>
-        <h2>${esc(n.titulo)}</h2>
-        <p>${esc(n.texto)}</p>
+      <div class="panel evento-copa stack">
+        <div class="evento-copa-header">
+          <div class="evento-copa-avatar-wrap">
+            <div class="evento-copa-avatar-ring"></div>
+            <img src="${avatarUrl}" alt="" class="evento-copa-avatar" loading="lazy">
+          </div>
+          <div class="eyebrow">Temporada ${c.temporada} · Decisión ${c.tramo + 1}</div>
+        </div>
+        <h2 class="evento-copa-titulo">${esc(n.titulo)}</h2>
+        <p class="evento-copa-texto">${esc(n.texto)}</p>
         <div class="decision-grid">
           ${n.opciones.map((o) => {
             const opcionCat = p.opciones.find((x) => x.id === o.id);

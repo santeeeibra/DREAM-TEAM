@@ -260,8 +260,96 @@ input:focus,select:focus,button:focus-visible{outline:2px solid var(--fluor);out
   .bench-card-slot .card:hover{transform:translateY(-4px)}
 }
 
-/* evento */
-.evento{border-left:3px solid var(--fluor);animation:entrar .35s cubic-bezier(.2,.8,.2,1)}
+/* evento - Estilo "Noche de Copa" */
+.evento-copa {
+  background: linear-gradient(135deg, rgba(10,10,20,0.95) 0%, rgba(20,20,35,0.95) 100%);
+  border: 1px solid rgba(212,175,55,0.2);
+  animation: entrar .35s cubic-bezier(.2,.8,.2,1);
+  position: relative;
+  overflow: hidden;
+}
+.evento-copa::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,215,0,0.5), transparent);
+}
+.evento-copa-grave {
+  border-color: rgba(255,91,30,.35);
+  background: linear-gradient(135deg, rgba(20,10,10,0.95) 0%, rgba(35,20,20,0.95) 100%);
+}
+
+/* Header con avatar */
+.evento-copa-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.evento-copa-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+.evento-copa-avatar-ring {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  animation: pulse-gold 2s ease-in-out infinite;
+  z-index: 0;
+}
+.evento-copa-avatar-ring.grave {
+  background: linear-gradient(135deg, #ff5b1e, #ff3300);
+}
+.evento-copa-avatar {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid rgba(10,10,20,0.8);
+  z-index: 1;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
+
+/* Título con gradiente dorado */
+.evento-copa-titulo {
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+  font-size: 22px;
+  line-height: 1.3;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 12px 0;
+}
+.evento-copa-texto {
+  font-size: 15px;
+  line-height: 1.6;
+  color: rgba(255,255,255,0.85);
+  margin: 12px 0 20px;
+}
+
+/* Animación de pulso dorado */
+@keyframes pulse-gold {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.05);
+  }
+}
+
 @keyframes entrar{from{opacity:0;transform:translateY(10px)}}
 
 /* tarjeta de opción: cabecera clickeable (elige) + toggle separado (detalle) */
@@ -330,12 +418,23 @@ input:focus,select:focus,button:focus-visible{outline:2px solid var(--fluor);out
 }
 .decision-card{
   display:flex;flex-direction:column;gap:10px;padding:18px 16px;
-  border:1px solid var(--linea);border-radius:var(--r);background:rgba(255,255,255,.03);
+  border:1px solid rgba(212,175,55,0.3);border-radius:var(--r);
+  background:linear-gradient(135deg, rgba(255,255,255,.04) 0%, rgba(255,255,255,.02) 100%);
   text-align:left;cursor:pointer;
-  transition:transform .2s cubic-bezier(.2,.7,.2,1),box-shadow .25s,border-color .25s}
-.decision-card:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.3),0 0 0 1px rgba(255,94,26,.18);border-color:rgba(255,94,26,.25)}
+  transition:transform .2s cubic-bezier(.2,.7,.2,1),box-shadow .25s,border-color .25s,background .3s}
+.decision-card:hover{
+  transform:translateY(-3px) scale(1.02);
+  box-shadow:0 12px 32px rgba(212,175,55,.25),0 0 0 1px rgba(255,215,0,.35);
+  border-color:rgba(255,215,0,.5);
+  background:linear-gradient(135deg, rgba(255,215,0,.08) 0%, rgba(255,165,0,.06) 100%)}
 .decision-card:active{transform:scale(.97);transition-duration:.08s}
-.decision-card.grave{border-color:rgba(255,91,30,.3);background:rgba(255,91,30,.05)}
+.decision-card.grave{
+  border-color:rgba(255,91,30,.4);
+  background:linear-gradient(135deg, rgba(255,91,30,.08) 0%, rgba(255,91,30,.04) 100%)}
+.decision-card.grave:hover{
+  border-color:rgba(255,91,30,.6);
+  background:linear-gradient(135deg, rgba(255,91,30,.12) 0%, rgba(255,91,30,.08) 100%);
+  box-shadow:0 12px 32px rgba(255,91,30,.3),0 0 0 1px rgba(255,91,30,.4)}
 .decision-label{font-weight:700;font-size:15px;line-height:1.3}
 .decision-chips{display:flex;flex-direction:column;gap:6px;margin-top:auto}
 .decision-result{display:flex;align-items:center;gap:8px;padding:5px 10px;border-radius:6px;
