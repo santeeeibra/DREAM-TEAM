@@ -1,0 +1,410 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   DREAM TEAM — Premium UI System ($150k+ Agency-Level)
+   
+   Arquitectura:
+   - Ethereal Glass adaptado deportivo
+   - Double-Bezel (Doppelrand) para paneles
+   - Glassmorphism pesado con backdrop-blur
+   - Motion choreography con cubic-bezier custom
+   
+   Importar después de cartas.css en index.html
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   DOUBLE-BEZEL ARCHITECTURE — Paneles Premium
+   ───────────────────────────────────────────────────────────────────────── */
+
+.panel {
+  position: relative;
+  padding: 3px;
+  background: linear-gradient(145deg, 
+    rgba(255, 94, 26, 0.12) 0%, 
+    rgba(14, 18, 16, 0.95) 25%, 
+    rgba(14, 18, 16, 0.95) 75%,
+    rgba(111, 227, 154, 0.08) 100%
+  );
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-float);
+  border: none;
+  transition: all 600ms var(--ease-premium);
+}
+
+.panel:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 20px 56px rgba(0, 0, 0, 0.65),
+    0 8px 20px rgba(0, 0, 0, 0.45),
+    0 0 32px rgba(255, 94, 26, 0.15);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   MARCADOR STICKY — Glassmorphism Premium
+   ───────────────────────────────────────────────────────────────────────── */
+
+.marcador {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  margin: calc(var(--space-md) * -1) calc(var(--space-md) * -1) var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  background: rgba(5, 5, 5, 0.85);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-bottom: 1px solid rgba(255, 94, 26, 0.15);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.65),
+    0 4px 12px rgba(0, 0, 0, 0.45);
+  transition: all 600ms var(--ease-premium);
+}
+
+.marcador::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent, 
+    rgba(255, 94, 26, 0.6) 30%, 
+    rgba(255, 94, 26, 0.8) 50%,
+    rgba(255, 94, 26, 0.6) 70%, 
+    transparent
+  );
+  opacity: 0.85;
+  animation: glowPulse 3s ease-in-out infinite;
+}
+
+@keyframes glowPulse {
+  0%, 100% { 
+    opacity: 0.65; 
+    transform: scaleX(0.95); 
+  }
+  50% { 
+    opacity: 1; 
+    transform: scaleX(1); 
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   BOTONES — Button-in-Button Pattern
+   ───────────────────────────────────────────────────────────────────────── */
+
+.btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px;
+  background: linear-gradient(135deg, 
+    rgba(255, 94, 26, 1) 0%, 
+    rgba(255, 94, 26, 0.92) 100%
+  );
+  border-radius: var(--radius-md);
+  box-shadow: 
+    0 8px 24px rgba(255, 94, 26, 0.35),
+    0 2px 8px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  cursor: pointer;
+  transition: all 400ms var(--ease-premium);
+  border: none;
+  overflow: hidden;
+}
+
+.btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 0%, 
+    rgba(255, 255, 255, 0.15) 0%, 
+    transparent 60%
+  );
+  opacity: 0;
+  transition: opacity 400ms var(--ease-premium);
+  pointer-events: none;
+}
+
+.btn:hover::before {
+  opacity: 1;
+}
+
+.btn:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 
+    0 12px 32px rgba(255, 94, 26, 0.45),
+    0 4px 12px rgba(0, 0, 0, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.btn:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 
+    0 4px 16px rgba(255, 94, 26, 0.25),
+    0 1px 4px rgba(0, 0, 0, 0.35);
+  transition: all 150ms var(--ease-premium);
+}
+
+.btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none;
+  filter: grayscale(0.8);
+}
+
+.btn.ghost {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--linea);
+  color: var(--tiza);
+}
+
+.btn.ghost:hover {
+  box-shadow: 
+    inset 0 0 0 1px var(--fluor),
+    0 8px 24px rgba(255, 94, 26, 0.25);
+  color: var(--fluor);
+  background: rgba(255, 94, 26, 0.08);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   VENTANA DE DECISIÓN — Premium Event Card
+   ───────────────────────────────────────────────────────────────────────── */
+
+.evento-copa {
+  padding: 4px;
+  background: linear-gradient(155deg, 
+    rgba(255, 94, 26, 0.18) 0%,
+    rgba(14, 18, 16, 0.98) 20%,
+    rgba(14, 18, 16, 0.98) 80%,
+    rgba(111, 227, 154, 0.12) 100%
+  );
+  border-radius: 28px;
+  box-shadow: 
+    0 24px 64px rgba(0, 0, 0, 0.65),
+    0 8px 24px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border: none;
+  position: relative;
+  overflow: visible;
+  transition: all 600ms var(--ease-premium);
+}
+
+.evento-copa::after {
+  content: '';
+  position: absolute;
+  inset: -100px;
+  background: radial-gradient(circle at 50% 0%, 
+    rgba(255, 94, 26, 0.15) 0%, 
+    transparent 50%
+  );
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 600ms var(--ease-premium);
+}
+
+.evento-copa:hover::after {
+  opacity: 1;
+}
+
+.evento-copa-grave {
+  background: linear-gradient(155deg, 
+    rgba(255, 74, 74, 0.20) 0%,
+    rgba(14, 18, 16, 0.98) 20%,
+    rgba(14, 18, 16, 0.98) 80%,
+    rgba(255, 74, 74, 0.10) 100%
+  );
+  box-shadow: 
+    0 24px 64px rgba(0, 0, 0, 0.65),
+    0 8px 24px rgba(255, 74, 74, 0.25);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   INPUTS & DROPDOWNS — Glassmorphism
+   ───────────────────────────────────────────────────────────────────────── */
+
+input, select {
+  background: rgba(14, 23, 18, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(233, 255, 240, 0.08);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  color: var(--tiza);
+  font: inherit;
+  width: 100%;
+  transition: all 400ms var(--ease-premium);
+}
+
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--fluor);
+  background: rgba(14, 23, 18, 0.8);
+  box-shadow: 
+    0 0 0 3px rgba(255, 94, 26, 0.15),
+    0 8px 24px rgba(0, 0, 0, 0.35);
+  transform: translateY(-1px);
+}
+
+input:hover, select:hover {
+  border-color: rgba(255, 94, 26, 0.25);
+}
+
+.dd-btn {
+  background: rgba(14, 23, 18, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(233, 255, 240, 0.08);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  transition: all 400ms var(--ease-premium);
+}
+
+.dd-btn:hover {
+  border-color: var(--fluor);
+  background: rgba(14, 23, 18, 0.75);
+  box-shadow: 0 4px 16px rgba(255, 94, 26, 0.15);
+}
+
+.dd-opciones {
+  background: rgba(14, 18, 16, 0.95);
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  border: 1px solid rgba(255, 94, 26, 0.15);
+  border-radius: var(--radius-md);
+  box-shadow: 
+    0 24px 64px rgba(0, 0, 0, 0.75),
+    0 8px 24px rgba(0, 0, 0, 0.45);
+  padding: 8px;
+  gap: 4px;
+}
+
+.dd-item {
+  border-radius: 8px;
+  transition: all 300ms var(--ease-premium);
+}
+
+.dd-item:hover {
+  background: rgba(255, 94, 26, 0.12);
+  transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(255, 94, 26, 0.15);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   GAUGES & CHIPS — Premium Micro-Components
+   ───────────────────────────────────────────────────────────────────────── */
+
+.gauge {
+  transition: 
+    filter 400ms var(--ease-premium),
+    transform 400ms var(--ease-premium);
+}
+
+.gauge.preview {
+  filter: drop-shadow(0 0 16px rgba(255, 94, 26, 0.45));
+  transform: scale(1.06) translateY(-4px);
+}
+
+.gauge-arc-svg {
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.35));
+  transition: filter 400ms var(--ease-premium);
+}
+
+.gauge.bad .gauge-arc-svg {
+  filter: 
+    drop-shadow(0 0 8px rgba(255, 74, 74, 0.55))
+    drop-shadow(0 4px 12px rgba(0, 0, 0, 0.35));
+}
+
+.gauge.warn .gauge-arc-svg {
+  filter: 
+    drop-shadow(0 0 6px rgba(255, 194, 75, 0.45))
+    drop-shadow(0 4px 12px rgba(0, 0, 0, 0.35));
+}
+
+.chip {
+  transition: all 400ms var(--ease-premium);
+}
+
+.chip:hover {
+  transform: translateY(-1px) scale(1.04);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   CANCHA GRID — Premium Field Styling
+   ───────────────────────────────────────────────────────────────────────── */
+
+.cancha-grid {
+  background: 
+    radial-gradient(120% 80% at 50% -20%, rgba(111, 227, 154, 0.16), transparent 55%),
+    radial-gradient(90% 70% at 50% 115%, rgba(111, 227, 154, 0.12), transparent 60%),
+    rgba(10, 13, 11, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(111, 227, 154, 0.15);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  box-shadow: 
+    0 16px 48px rgba(0, 0, 0, 0.55),
+    inset 0 0 60px rgba(111, 227, 154, 0.06);
+}
+
+.cancha-grid::before {
+  background: linear-gradient(90deg, 
+    transparent, 
+    rgba(233, 255, 240, 0.12) 20%,
+    rgba(233, 255, 240, 0.22) 50%,
+    rgba(233, 255, 240, 0.12) 80%,
+    transparent
+  );
+  height: 2px;
+  box-shadow: 0 0 12px rgba(111, 227, 154, 0.35);
+}
+
+.cancha-grid::after {
+  border: 2px solid rgba(233, 255, 240, 0.16);
+  box-shadow: 
+    0 0 20px rgba(111, 227, 154, 0.25),
+    inset 0 0 20px rgba(111, 227, 154, 0.10);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   MOBILE RESPONSIVE
+   ───────────────────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .panel {
+    padding: 2px;
+    border-radius: var(--radius-md);
+  }
+  
+  .evento-copa {
+    padding: 3px;
+    border-radius: 20px;
+  }
+  
+  .marcador {
+    margin: calc(var(--space-sm) * -1) calc(var(--space-sm) * -1) var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   ACCESSIBILITY — Reduced Motion
+   ───────────────────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .panel,
+  .btn,
+  .gauge,
+  .chip,
+  .dd-item {
+    animation: none !important;
+    transition: none !important;
+  }
+  
+  @keyframes glowPulse {
+    0%, 100% { opacity: 0.75; transform: none; }
+  }
+}
+

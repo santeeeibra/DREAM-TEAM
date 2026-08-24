@@ -8,12 +8,50 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/src/ui/cartas.css">
+<link rel="stylesheet" href="/src/ui/premium.css">
 <style>
 :root{
-  --noche:#080B09; --cancha:#0E1712; --panel:#121D17; --linea:rgba(233,255,240,.10);
-  --papel:#EFE9DB; --tiza:#EAF2EC; --humo:#7E8F85;
-  --fluor:#FF5E1A; --led:#6FE39A; --rojo:#FF4A4A; --ambar:#FFC24B;
-  --r:4px;
+  /* ── Paleta oscura profunda (premium) ── */
+  --noche:#050505; 
+  --cancha:#0A0D0B; 
+  --panel:#0E1210; 
+  --linea:rgba(233,255,240,.06);
+  
+  /* ── Glassmorphism ── */
+  --glass-bg:rgba(14,18,16,.75);
+  --glass-border:rgba(233,255,240,.08);
+  
+  /* ── Colores de acento (identidad deportiva) ── */
+  --papel:#EFE9DB; 
+  --tiza:#EAF2EC; 
+  --humo:#7E8F85;
+  --fluor:#FF5E1A; 
+  --led:#6FE39A; 
+  --rojo:#FF4A4A; 
+  --ambar:#FFC24B;
+  
+  /* ── Spatial rhythm (premium spacing) ── */
+  --space-xs:8px;
+  --space-sm:12px;
+  --space-md:20px;
+  --space-lg:32px;
+  --space-xl:48px;
+  --space-2xl:64px;
+  
+  /* ── Squircle radius ── */
+  --radius-sm:12px;
+  --radius-md:18px;
+  --radius-lg:24px;
+  --r:4px; /* legacy fallback */
+  
+  /* ── Premium shadows ── */
+  --shadow-ambient:0 8px 32px rgba(0,0,0,.45), 0 2px 8px rgba(0,0,0,.25);
+  --shadow-float:0 16px 48px rgba(0,0,0,.55), 0 4px 12px rgba(0,0,0,.35);
+  --shadow-glow-fluor:0 0 24px rgba(255,94,26,.25);
+  
+  /* ── Motion curves (premium easing) ── */
+  --ease-premium:cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-elastic:cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
