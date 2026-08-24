@@ -31,7 +31,7 @@
 
 /* Contenido interno del panel con padding respirado */
 .panel > * {
-  padding: var(--space-lg) var(--space-md);
+  padding: 16px var(--space-md);  /* 16px vertical (antes 32px), mantiene 20px horizontal */
 }
 
 .panel h1,
@@ -222,7 +222,7 @@
 
 /* Contenido interno de eventos con padding generoso */
 .evento-copa > * {
-  padding: var(--space-lg) var(--space-md);
+  padding: 12px var(--space-md);  /* 12px vertical (antes 32px), mantiene 20px horizontal */
 }
 
 .evento-copa h2,
