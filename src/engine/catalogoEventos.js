@@ -248,6 +248,13 @@ export const CATALOGO = [
           { prob: 0.2, nota: 'aparecés en la investigación igual', efectos: { presion: 30, moral: -15 } },
         ],
       },
+      {
+        id: 'agarrar', label: 'Agarrar la valija',
+        resultado: [
+          { prob: 0.2, nota: 'sale perfecto', efectos: { money: 50, ratingDelta: 3 } },
+          { prob: 0.8, nota: 'te descubren', efectos: { presion: 100 } },
+        ],
+      },
     ],
   }),
 
