@@ -44,7 +44,13 @@ const RATING_MIN = 40;
 const RATING_MAX = 99;
 
 // --- Ruido de un partido puntual ---
-const AZAR_MAX_SWING = 8; // tope de cuánto puede mover el azar la fuerza de un equipo en un partido
+const AZAR_MAX_SWING = 8; // tope base de cuánto puede mover el azar la fuerza de un equipo en un partido
+
+// --- Volatilidad por crisis (sorpresas cuando el equipo está mal) ---
+const VOLATILIDAD_MORAL_UMBRAL = 50; // moral por debajo de esto activa volatilidad
+const VOLATILIDAD_PRESION_UMBRAL = 40; // presión por encima de esto activa volatilidad
+const VOLATILIDAD_FATIGA_UMBRAL = 60; // fatiga por encima de esto activa volatilidad
+const VOLATILIDAD_MAX_MULTIPLICADOR = 1.75; // máximo 75% más de swing cuando todo está mal
 
 // --- Ventaja de localía ---
 const VENTAJA_LOCAL = 4; // puntos de fuerza extra por jugar de local
@@ -118,15 +124,48 @@ function clamp(valor, minimo, maximo) {
 // AZAR Y GOLES
 // -----------------------------------------------------------------------
 
+// calcularVolatilidadPorCrisis analiza el estado del equipo y devuelve un
+// multiplicador de azar [1.0, VOLATILIDAD_MAX_MULTIPLICADOR]. Cuando el equipo
+// está en crisis (moral baja, presión alta, fatiga acumulada), los resultados
+// se vuelven más impredecibles: puede salir una sorpresa positiva o un
+// desastre, pero nunca un resultado "esperado". Cada factor de crisis suma
+// ~25% de volatilidad extra, hasta un máximo de 75% (tres crisis simultáneas).
+function calcularVolatilidadPorCrisis(moral, presion, fatiga) {
+  let factoresDeCrisis = 0;
+  
+  // Crisis mental: moral por el piso
+  if (moral < VOLATILIDAD_MORAL_UMBRAL) {
+    const deficit = (VOLATILIDAD_MORAL_UMBRAL - moral) / VOLATILIDAD_MORAL_UMBRAL;
+    factoresDeCrisis += deficit * 0.25; // hasta +25%
+  }
+  
+  // Crisis de resultados: presión alta
+  if (presion > VOLATILIDAD_PRESION_UMBRAL) {
+    const exceso = (presion - VOLATILIDAD_PRESION_UMBRAL) / (100 - VOLATILIDAD_PRESION_UMBRAL);
+    factoresDeCrisis += exceso * 0.25; // hasta +25%
+  }
+  
+  // Crisis física: fatiga acumulada
+  if (fatiga > VOLATILIDAD_FATIGA_UMBRAL) {
+    const exceso = (fatiga - VOLATILIDAD_FATIGA_UMBRAL) / (100 - VOLATILIDAD_FATIGA_UMBRAL);
+    factoresDeCrisis += exceso * 0.25; // hasta +25%
+  }
+  
+  // Clamp: nunca superar el multiplicador máximo
+  return clamp(1.0 + factoresDeCrisis, 1.0, VOLATILIDAD_MAX_MULTIPLICADOR);
+}
+
 // generarAzarAcotado devuelve un número en [-AZAR_MAX_SWING, AZAR_MAX_SWING],
 // pero con distribución triangular (no uniforme): sumamos dos random [0,1) y
 // restamos 1, lo que da un rango [-1, 1] con forma de "techo a dos aguas"
 // (mucho más denso cerca del 0 que en los extremos). Es la forma más simple
 // de simular "esto casi siempre es un ruido chico, pero de vez en cuando es
 // grande" sin tener que traer una librería de distribuciones normales.
-function generarAzarAcotado() {
+// Acepta un multiplicador opcional para amplificar el swing en situaciones de
+// crisis (ver calcularVolatilidadPorCrisis).
+function generarAzarAcotado(multiplicador = 1.0) {
   const triangular = Math.random() + Math.random() - 1;
-  return triangular * AZAR_MAX_SWING;
+  return triangular * AZAR_MAX_SWING * multiplicador;
 }
 
 // calcularLambdaDeGoles convierte una diferencia de fuerza en el lambda
@@ -164,8 +203,15 @@ function sortearGoles(lambda) {
 // (fuerzaLocal y fuerzaVisitante = rating_del_11 + moral/10 - fatiga/10 de
 // cada equipo, sin azar todavía: el azar se agrega acá adentro, junto con la
 // ventaja de localía). Devuelve el marcador { golesLocal, golesVisitante }.
-export function simularJornada(fuerzaLocal, fuerzaVisitante) {
-  const fuerzaLocalFinal = fuerzaLocal + VENTAJA_LOCAL + generarAzarAcotado();
+// Si el equipo local está en crisis (estadoLocal con moral/presion/fatiga), el
+// azar se amplifica para simular resultados más impredecibles.
+export function simularJornada(fuerzaLocal, fuerzaVisitante, estadoLocal = null) {
+  // Calcular volatilidad por crisis del equipo local (si aplica)
+  const volatilidad = estadoLocal
+    ? calcularVolatilidadPorCrisis(estadoLocal.moral, estadoLocal.presion, estadoLocal.fatiga)
+    : 1.0;
+  
+  const fuerzaLocalFinal = fuerzaLocal + VENTAJA_LOCAL + generarAzarAcotado(volatilidad);
   const fuerzaVisitanteFinal = fuerzaVisitante + generarAzarAcotado();
 
   const diferencia = fuerzaLocalFinal - fuerzaVisitanteFinal;
@@ -480,9 +526,18 @@ export function simularTramo({ desdeJornada, hastaJornada, rivalesFuerza, rivale
 
     const fuerzaPlantel = nuevoEstado.ratingPlantel + nuevoEstado.moral / 10 - nuevoEstado.fatiga / 10;
 
+    // Pasar el estado del equipo a simularJornada para que calcule volatilidad
+    // por crisis. Presión no está en nuevoEstado aún, así que usamos 0 por ahora
+    // (TODO: agregar presión al estado si se implementa).
+    const estadoParaVolatilidad = {
+      moral: nuevoEstado.moral,
+      presion: 0, // presión no está en el estado del simulador (solo en carrera.js)
+      fatiga: nuevoEstado.fatiga
+    };
+
     const { golesLocal, golesVisitante } = esLocal
-      ? simularJornada(fuerzaPlantel, fuerzaRival)
-      : simularJornada(fuerzaRival, fuerzaPlantel);
+      ? simularJornada(fuerzaPlantel, fuerzaRival, estadoParaVolatilidad)
+      : simularJornada(fuerzaRival, fuerzaPlantel, null); // cuando es visitante, la volatilidad aplica al rival
 
     const golesPlantel = esLocal ? golesLocal : golesVisitante;
     const golesRival = esLocal ? golesVisitante : golesLocal;
