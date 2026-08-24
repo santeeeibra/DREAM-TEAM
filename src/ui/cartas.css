@@ -16,7 +16,7 @@
   --epica-1:#7b2ff7;   --epica-2:#f0a6ff;
 }
 
-.grid-cartas{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:20px;max-width:1200px;margin:0 auto}
+.grid-cartas{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(160px,100%),1fr));gap:20px;max-width:1200px;margin:0 auto;width:100%}
 
 /* ============ reveal escalonado ============ */
 .carta-slot{opacity:0;animation:cartaReveal 480ms var(--card-ease) forwards;animation-delay:calc(var(--i)*55ms)}
