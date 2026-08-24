@@ -780,6 +780,18 @@ function chipsEnResultado(efectos) {
   }).join('  ');
 }
 
+// Nueva función: genera badges HTML para efectos en columna
+function efectosBadges(efectos) {
+  const entradas = Object.entries(efectos).filter(([, val]) => Math.abs(val) >= 0.05);
+  if (!entradas.length) return '<span class="efecto-badge">Sin cambios</span>';
+  return entradas.map(([k, val]) => {
+    const mag = Number.isInteger(val) ? Math.abs(val) : Math.abs(val).toFixed(1);
+    const esBueno = MALO_SI_SUBE.has(k) ? val < 0 : val > 0;
+    const clase = esBueno ? 'positivo' : 'negativo';
+    return `<span class="efecto-badge ${clase}">${ICONO[k]} ${signoDelta(k, val)}${mag}</span>`;
+  }).join('');
+}
+
 // ── Helpers para decisiones estilo COPERO (sin emojis) ──
 function esResultadoPositivo(efectos) {
   let score = 0;
@@ -827,11 +839,14 @@ function decisionResultChips(opcionCat) {
     const positivo = esResultadoPositivo(r.efectos);
     const probPct = Math.round(r.prob * 100);
     const nota = r.nota || 'Resultado';
-    const chipsTexto = chipsEnResultado(r.efectos);
+    const badgesHTML = efectosBadges(r.efectos);
     return `<div class="decision-result ${positivo ? 'pos' : 'neg'}">
       <span class="result-icon">${positivo ? '↗' : '↘'}</span>
-      <span class="result-nota">${esc(nota)}: ${chipsTexto}</span>
-      <span class="result-prob">${probPct}%</span>
+      <span class="result-nota">${esc(nota)}</span>
+      <div class="result-efectos">
+        ${badgesHTML}
+        <span class="efecto-badge probabilidad">${probPct}%</span>
+      </div>
     </div>`;
   }).join('');
 }

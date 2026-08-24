@@ -517,8 +517,12 @@ input:focus,select:focus,button:focus-visible{outline:2px solid var(--fluor);out
 .decision-result.pos{color:var(--led);border-color:rgba(111,227,154,.2)}
 .decision-result.neg{color:var(--rojo);border-color:rgba(255,74,74,.2)}
 .result-icon{font-size:15px;flex-shrink:0}
-.result-nota{flex:1}
-.result-prob{opacity:.6;font-size:12px;white-space:nowrap;padding:2px 6px;background:rgba(255,255,255,.05);border-radius:4px}
+.result-nota{flex:1;font-size:13px;line-height:1.4;color:#d0d3e0}
+.result-efectos{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0}
+.efecto-badge{font-size:11px;font-weight:700;padding:2px 7px;border-radius:4px;background:rgba(255,255,255,.05);white-space:nowrap}
+.efecto-badge.positivo{color:#6fe39a}
+.efecto-badge.negativo{color:#ff7070}
+.efecto-badge.probabilidad{color:#d4af37}
 /* stat rows */
 .stat-rows{display:flex;flex-direction:column;gap:5px}
 .stat-row{display:grid;grid-template-columns:64px 1fr 32px;align-items:center;gap:8px}
