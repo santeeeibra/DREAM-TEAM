@@ -367,6 +367,21 @@ body {
   object-fit: contain;
 }
 
+.liga-chip.selected,
+.liga-btn.selected {
+  border: 2px solid #d4af37;
+  background: rgba(212, 175, 55, 0.15);
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.liga-chip:not(.selected),
+.liga-btn:not(.selected) {
+  border: 1px solid #2b2b45;
+  background: #101020;
+  color: #9aa0b4;
+}
+
 /* ---- Columna derecha: panel de perfil en vivo ---- */
 .manager-resumen {
   position: sticky;
@@ -380,6 +395,23 @@ body {
   border: 1px solid #2b2b45;
   border-radius: 16px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.manager-resumen::before {
+  content: '● EN VIVO';
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font-size: 9px;
+  letter-spacing: 1.5px;
+  color: #6fe39a;
+  font-weight: 700;
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
 }
 
 .resumen-avatar {
