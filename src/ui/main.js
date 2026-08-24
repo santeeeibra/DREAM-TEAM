@@ -1239,11 +1239,15 @@ const PANTALLAS = {
       <div class="eyebrow">Modo carrera · 8 temporadas</div>
       <h1>Dream<br>Team</h1>
       <p style="max-width:42ch;color:var(--humo)">Abrís tus primeros sobres, armás el plantel de tu vida y aguantás ocho temporadas. Cada lesión, cada oferta y cada ultimátum del vestuario te acerca a la gloria o al despido.</p>
-      <div class="panel stack" style="max-width:440px">
-        <label class="eyebrow" for="dt">Tu nombre</label>
-        <input id="dt" value="Bilardo" maxlength="24" />
-        <label class="eyebrow" for="club">Club</label>
-        <select id="club">${CLUBES_JUGABLES.map((x, i) => `<option value="${i}">${x.nombre} — ${x.apodo}</option>`).join('')}</select>
+      <div class="panel stack" style="max-width:440px;gap:16px">
+        <div class="form-field">
+          <label class="eyebrow" for="dt">Tu nombre</label>
+          <input id="dt" value="Bilardo" maxlength="24" />
+        </div>
+        <div class="form-field">
+          <label class="eyebrow" for="club">Club</label>
+          <select id="club">${CLUBES_JUGABLES.map((x, i) => `<option value="${i}">${x.nombre} — ${x.apodo}</option>`).join('')}</select>
+        </div>
         <button class="btn" data-accion="empezar">Firmar contrato</button>
         <button class="btn ghost" data-accion="ver-guia">Cómo funciona el juego</button>
       </div>
