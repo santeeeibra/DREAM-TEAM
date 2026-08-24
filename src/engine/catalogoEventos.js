@@ -50,15 +50,15 @@ export const CATALOGO = [
       {
         id: 'cubrir', label: 'Buscar al responsable puertas adentro',
         resultado: [
-          { prob: 0.6, nota: 'Saltó la ficha del culpable', efectos: { ratingDelta: 1, fatiga: 4, moral: -2 } },
-          { prob: 0.4, nota: 'Generás paranoia en el grupo', efectos: { ratingDelta: -3, presion: 15, moral: -8 }, tramo: { fuerza: -3 } },
+          { prob: 0.6, nota: 'Apareció el buchón, lo cruzaste en la justa', efectos: { ratingDelta: 1, fatiga: 4, moral: -2 } },
+          { prob: 0.4, nota: 'El vestuario quedó picado, nadie se fía de nadie', efectos: { ratingDelta: -3, presion: 15, moral: -8 }, tramo: { fuerza: -3 } },
         ],
       },
       {
         id: 'bajar', label: 'Bajarle la espuma al tema',
         resultado: [
-          { prob: 0.7, nota: 'El plantel se enfoca en el partido', efectos: { moral: -8, ratingDelta: -1, fatiga: 2 } },
-          { prob: 0.3, nota: 'Te toman el tiempo y vuelve a pasar', efectos: { moral: -12, ratingDelta: -1, presion: 12, fatiga: 4 } },
+          { prob: 0.7, nota: 'El grupo se metió de lleno en la semana, lo demás afuera', efectos: { moral: -8, ratingDelta: -1, fatiga: 2 } },
+          { prob: 0.3, nota: 'Te comieron la mano, al clásico siguiente filtraron el once de vuelta', efectos: { moral: -12, ratingDelta: -1, presion: 12, fatiga: 4 } },
         ],
       },
     ],
@@ -73,15 +73,15 @@ export const CATALOGO = [
       {
         id: 'echar', label: 'Expulsar al detonante del conflicto',
         resultado: [
-          { prob: 0.5, nota: 'el plantel acepta la autoridad del DT', efectos: { moral: 6, ratingDelta: -3, fatiga: 2 } },
-          { prob: 0.5, nota: 'se fracturan bandos internamente', efectos: { moral: -8, presion: 8, ratingDelta: -3, fatiga: 4 } },
+          { prob: 0.5, nota: 'los demás ven que el que la caga la paga, se calman', efectos: { moral: 6, ratingDelta: -3, fatiga: 2 } },
+          { prob: 0.5, nota: 'el grupo se partió en dos, hay rencores para rato', efectos: { moral: -8, presion: 8, ratingDelta: -3, fatiga: 4 } },
         ],
       },
       {
         id: 'perdonar', label: 'Cerrar el conflicto sin expulsiones',
         resultado: [
-          { prob: 0.6, nota: 'la crisis baja de tono', efectos: { moral: 2, fatiga: -2, presion: -2 } },
-          { prob: 0.4, nota: 'la tensión persiste en los entrenamientos', efectos: { moral: -10, presion: 6, fatiga: 4 } },
+          { prob: 0.6, nota: 'se dieron la mano, por ahora está tranquilo', efectos: { moral: 2, fatiga: -2, presion: -2 } },
+          { prob: 0.4, nota: 'el odio sigue en los entrenamientos, se nota en cada pelota dividida', efectos: { moral: -10, presion: 6, fatiga: 4 } },
         ],
       },
     ],
@@ -96,15 +96,15 @@ export const CATALOGO = [
       {
         id: 'confrontar', label: 'Bajar línea fuerte en el vestuario',
         resultado: [
-          { prob: 0.7, nota: 'el capitán acepta y baja la intensidad', efectos: { moral: 5, presion: -3 } },
-          { prob: 0.3, nota: 'escala al presidente directamente', efectos: { moral: -6, presion: 10 } },
+          { prob: 0.7, nota: 'el capitán se tragó el discurso, no volvió a abrir la boca', efectos: { moral: 5, presion: -3 } },
+          { prob: 0.3, nota: 'fue derecho al presidente, ahora el quilombo es institucional', efectos: { moral: -6, presion: 10 } },
         ],
       },
       {
         id: 'ignorar', label: 'Hablarlo a solas y escuchar su postura',
         resultado: [
-          { prob: 0.55, nota: 'encuentran un punto medio', efectos: { presion: -2 } },
-          { prob: 0.45, nota: 'otros jugadores empiezan a cuestionar también', efectos: { moral: -7, presion: 6 } },
+          { prob: 0.55, nota: 'tiraron para el mismo lado, algo salió de la charla', efectos: { presion: -2 } },
+          { prob: 0.45, nota: 'otros tres del plantel se prendieron, el murmullo se hizo ruido', efectos: { moral: -7, presion: 6 } },
         ],
       },
     ],
@@ -120,8 +120,8 @@ export const CATALOGO = [
       {
         id: 'rechazar', label: 'Facilitar su retiro con dignidad',
         resultado: [
-          { prob: 0.4, nota: 'la hinchada lo entiende', efectos: { presion: 2, moral: -3 } },
-          { prob: 0.6, nota: 'presión por "traicionar al ídolo"', efectos: { presion: 20, moral: -8 } },
+          { prob: 0.4, nota: 'la tribuna lo despidió con aplausos, no hubo drama', efectos: { presion: 2, moral: -3 } },
+          { prob: 0.6, nota: 'te quemaron en redes, "echaron al ídolo" fue el hashtag del día', efectos: { presion: 20, moral: -8 } },
         ],
       },
     ],
@@ -136,15 +136,15 @@ export const CATALOGO = [
       {
         id: 'buscar', label: 'Ir a buscarlo personalmente',
         resultado: [
-          { prob: 0.65, nota: 'vuelve comprometido', efectos: { moral: 10, ratingDelta: 2 } },
-          { prob: 0.35, nota: 'no responde, perdés tiempo', efectos: { moral: -3, fatiga: 5 } },
+          { prob: 0.65, nota: 'apareció, habló con vos, está en carrera otra vez', efectos: { moral: 10, ratingDelta: 2 } },
+          { prob: 0.35, nota: 'ni abrió la puerta, dos semanas mirando el teléfono sin respuesta', efectos: { moral: -3, fatiga: 5 } },
         ],
       },
       {
         id: 'baja', label: 'Darle la baja del plantel',
         resultado: [
-          { prob: 0.5, nota: 'el equipo lo entiende', efectos: { moral: 3, presion: -4 } },
-          { prob: 0.5, nota: 'te ven frío con alguien en crisis', efectos: { moral: -9, presion: 6 } },
+          { prob: 0.5, nota: 'el plantel lo procesó, siguen para adelante sin drama', efectos: { moral: 3, presion: -4 } },
+          { prob: 0.5, nota: 'quedaste como el DT de hielo, algunos no te lo van a perdonar', efectos: { moral: -9, presion: 6 } },
         ],
       },
     ],
@@ -161,15 +161,15 @@ export const CATALOGO = [
       {
         id: 'resistir', label: 'Plantarte y resistir la venta',
         resultado: [
-          { prob: 0.55, nota: 'el presidente cede', efectos: { presion: -4 } },
-          { prob: 0.45, nota: 'te tildan de "conflictivo"', efectos: { presion: 18, moral: -3 } },
+          { prob: 0.55, nota: 'el presidente se rajó, la venta se cayó', efectos: { presion: -4 } },
+          { prob: 0.45, nota: 'te pusieron la etiqueta de "difícil", ya circula en los pasillos', efectos: { presion: 18, moral: -3 } },
         ],
       },
       {
         id: 'negociar', label: 'Aceptar y negociar el reemplazo',
         resultado: [
-          { prob: 0.6, nota: 'el reemplazo llega bien', efectos: { money: 14, ratingDelta: -4 } },
-          { prob: 0.4, nota: 'el reemplazo no llega a tiempo', efectos: { money: 14, ratingDelta: -7 } },
+          { prob: 0.6, nota: 'la plata cayó y el reemplazo enchufó rápido, salió bien', efectos: { money: 14, ratingDelta: -4 } },
+          { prob: 0.4, nota: 'la plata en el banco, pero tres tramos sin el puesto cubierto', efectos: { money: 14, ratingDelta: -7 } },
         ],
       },
     ],
@@ -184,15 +184,15 @@ export const CATALOGO = [
       {
         id: 'hablar', label: 'Hablar con el plantel y bajar línea',
         resultado: [
-          { prob: 0.7, nota: 'los tranquilizás', efectos: { moral: 6, presion: -6 } },
-          { prob: 0.3, nota: 'el discurso se filtra y es peor', efectos: { moral: -8, presion: 10 } },
+          { prob: 0.7, nota: 'el plantel se quedó más tranquilo, foco en el partido', efectos: { moral: 6, presion: -6 } },
+          { prob: 0.3, nota: 'alguien grabó la charla, salió en el diario peor que el comunicado', efectos: { moral: -8, presion: 10 } },
         ],
       },
       {
         id: 'silencio', label: 'Guardar silencio y seguir laburando',
         resultado: [
-          { prob: 0.6, nota: 'se olvida en una semana', efectos: { presion: -3 } },
-          { prob: 0.4, nota: 'los rumores crecen', efectos: { moral: -15, presion: 8 } },
+          { prob: 0.6, nota: 'otra noticia tapó todo, nadie se acuerda más', efectos: { presion: -3 } },
+          { prob: 0.4, nota: 'sin desmentida el rumor creció, algunos jugadores llaman a sus agentes', efectos: { moral: -15, presion: 8 } },
         ],
       },
     ],
@@ -207,15 +207,15 @@ export const CATALOGO = [
       {
         id: 'ceder', label: 'Darle minutos aunque no rinda',
         resultado: [
-          { prob: 0.65, nota: 'nadie lo nota', efectos: { money: 7 } },
-          { prob: 0.35, nota: 'la prensa lo expone', efectos: { money: 7, presion: 10, moral: -4 } },
+          { prob: 0.65, nota: 'el pibe entró 20 minutos, no la tocó, pero el sponsor se calla la boca', efectos: { money: 7 } },
+          { prob: 0.35, nota: 'Olé tituló "el DT pone al amigo del sponsor", quilombo mediático', efectos: { money: 7, presion: 10, moral: -4 } },
         ],
       },
       {
         id: 'negar', label: 'Plantarte: juega el que se lo gana',
         resultado: [
-          { prob: 0.7, nota: 'te respetan internamente', efectos: { moral: 5 } },
-          { prob: 0.3, nota: 'fricción con el presidente', efectos: { presion: 12, money: -2 } },
+          { prob: 0.7, nota: 'el plantel te respeta más por no doblarte, eso no tiene precio', efectos: { moral: 5 } },
+          { prob: 0.3, nota: 'el presidente te llamó a la oficina y la charla no terminó bien', efectos: { presion: 12, money: -2 } },
         ],
       },
     ],
@@ -230,15 +230,15 @@ export const CATALOGO = [
       {
         id: 'rechazar', label: 'Rechazarla en público',
         resultado: [
-          { prob: 0.6, nota: 'te renuevan tranquilo', efectos: { moral: 10, presion: -8 } },
-          { prob: 0.4, nota: 'igual no te renuevan, sigue la incertidumbre', efectos: { moral: 10, presion: -2 } },
+          { prob: 0.6, nota: 'el presidente te llamó esa misma tarde, contrato nuevo en la mesa', efectos: { moral: 10, presion: -8 } },
+          { prob: 0.4, nota: 'te quedaste sin la oferta y sin la renovación, igual te la bancás', efectos: { moral: 10, presion: -2 } },
         ],
       },
       {
         id: 'negociar', label: 'Negociar en silencio tu renovación',
         resultado: [
-          { prob: 0.55, nota: 'conseguís mejor contrato', efectos: { money: -3, moral: 4 } },
-          { prob: 0.45, nota: 'se filtra, vestuario dividido', efectos: { moral: -9, presion: 8 } },
+          { prob: 0.55, nota: 'usaste la oferta de palanca y te subieron el sueldo', efectos: { money: -3, moral: 4 } },
+          { prob: 0.45, nota: 'se enteraron todos, mitad del plantel cree que te vas', efectos: { moral: -9, presion: 8 } },
         ],
       },
     ],
@@ -253,22 +253,22 @@ export const CATALOGO = [
       {
         id: 'reportar', label: 'Rechazarlo y denunciarlo',
         resultado: [
-          { prob: 0.7, nota: 'no pasa nada', efectos: { presion: -5, moral: 5 } },
-          { prob: 0.3, nota: 'igual te investigan a vos', efectos: { presion: 10, moral: 5 } },
+          { prob: 0.7, nota: 'nadie más supo, se esfumó como llegó', efectos: { presion: -5, moral: 5 } },
+          { prob: 0.3, nota: 'la investigación llegó igual a tu nombre, necesitás un abogado', efectos: { presion: 10, moral: 5 } },
         ],
       },
       {
         id: 'ignorar', label: 'Ignorarlo sin decir nada',
         resultado: [
-          { prob: 0.8, nota: 'no pasa nada', efectos: {} },
-          { prob: 0.2, nota: 'aparecés en la investigación igual', efectos: { presion: 30, moral: -15 } },
+          { prob: 0.8, nota: 'pasó de largo sin dejar rastro, por ahora', efectos: {} },
+          { prob: 0.2, nota: 'tu número apareció en el expediente, carrera en riesgo', efectos: { presion: 30, moral: -15 } },
         ],
       },
       {
         id: 'agarrar', label: 'Agarrar la valija',
         resultado: [
-          { prob: 0.2, nota: 'sale perfecto', efectos: { money: 50, ratingDelta: 3 } },
-          { prob: 0.8, nota: 'te descubren', efectos: { presion: 100 } },
+          { prob: 0.2, nota: 'los pesos cayeron limpios, por ahora nadie sabe nada', efectos: { money: 50, ratingDelta: 3 } },
+          { prob: 0.8, nota: 'la AFA te suspendió de por vida, carrera terminada', efectos: { presion: 100 } },
         ],
       },
     ],
@@ -285,15 +285,15 @@ export const CATALOGO = [
       {
         id: 'defender', label: 'Defenderlo públicamente',
         resultado: [
-          { prob: 0.55, nota: 'la apelación prospera', efectos: { moral: 6, presion: -4 } },
-          { prob: 0.45, nota: 'manchás al club también', efectos: { presion: 18, moral: -6 } },
+          { prob: 0.55, nota: 'la CAS le dio la razón, suplemento sin culpa confirmado', efectos: { moral: 6, presion: -4 } },
+          { prob: 0.45, nota: 'la causa se amplió al club, el logo apareció en todos los medios', efectos: { presion: 18, moral: -6 } },
         ],
       },
       {
         id: 'distanciarte', label: 'Tomar distancia y proteger al club',
         resultado: [
-          { prob: 0.7, nota: 'el jugador lo entiende', efectos: { presion: -8 } },
-          { prob: 0.3, nota: 'rompe relación para siempre', efectos: { moral: -10, presion: -8 } },
+          { prob: 0.7, nota: 'aceptó quedarse afuera, entiende que es lo mejor para el club', efectos: { presion: -8 } },
+          { prob: 0.3, nota: 'se cortó todo lazo, en el próximo mercado te lo ponen enfrente', efectos: { moral: -10, presion: -8 } },
         ],
       },
     ],
@@ -308,15 +308,15 @@ export const CATALOGO = [
       {
         id: 'pedir_fondos', label: 'Solicitarle aumento salarial al presidente',
         resultado: [
-          { prob: 0.5, nota: 'consiguen los fondos', efectos: { money: -8, moral: 6 } },
-          { prob: 0.5, nota: 'te dicen que lo vendas', efectos: { presion: 10, moral: -4 } },
+          { prob: 0.5, nota: 'el presidente encontró la plata, la firma se hizo esa semana', efectos: { money: -8, moral: 6 } },
+          { prob: 0.5, nota: 'la directiva fue clara: si no firma así, en enero se fue', efectos: { presion: 10, moral: -4 } },
         ],
       },
       {
         id: 'hablar_proyecto', label: 'Gestionar su continuidad en el club',
         resultado: [
-          { prob: 0.6, nota: 'convencido, sigue', efectos: { moral: 5 } },
-          { prob: 0.4, nota: 'igual se va, mal parado', efectos: { money: 10, ratingDelta: -5, moral: -6 } },
+          { prob: 0.6, nota: 'le vendiste el proyecto y se quedó, por ahora', efectos: { moral: 5 } },
+          { prob: 0.4, nota: 'se fue libre al clásico rival, la foto salió en primera plana', efectos: { money: 10, ratingDelta: -5, moral: -6 } },
         ],
       },
     ],
@@ -331,15 +331,15 @@ export const CATALOGO = [
       {
         id: 'cubrir', label: 'Cubrirlo frente al cuerpo médico',
         resultado: [
-          { prob: 0.65, nota: 'el vestuario lo valora', efectos: { moral: 5 } },
-          { prob: 0.35, nota: 'la prensa lo descubre igual', efectos: { presion: 10, moral: -3 } },
+          { prob: 0.65, nota: 'los compañeros lo ven como un guerrero, se ganó el respeto', efectos: { moral: 5 } },
+          { prob: 0.35, nota: 'el médico rival lo vio cojear y la nota salió esa misma noche', efectos: { presion: 10, moral: -3 } },
         ],
       },
       {
         id: 'honesto', label: 'Sé honesto con el cuerpo médico',
         resultado: [
-          { prob: 0.55, nota: 'el jugador lo entiende', efectos: { presion: -4 } },
-          { prob: 0.45, nota: 'te odia para siempre', efectos: { moral: -10 } },
+          { prob: 0.55, nota: 'el cuerpo médico lo trató sin dramas, hiciste lo correcto', efectos: { presion: -4 } },
+          { prob: 0.45, nota: 'se sintió traicionado, en el vestuario dejó de saludarte', efectos: { moral: -10 } },
         ],
       },
     ],
@@ -354,15 +354,15 @@ export const CATALOGO = [
       {
         id: 'dejar_ir', label: 'Dejarlo ir a préstamo',
         resultado: [
-          { prob: 0.7, nota: 'vuelve mejor', efectos: { moral: 4, ratingDelta: 1 } },
-          { prob: 0.3, nota: 'el otro club lo termina comprando', efectos: { money: -2, ratingDelta: -1 } },
+          { prob: 0.7, nota: 'volvió con otra cabeza, seis meses afuera lo hicieron crecer', efectos: { moral: 4, ratingDelta: 1 } },
+          { prob: 0.3, nota: 'lo compraron antes de volver, te enteraste por la prensa', efectos: { money: -2, ratingDelta: -1 } },
         ],
       },
       {
         id: 'retener', label: 'Retenerlo para el proyecto',
         resultado: [
-          { prob: 0.55, nota: 'rinde cuando entra', efectos: { ratingDelta: 2, moral: 2 } },
-          { prob: 0.45, nota: 'se cierra emocionalmente', efectos: { moral: -5 } },
+          { prob: 0.55, nota: 'cada vez que entró la clavó, te felicitaste por quedártelo', efectos: { ratingDelta: 2, moral: 2 } },
+          { prob: 0.45, nota: 'se apagó, empezó a entrenar solo y tarde', efectos: { moral: -5 } },
         ],
       },
     ],
@@ -377,15 +377,15 @@ export const CATALOGO = [
       {
         id: 'comunicado', label: 'Sacar un comunicado público',
         resultado: [
-          { prob: 0.6, nota: 'la prensa te apoya', efectos: { moral: 5, presion: -3 } },
-          { prob: 0.4, nota: 'la federación te pone en la mira', efectos: { presion: 8 } },
+          { prob: 0.6, nota: 'los medios salieron a bancarte, le tiraron la culpa a la selección', efectos: { moral: 5, presion: -3 } },
+          { prob: 0.4, nota: 'en la federación te tienen de punto, cualquier cosa te la cobran', efectos: { presion: 8 } },
         ],
       },
       {
         id: 'callarte', label: 'No decir nada y adaptarte',
         resultado: [
-          { prob: 0.7, nota: 'te queda bien con todos', efectos: { presion: -4 } },
-          { prob: 0.3, nota: 'sienten que no los defendés', efectos: { moral: -8 } },
+          { prob: 0.7, nota: 'zafaste sin hacer ruido, el jugador también te lo valora', efectos: { presion: -4 } },
+          { prob: 0.3, nota: 'en el vestuario quedó la sensación de que el DT no pelea por ellos', efectos: { moral: -8 } },
         ],
       },
     ],
@@ -494,15 +494,15 @@ export const CATALOGO = [
       {
         id: 'arriesgar', label: 'Arriesgar con la formación experimental',
         resultado: [
-          { prob: 0.45, nota: 'obra maestra', efectos: { moral: 8 }, tramo: { fuerza: 5 } },
-          { prob: 0.55, nota: 'sos el culpable eterno', efectos: { presion: 15, moral: -8 }, tramo: { fuerza: -4 } },
+          { prob: 0.45, nota: 'la prensa habló de obra maestra táctica, el plantel te levantó en hombros', efectos: { moral: 8 }, tramo: { fuerza: 5 } },
+          { prob: 0.55, nota: 'perdiste y la formación fue la noticia, te crucificaron en todos lados', efectos: { presion: 15, moral: -8 }, tramo: { fuerza: -4 } },
         ],
       },
       {
         id: 'conservador', label: 'Ir con lo conocido y conservador',
         resultado: [
-          { prob: 0.65, nota: 'resultado decente', efectos: { presion: -2 }, tramo: { fuerza: 1 } },
-          { prob: 0.35, nota: 'ganás pero nadie te recuerda por eso', efectos: { moral: -3 }, tramo: { fuerza: 1 } },
+          { prob: 0.65, nota: 'partido digno, sin brillar ni caer, se suma y listo', efectos: { presion: -2 }, tramo: { fuerza: 1 } },
+          { prob: 0.35, nota: 'ganaste pero todos hablaban de otra cosa al día siguiente', efectos: { moral: -3 }, tramo: { fuerza: 1 } },
         ],
       },
     ],
@@ -519,15 +519,15 @@ export const CATALOGO = [
       {
         id: 'multa', label: 'Ponerle una multa interna',
         resultado: [
-          { prob: 0.7, nota: 'se corrige', efectos: { moral: 2, presion: -2 } },
-          { prob: 0.3, nota: 'se resiente y baja el rendimiento', efectos: { moral: -6 } },
+          { prob: 0.7, nota: 'agarró el mensaje, en la siguiente semana llegó antes que nadie', efectos: { moral: 2, presion: -2 } },
+          { prob: 0.3, nota: 'la multa lo encendió, en el entrenamiento no tocó una pelota', efectos: { moral: -6 } },
         ],
       },
       {
         id: 'hablar', label: 'Hablarlo en privado, sin sanción',
         resultado: [
-          { prob: 0.6, nota: 'promete cambiar', efectos: { moral: 3 } },
-          { prob: 0.4, nota: 'reincide en dos semanas', efectos: { moral: -4, ratingDelta: -1 } },
+          { prob: 0.6, nota: 'prometió de palabra, veremos si esta vez cumple', efectos: { moral: 3 } },
+          { prob: 0.4, nota: 'dos semanas después llegó tarde otra vez, el plantel ya lo miraba mal', efectos: { moral: -4, ratingDelta: -1 } },
         ],
       },
     ],
@@ -541,15 +541,15 @@ export const CATALOGO = [
       {
         id: 'investigar', label: 'Investigar quién filtró',
         resultado: [
-          { prob: 0.55, nota: 'lo encontrás', efectos: { presion: -4 } },
-          { prob: 0.45, nota: 'creás paranoia en el grupo', efectos: { moral: -5 } },
+          { prob: 0.55, nota: 'el buchón apareció, conversación breve y directa, asunto cerrado', efectos: { presion: -4 } },
+          { prob: 0.45, nota: 'nadie habla con nadie, el vestuario quedó frío como un freezer', efectos: { moral: -5 } },
         ],
       },
       {
         id: 'ignorar', label: 'Dejarlo pasar esta vez',
         resultado: [
-          { prob: 0.65, nota: 'se olvida', efectos: { presion: 1 } },
-          { prob: 0.35, nota: 'vuelve a pasar en un partido importante', efectos: { presion: 8 } },
+          { prob: 0.65, nota: 'la nota duró una hora, otra noticia lo tapó', efectos: { presion: 1 } },
+          { prob: 0.35, nota: 'en el clásico ya sabían el once antes que los propios titulares', efectos: { presion: 8 } },
         ],
       },
     ],
@@ -563,15 +563,15 @@ export const CATALOGO = [
       {
         id: 'intervenir', label: 'Hablar con los dos para destrabarlo',
         resultado: [
-          { prob: 0.7, nota: 'se resuelve', efectos: { moral: 3 } },
-          { prob: 0.3, nota: 'pide salir en el próximo mercado', efectos: { moral: -2, presion: 2 } },
+          { prob: 0.7, nota: 'se dieron la mano en el vestuario, drama terminado', efectos: { moral: 3 } },
+          { prob: 0.3, nota: 'el suplente mandó al representante: no se queda para la próxima', efectos: { moral: -2, presion: 2 } },
         ],
       },
       {
         id: 'dejar', label: 'Dejar que lo resuelvan solos',
         resultado: [
-          { prob: 0.5, nota: 'se arregla', efectos: { moral: 1 } },
-          { prob: 0.5, nota: 'escala', efectos: { moral: -5 } },
+          { prob: 0.5, nota: 'se hablan solos, vos no te gastaste en el medio', efectos: { moral: 1 } },
+          { prob: 0.5, nota: 'explotó en el entrenamiento, todo el plantel se enteró', efectos: { moral: -5 } },
         ],
       },
     ],
@@ -586,15 +586,15 @@ export const CATALOGO = [
       {
         id: 'llamar_retar', label: 'Llamarlo y retarlo en privado',
         resultado: [
-          { prob: 0.65, nota: 'se disculpa y enfoca', efectos: { moral: 2, ratingDelta: 1 } },
-          { prob: 0.35, nota: 'se ofende, baja el rendimiento', efectos: { moral: -6 } },
+          { prob: 0.65, nota: 'pidió perdón en privado, entrenó a la par esa misma tarde', efectos: { moral: 2, ratingDelta: 1 } },
+          { prob: 0.35, nota: 'se lo tomó a mal, esa semana entrenó con desgano total', efectos: { moral: -6 } },
         ],
       },
       {
         id: 'ejemplo_publico', label: 'Usarlo como ejemplo frente al plantel',
         resultado: [
-          { prob: 0.55, nota: 'el plantel toma nota', efectos: { moral: 3, presion: 2 } },
-          { prob: 0.45, nota: 'lo vive como una traición', efectos: { moral: -7 } },
+          { prob: 0.55, nota: 'el vestuario entendió que esas cosas se pagan, nadie más se animó', efectos: { moral: 3, presion: 2 } },
+          { prob: 0.45, nota: 'se sintió expuesto públicamente, en el vestuario dejó de saludarte', efectos: { moral: -7 } },
         ],
       },
     ],
@@ -608,15 +608,15 @@ export const CATALOGO = [
       {
         id: 'despedir', label: 'Despedirlo',
         resultado: [
-          { prob: 0.7, nota: 'el mensaje queda claro', efectos: { presion: -3 } },
-          { prob: 0.3, nota: 'el plantel lo ve como algo frío', efectos: { moral: -4 } },
+          { prob: 0.7, nota: 'el plantel entendió que hay cosas que no se hablan afuera', efectos: { presion: -3 } },
+          { prob: 0.3, nota: 'algunos jugadores lo conocían de años, quedó un clima raro', efectos: { moral: -4 } },
         ],
       },
       {
         id: 'advertir', label: 'Advertirle y darle una segunda chance',
         resultado: [
-          { prob: 0.6, nota: 'no vuelve a pasar', efectos: { presion: -1 } },
-          { prob: 0.4, nota: 'el periodista ya tenía más info de antes', efectos: { presion: 6 } },
+          { prob: 0.6, nota: 'el susto lo silenció para rato, cerró la boca', efectos: { presion: -1 } },
+          { prob: 0.4, nota: 'había más info guardada, al día siguiente salió todo junto', efectos: { presion: 6 } },
         ],
       },
     ],
@@ -631,8 +631,8 @@ export const CATALOGO = [
     texto: 'Metió tres goles en cuatro partidos de reserva y su representante llamó: o juega el fin de semana o pide salir a préstamo. Tiene 18 años.',
     opciones: [
       { id: 'titular', label: 'Ponerlo de titular', resultado: [
-        { prob: 0.5, nota: 'la rompe y se gana el puesto', efectos: { moral: 6, ratingDelta: 2 } },
-        { prob: 0.5, nota: 'se paraliza en el debut', efectos: { moral: -4, ratingDelta: -2, presion: 6 } },
+        { prob: 0.5, nota: 'metió dos y asistió una, mañana ya está en el once fijo', efectos: { moral: 6, ratingDelta: 2 } },
+        { prob: 0.5, nota: 'le temblaron las piernas, el estadio lo notó antes que él', efectos: { moral: -4, ratingDelta: -2, presion: 6 } },
       ]},
       { id: 'banco', label: 'Que sume desde el banco', efectos: { moral: -2, presion: 2 } },
     ],
@@ -646,8 +646,8 @@ export const CATALOGO = [
     opciones: [
       { id: 'ceder', label: 'Cederlo sin trabas', efectos: { moral: 4, ratingDelta: -1, fatiga: 6 } },
       { id: 'pelear', label: 'Pedir que no lo lleven', resultado: [
-        { prob: 0.4, nota: 'lo dejan', efectos: { ratingDelta: 1, moral: -3 } },
-        { prob: 0.6, nota: 'igual se lo llevan y quedan resentidos', efectos: { moral: -8, presion: 6 } },
+        { prob: 0.4, nota: 'la selección cedió, el chico se queda con vos', efectos: { ratingDelta: 1, moral: -3 } },
+        { prob: 0.6, nota: 'se lo llevaron igual, el seleccionador no te atendió el teléfono', efectos: { moral: -8, presion: 6 } },
       ]},
     ],
   }),
@@ -661,8 +661,8 @@ export const CATALOGO = [
     texto: 'El periodista de siempre te lanzó una pregunta cargada sobre el DT rival, buscando titular. Toda la sala espera.',
     opciones: [
       { id: 'chicana', label: 'Devolver con una chicana', resultado: [
-        { prob: 0.5, nota: 'la hinchada te banca', efectos: { moral: 5, presion: -3 } },
-        { prob: 0.5, nota: 'el otro DT se calienta y se arma quilombo', efectos: { presion: 12, moral: 2 } },
+        { prob: 0.5, nota: 'el clip se viralizó en Twitter, la tribuna te hizo tendencia', efectos: { moral: 5, presion: -3 } },
+        { prob: 0.5, nota: 'el rival salió a contestarte en sus redes, se armó el bardo mediático', efectos: { presion: 12, moral: 2 } },
       ]},
       { id: 'diplomacia', label: 'Salida diplomática', efectos: { presion: -4 } },
     ],
@@ -676,8 +676,8 @@ export const CATALOGO = [
     opciones: [
       { id: 'humilde', label: 'Mantener los pies en la tierra', efectos: { moral: 4, presion: -2 } },
       { id: 'aprovechar', label: 'Aprovechar el momento mediático', resultado: [
-        { prob: 0.6, nota: 'te ganas respeto en el ambiente', efectos: { presion: -5, moral: 3 } },
-        { prob: 0.4, nota: 'generás expectativas que no podés cumplir', efectos: { presion: 12, moral: -2 } },
+        { prob: 0.6, nota: 'el vestuario lo tomó como un reconocimiento propio, el grupo voló', efectos: { presion: -5, moral: 3 } },
+        { prob: 0.4, nota: 'la primera derrota que vino fue el titular de todos los diarios', efectos: { presion: 12, moral: -2 } },
       ]},
     ],
   }),
@@ -689,8 +689,8 @@ export const CATALOGO = [
     texto: 'Cuatro fechas sin ganar y la tribuna ya silba. En el vestuario nadie te mira a los ojos. El presidente te citó para mañana.',
     opciones: [
       { id: 'charla_dura', label: 'Reunión dura con el plantel', resultado: [
-        { prob: 0.55, nota: 'reaccionan con carácter', efectos: { moral: 8, presion: -6 } },
-        { prob: 0.45, nota: 'se profundiza la fractura', efectos: { moral: -10, presion: 8 } },
+        { prob: 0.55, nota: 'el vestuario salió respondido, la charla dura valió la pena', efectos: { moral: 8, presion: -6 } },
+        { prob: 0.45, nota: 'la reunión terminó con portazos, el bardo se complicó más', efectos: { moral: -10, presion: 8 } },
       ]},
       { id: 'descanso', label: 'Darles un día libre para resetear', efectos: { moral: 5, fatiga: -8, presion: 3 } },
     ],
@@ -725,8 +725,8 @@ export const CATALOGO = [
     texto: 'En su columna semanal dice que "el equipo no tiene alma" y que vos no entendés al club. Los hinchas lo respetan mucho.',
     opciones: [
       { id: 'responder', label: 'Responderle en conferencia', resultado: [
-        { prob: 0.5, nota: 'quedás como valiente', efectos: { moral: 4, presion: 5 } },
-        { prob: 0.5, nota: 'quedás como agrandado', efectos: { moral: -4, presion: 10 } },
+        { prob: 0.5, nota: 'los hinchas te respetaron más, la prensa habló de personalidad', efectos: { moral: 4, presion: 5 } },
+        { prob: 0.5, nota: 'te cruzaron por todos lados, "se peleó con el ídolo" fue el titular', efectos: { moral: -4, presion: 10 } },
       ]},
       { id: 'callar', label: 'No contestar', efectos: { presion: 4 } },
     ],
@@ -752,8 +752,8 @@ export const CATALOGO = [
     texto: 'Un representante te ofrece un ex-crack europeo. Tiene 34, contrato caro, pero sabe ganar finales.',
     opciones: [
       { id: 'firmar', label: 'Firmarlo', resultado: [
-        { prob: 0.5, nota: 'aporta liderazgo real', efectos: { ratingDelta: 2, moral: 6, money: -3 } },
-        { prob: 0.5, nota: 'se lesiona en un mes', efectos: { moral: -4, money: -3 } },
+        { prob: 0.5, nota: 'cada charla de vestuario vale oro, el plantel lo escucha como a nadie', efectos: { ratingDelta: 2, moral: 6, money: -3 } },
+        { prob: 0.5, nota: 'duró tres semanas, el isquiotibial no lo perdonó', efectos: { moral: -4, money: -3 } },
       ]},
       { id: 'descartar', label: 'No es para nosotros', efectos: {} },
     ],
@@ -767,8 +767,8 @@ export const CATALOGO = [
     opciones: [
       { id: 'retener', label: 'Retenerlo con más sueldo', efectos: { money: -4, moral: 4, presion: -3 } },
       { id: 'dejarir', label: 'Dejarlo ir con la bendición', resultado: [
-        { prob: 0.55, nota: 'lo reemplazás bien', efectos: { moral: -3 } },
-        { prob: 0.45, nota: 'el vestuario lo extraña', efectos: { moral: -8, ratingDelta: -1 } },
+        { prob: 0.55, nota: 'el nuevo entró enchufado, casi no se notó el cambio', efectos: { moral: -3 } },
+        { prob: 0.45, nota: 'lo extrañaban en cada entrenamiento, era el pegamento del cuerpo técnico', efectos: { moral: -8, ratingDelta: -1 } },
       ]},
     ],
   }),
@@ -780,8 +780,8 @@ export const CATALOGO = [
     texto: 'Un club te ofrece cambiar un central tuyo por un delantero suyo. Es plata cero, todo trueque.',
     opciones: [
       { id: 'aceptar', label: 'Aceptar el canje', resultado: [
-        { prob: 0.5, nota: 'los dos rinden en su nuevo lugar', efectos: { ratingDelta: 1, moral: 3 } },
-        { prob: 0.5, nota: 'el que se fue explota afuera', efectos: { presion: 8, moral: -5 } },
+        { prob: 0.5, nota: 'los dos cambiaron de chip, el canje fue un 10 para ambos lados', efectos: { ratingDelta: 1, moral: 3 } },
+        { prob: 0.5, nota: 'el que mandaste metió un hat-trick en su debut, no te lo van a dejar olvidar', efectos: { presion: 8, moral: -5 } },
       ]},
       { id: 'rechazar', label: 'Rechazarlo', efectos: {} },
     ],
@@ -796,8 +796,8 @@ export const CATALOGO = [
     texto: 'Los jefes de la hinchada organizada piden verte "de igual a igual" en el predio. No es una amenaza abierta, pero tampoco es una charla amistosa.',
     opciones: [
       { id: 'recibir', label: 'Recibirlos y escuchar', resultado: [
-        { prob: 0.55, nota: 'se van tranquilos', efectos: { presion: -8 } },
-        { prob: 0.45, nota: 'se filtra la reunión y hay escándalo', efectos: { presion: 15, moral: -4 } },
+        { prob: 0.55, nota: 'escucharon, dijeron lo suyo y se fueron, por ahora quieto', efectos: { presion: -8 } },
+        { prob: 0.45, nota: 'alguien los fotografió entrando al predio, la nota salió antes del almuerzo', efectos: { presion: 15, moral: -4 } },
       ]},
       { id: 'negar', label: 'Negarse a recibirlos', efectos: { presion: 10 } },
     ],
@@ -822,8 +822,8 @@ export const CATALOGO = [
     opciones: [
       { id: 'bancar', label: 'Bancarlo públicamente', efectos: { moral: 6, presion: 8, ratingDelta: 1 } },
       { id: 'suplente', label: 'Mandarlo al banco un tramo', resultado: [
-        { prob: 0.55, nota: 'baja el ruido y se recupera', efectos: { presion: -6, moral: -3 } },
-        { prob: 0.45, nota: 'lo sienten como abandono', efectos: { moral: -8, ratingDelta: -2 } },
+        { prob: 0.55, nota: 'sin la presión del estadio se reencontró, volvió con confianza', efectos: { presion: -6, moral: -3 } },
+        { prob: 0.45, nota: 'se lo tomó como una puñalada, la relación quedó rota', efectos: { moral: -8, ratingDelta: -2 } },
       ]},
     ],
   }),
@@ -837,8 +837,8 @@ export const CATALOGO = [
     texto: 'El VAR se demoró seis minutos revisando la jugada. El árbitro cobró y perdiste dos puntos. Todos esperan tu reacción.',
     opciones: [
       { id: 'estallar', label: 'Estallar en conferencia', resultado: [
-        { prob: 0.5, nota: 'los hinchas te aman', efectos: { moral: 6, presion: -4 } },
-        { prob: 0.5, nota: 'te clavan una multa fuerte', efectos: { money: -5, presion: 4 } },
+        { prob: 0.5, nota: 'la tribuna te cantó hasta en los pasillos, sos el DT del pueblo', efectos: { moral: 6, presion: -4 } },
+        { prob: 0.5, nota: 'la AFA te revisó cada palabra, la multa llegó en tres días', efectos: { money: -5, presion: 4 } },
       ]},
       { id: 'mesura', label: 'Ser mesurado', efectos: { presion: 2 } },
     ],
@@ -851,8 +851,8 @@ export const CATALOGO = [
     texto: 'Un canal armó un informe con todos los fallos dudosos que sufriste. Te preguntan si vas a hacer una denuncia formal.',
     opciones: [
       { id: 'denunciar', label: 'Presentar la denuncia', resultado: [
-        { prob: 0.35, nota: 'la AFA/liga le da bola', efectos: { moral: 8, presion: -8 } },
-        { prob: 0.65, nota: 'te suspenden dos partidos', efectos: { moral: -5, presion: 12, ratingDelta: -2 } },
+        { prob: 0.35, nota: 'el informe prosperó, suspendieron al árbitro preventivamente', efectos: { moral: 8, presion: -8 } },
+        { prob: 0.65, nota: 'la sanción llegó rápido: dos fechas en la tribuna mirando', efectos: { moral: -5, presion: 12, ratingDelta: -2 } },
       ]},
       { id: 'archivar', label: 'Archivar el tema', efectos: { presion: 4 } },
     ],
@@ -867,8 +867,8 @@ export const CATALOGO = [
     texto: 'Se cansó del rejunte de lesiones y de que el cuerpo médico lo culpe. Presentó la renuncia a la mañana.',
     opciones: [
       { id: 'aceptar', label: 'Aceptarla y traer otro', resultado: [
-        { prob: 0.5, nota: 'el nuevo baja la fatiga', efectos: { fatiga: -8, money: -3 } },
-        { prob: 0.5, nota: 'el nuevo no engancha', efectos: { fatiga: 5, ratingDelta: -1, money: -3 } },
+        { prob: 0.5, nota: 'el nuevo trajo una metodología diferente, el plantel lo adoptó rápido', efectos: { fatiga: -8, money: -3 } },
+        { prob: 0.5, nota: 'el nuevo no terminó de conectar, el plantel siguió cargado igual', efectos: { fatiga: 5, ratingDelta: -1, money: -3 } },
       ]},
       { id: 'retener', label: 'Bajar los brazos y retenerlo', efectos: { presion: 3, moral: 2 } },
     ],
@@ -882,8 +882,8 @@ export const CATALOGO = [
     opciones: [
       { id: 'rotar', label: 'Rotar el próximo tramo', efectos: { fatiga: -10, ratingDelta: -2 } },
       { id: 'apretar', label: 'Apretar los dientes', resultado: [
-        { prob: 0.45, nota: 'aguantan', efectos: { fatiga: 5 } },
-        { prob: 0.55, nota: 'un titular se lesiona', efectos: { fatiga: 8, moral: -6, ratingDelta: -3 } },
+        { prob: 0.45, nota: 'los tres llegaron enteros, el físico respondió cuando más importaba', efectos: { fatiga: 5 } },
+        { prob: 0.55, nota: 'uno cayó en el calentamiento, el cuerpo médico lo confirmó: fuera dos semanas', efectos: { fatiga: 8, moral: -6, ratingDelta: -3 } },
       ]},
     ],
   }),
@@ -897,8 +897,8 @@ export const CATALOGO = [
     texto: 'Tu ayudante insiste con cambiar a línea de 3 en el fondo. El plantel nunca lo entrenó en serio.',
     opciones: [
       { id: 'probar', label: 'Meterlo en el próximo partido', resultado: [
-        { prob: 0.45, nota: 'sorprende y funciona', efectos: { ratingDelta: 3, moral: 5 } },
-        { prob: 0.55, nota: 'no se entiende nada', efectos: { ratingDelta: -3, moral: -5, presion: 6 } },
+        { prob: 0.45, nota: 'el rival no supo cómo marcarte, ganaron con autoridad', efectos: { ratingDelta: 3, moral: 5 } },
+        { prob: 0.55, nota: 'tres toques y ya la perdían, el plantel no entendió nada', efectos: { ratingDelta: -3, moral: -5, presion: 6 } },
       ]},
       { id: 'esperar', label: 'Entrenarlo tres semanas primero', efectos: { fatiga: 4 } },
     ],
@@ -935,8 +935,8 @@ export const CATALOGO = [
     texto: 'La directiva no pagó a tiempo. El capitán vino a decirte que si no se soluciona esta semana, no entrenan el jueves.',
     opciones: [
       { id: 'poner_cara', label: 'Ponerte del lado del plantel', resultado: [
-        { prob: 0.55, nota: 'la directiva paga', efectos: { moral: 8, presion: 8, money: -3 } },
-        { prob: 0.45, nota: 'la directiva te aísla', efectos: { presion: 18, moral: 4 } },
+        { prob: 0.55, nota: 'la directiva cedió, los sueldos cayeron esa misma tarde', efectos: { moral: 8, presion: 8, money: -3 } },
+        { prob: 0.45, nota: 'te dejaron solo en el barro, la plata no llegó y vos quedaste en el medio', efectos: { presion: 18, moral: 4 } },
       ]},
       { id: 'mediar', label: 'Mediar entre las partes', efectos: { presion: 4, moral: -3 } },
     ],
@@ -960,8 +960,8 @@ export const CATALOGO = [
     texto: 'Ofrecen buena plata por seguir al plantel con cámaras adentro del vestuario durante toda la temporada. El plantel está dividido.',
     opciones: [
       { id: 'aceptar', label: 'Aceptar el contrato', resultado: [
-        { prob: 0.45, nota: 'da visibilidad y plata', efectos: { money: 10, presion: 6 } },
-        { prob: 0.55, nota: 'se filtran cosas del vestuario', efectos: { money: 10, moral: -8, presion: 15 } },
+        { prob: 0.45, nota: 'la plataforma armó un trailer que se viralizó, el club ganó visibilidad', efectos: { money: 10, presion: 6 } },
+        { prob: 0.55, nota: 'las cámaras agarraron una discusión que nadie quería publicar', efectos: { money: 10, moral: -8, presion: 15 } },
       ]},
       { id: 'rechazar', label: 'Rechazarlo', efectos: { moral: 3 } },
     ],
