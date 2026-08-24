@@ -868,7 +868,7 @@ function marcador() {
           <path d="M6 32 A26 26 0 0 1 58 32" stroke="${stroke}" stroke-width="5" stroke-linecap="round" fill="none"
             style="stroke-dasharray:${circum};stroke-dashoffset:${offset};transition:stroke-dashoffset .6s cubic-bezier(.2,.7,.2,1),stroke .3s"/>
         </svg>
-        ${d ? `<span class="gauge-delta ${ui.preClick ? 'pour' : ''} ${d === 0 ? '' : (MALO_SI_SUBE.has(k) ? d < 0 : d > 0) ? 'pos' : 'neg'}" style="${ui.preClick ? `animation-delay:${['money','moral','fatiga','presion','ratingDelta'].indexOf(k) * 50}ms` : ''}">${ICONO[k]} ${signoDelta(k, d)}${Math.abs(d)}</span>` : ''}
+        ${d ? `<span class="gauge-delta ${ui.preClick ? 'pour' : ''} ${d === 0 ? '' : (MALO_SI_SUBE.has(k) ? d < 0 : d > 0) ? 'pos' : 'neg'}" style="${ui.preClick ? `animation-delay:${['money','moral','fatiga','presion','ratingDelta'].indexOf(k) * 50}ms` : ''}">${signoDelta(k, d)}${Math.abs(d)}</span>` : ''}
       </div>
       <div class="gauge-arc-val">${dv}</div>
       <div class="gauge-lbl">${ICONO[k]} ${NOMBRE_VAR[k]}</div>
@@ -1503,45 +1503,6 @@ const _guardarDtDraft = () => {
   localStorage.setItem('dt_draft', JSON.stringify({ nombre: ob.nombre, pais: ob.pais, liga: ob.liga, clubId: ob.clubId, modo: ob.modo, modoJuego: ob.modoJuego, formacion: ob.formacion }));
 };
 const acciones = {
-  'nueva-partida': () => {
-    c = iniciarCarrera(ui.onboarding);
-    ui.vista = 'draft';
-    ui.onboarding.abierto = null;
-    localStorage.removeItem('dt_draft');
-    render();
-  },
-  'ob-modo': (el) => {
-    ui.onboarding.modo = el.dataset.modo;
-    render();
-    _guardarDtDraft();
-  },
-  'ob-formacion': (el) => {
-    ui.onboarding.formacion = el.dataset.id;
-    render();
-    _guardarDtDraft();
-  },
-  'confirmar-ofertas': async () => {
-    await ACCIONES['confirmar-ofertas']();
-  },
-  'vender-oferta': (el) => {
-    const fn = acciones[el.dataset.accion];
-    if (!fn) return;
-    const r = fn(el);
-  },
-};
-
-// Función para guardar el draft del DT
-const _guardarDtDraft = () => {
-  localStorage.setItem('dt_draft', JSON.stringify({
-    nombre: ui.onboarding.nombre,
-    pais: ui.onboarding.pais,
-    liga: ui.onboarding.liga,
-    clubId: ui.onboarding.clubId,
-    modo: ui.onboarding.modo,
-    modoJuego: ui.onboarding.modoJuego,
-    formacion: ui.onboarding.formacion
-  }));
-};
   'ob-modo'(el) { ui.onboarding.modo = el.dataset.modo; render(); _guardarDtDraft(); },
   'ob-formacion'(el) { ui.onboarding.formacion = el.dataset.id; render(); _guardarDtDraft(); },
   'ob-pais'(el) {
@@ -1867,17 +1828,8 @@ const _guardarDtDraft = () => {
     ui = { ...ui, vista: 'onboarding', tabla: false, sobresAbiertos: [], draftPuro: null };
     ui.onboarding = { liga: null, clubes: [], clubId: '', nombre: '', pais: '', cargando: false, error: null, enviando: false, abierto: null, modo: 'facil', modoJuego: 'liga', formacion: '4-3-3' };
   },
-'ver-guia'() { ui.vistaAnterior = ui.vista; ui.vista = 'guia'; },
-volver() {
-    ui.vista = ui.vistaAnterior || 'intro';
-  }
-};
-
-app.addEventListener('click', async (e) => {
-  volver() { ui.vista = ui.vistaAnterior || 'intro'; }
-};
   'ver-guia'() { ui.vistaAnterior = ui.vista; ui.vista = 'guia'; },
-  volver() { ui.vista = ui.vistaAnterior || 'intro'; }
+  volver() { ui.vista = ui.vistaAnterior || 'intro'; },
 };
 
 app.addEventListener('click', async (e) => {
