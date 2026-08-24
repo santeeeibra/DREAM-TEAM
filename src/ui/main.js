@@ -1867,6 +1867,9 @@ const _guardarDtDraft = () => {
     ui = { ...ui, vista: 'onboarding', tabla: false, sobresAbiertos: [], draftPuro: null };
     ui.onboarding = { liga: null, clubes: [], clubId: '', nombre: '', pais: '', cargando: false, error: null, enviando: false, abierto: null, modo: 'facil', modoJuego: 'liga', formacion: '4-3-3' };
   },
+'ver-guia'() { ui.vistaAnterior = ui.vista; ui.vista = 'guia'; },
+  volver() { ui.vista = ui.vistaAnterior || 'intro'; }
+};
   'ver-guia'() { ui.vistaAnterior = ui.vista; ui.vista = 'guia'; },
   volver() { ui.vista = ui.vistaAnterior || 'intro'; }
 };
