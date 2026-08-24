@@ -29,6 +29,27 @@
   transition: all 600ms var(--ease-premium);
 }
 
+/* Contenido interno del panel con padding respirado */
+.panel > * {
+  padding: var(--space-lg) var(--space-md);
+}
+
+.panel h1,
+.panel h2,
+.panel h3 {
+  margin: 0 0 var(--space-md) 0;
+  padding: 0;
+}
+
+.panel p {
+  margin: 0 0 var(--space-sm) 0;
+  line-height: 1.6;
+}
+
+.panel p:last-child {
+  margin-bottom: 0;
+}
+
 .panel:hover {
   transform: translateY(-2px);
   box-shadow: 
@@ -188,6 +209,23 @@
   transition: all 600ms var(--ease-premium);
 }
 
+/* Contenido interno de eventos con padding generoso */
+.evento-copa > * {
+  padding: var(--space-lg) var(--space-md);
+}
+
+.evento-copa h2,
+.evento-copa h3 {
+  margin: 0 0 var(--space-md) 0;
+  padding: 0;
+  line-height: 1.3;
+}
+
+.evento-copa p {
+  margin: 0 0 var(--space-sm) 0;
+  line-height: 1.65;
+}
+
 .evento-copa::after {
   content: '';
   position: absolute;
@@ -279,6 +317,7 @@ input:hover, select:hover {
 }
 
 .dd-item {
+  padding: 12px 14px;
   border-radius: 8px;
   transition: all 300ms var(--ease-premium);
 }
@@ -387,6 +426,78 @@ input:hover, select:hover {
     margin: calc(var(--space-sm) * -1) calc(var(--space-sm) * -1) var(--space-sm);
     padding: var(--space-sm) var(--space-md);
   }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   TYPOGRAPHY — Text Spacing & Alignment
+   ───────────────────────────────────────────────────────────────────────── */
+
+h1, h2, h3, h4, h5, h6 {
+  line-height: 1.2;
+}
+
+/* Secciones con títulos separados del contenido */
+section h1,
+section h2,
+section h3 {
+  margin-bottom: var(--space-md);
+}
+
+/* Textos de listas y tablas con padding interno */
+.goleadores-y-asistencias,
+.tabla-posiciones {
+  padding: var(--space-md);
+}
+
+.goleadores-y-asistencias h3,
+.tabla-posiciones h3 {
+  margin: 0 0 var(--space-sm) 0;
+  padding: 0;
+}
+
+/* Items de listas de goleadores/asistencias */
+.goleador-item,
+.asistencia-item {
+  padding: var(--space-sm) var(--space-xs);
+  margin-bottom: var(--space-xs);
+}
+
+/* Decisiones y opciones de eventos */
+.decision-grid {
+  gap: var(--space-md);
+  padding: var(--space-sm);
+}
+
+.decision-option {
+  padding: var(--space-md) var(--space-sm);
+}
+
+.decision-option h4 {
+  margin: 0 0 var(--space-xs) 0;
+}
+
+.decision-option p {
+  margin: var(--space-xs) 0;
+  line-height: 1.5;
+}
+
+/* Chips y badges */
+.chip {
+  padding: 6px 12px;
+  line-height: 1.4;
+}
+
+/* Labels y etiquetas */
+.campo-etiqueta,
+label {
+  margin-bottom: 6px;
+  display: block;
+}
+
+/* Formularios */
+.manager-formulario,
+.pantalla-centrada form {
+  gap: var(--space-md);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
