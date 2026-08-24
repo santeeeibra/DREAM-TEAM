@@ -294,8 +294,24 @@ input:focus,select:focus,button:focus-visible{outline:2px solid var(--fluor);out
 .bench-card-slot .card .foot .metarow{font-size:9px}
 .bench-card-slot .card .photo-well{aspect-ratio:1/1}
 
+/* Estilos para cartas directas en bench-row (sin wrapper .bench-card-slot) */
+.bench-row > .carta-slot{
+  flex:0 0 72px;cursor:grab;transition:transform .18s cubic-bezier(.2,.7,.2,1)
+}
+.bench-row > .carta-slot:hover{transform:translateY(-3px)}
+.bench-row > .carta-slot .card{border-radius:12px;padding:2px;width:100%;max-width:72px;box-sizing:border-box}
+.bench-row > .carta-slot .card-inner{border-radius:10px}
+.bench-row > .carta-slot .card .ovr{padding:4px 6px 2px}
+.bench-row > .carta-slot .card .ovr .num{font-size:16px}
+.bench-row > .carta-slot .card .ovr .pos{font-size:9px}
+.bench-row > .carta-slot .card .foot{padding:0 6px 5px}
+.bench-row > .carta-slot .card .foot .name{font-size:10px}
+.bench-row > .carta-slot .card .foot .metarow{font-size:9px}
+.bench-row > .carta-slot .card .photo-well{aspect-ratio:1/1}
+
 @media (hover:hover) and (pointer:fine){
   .bench-card-slot .card:hover{transform:translateY(-4px)}
+  .bench-row > .carta-slot .card:hover{transform:translateY(-4px)}
 }
 
 /* evento - Estilo "Noche de Copa" */
