@@ -1141,14 +1141,20 @@ body {
 
 /* Label del sobre */
 .pack-label {
-  text-align: center;
-  margin-top: 12px;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 8px 10px;
+  border-radius: 0 0 6px 6px;
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0.8), transparent);
   font-family: 'Rajdhani', sans-serif;
   font-size: 16px;
   font-weight: 700;
   letter-spacing: 1px;
   color: #d4af37;
   text-transform: uppercase;
+  text-align: center;
   text-shadow: 0 2px 8px rgba(212, 175, 55, 0.5);
   transition: all 0.3s ease;
 }
