@@ -1108,7 +1108,21 @@ const PANTALLAS = {
     const fichaCompleta = !!(ob.nombre.trim() && ob.pais && ob.liga && ob.clubId);
     const anim = obPrimeraVezOnboarding ? ' ob-anim' : '';
     obPrimeraVezOnboarding = false;
-    const paso = (n, ok) => `<span class="ob-step${ok ? ' done' : ''}"><i></i>${n}</span>`;
+    
+    // Detectar paso actual: el primer paso incompleto es el activo
+    const paso1OK = !!(ob.nombre.trim() && ob.pais);
+    const paso2OK = !!(ob.liga && ob.clubId);
+    const paso3OK = !!ob.enviando;
+    const pasoActual = !paso1OK ? 1 : (!paso2OK ? 2 : (!paso3OK ? 3 : 0));
+    
+    const paso = (n, ok, idx) => {
+      const clases = [];
+      if (ok) clases.push('done');
+      if (idx === pasoActual) clases.push('activo');
+      const cls = clases.length ? ' ' + clases.join(' ') : '';
+      return `<span class="ob-step${cls}"><i></i>${n}</span>`;
+    };
+    
     return `
     <div class="ob-wrap${anim}">
       <header class="ob-hero">
@@ -1116,9 +1130,9 @@ const PANTALLAS = {
         <h1 class="ob-h1">Creá tu <span class="ob-h1-glow">perfil</span> de DT</h1>
         <p class="ob-sub">Una sola vez: tu identidad, tu club y 3 sobres gratis para arrancar la carrera.</p>
         <nav class="ob-steps" aria-label="Progreso del perfil">
-          ${paso('Identidad', !!(ob.nombre.trim() && ob.pais))}<span class="ob-step-arrow"></span>
-          ${paso('Club', !!(ob.liga && ob.clubId))}<span class="ob-step-arrow"></span>
-          ${paso('Contrato', !!ob.enviando)}
+          ${paso('Identidad', paso1OK, 1)}<span class="ob-step-arrow"></span>
+          ${paso('Club', paso2OK, 2)}<span class="ob-step-arrow"></span>
+          ${paso('Contrato', paso3OK, 3)}
         </nav>
       </header>
       <div class="ob-layout">

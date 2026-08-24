@@ -605,6 +605,8 @@ td.n{text-align:right;font-family:'Barlow Condensed';font-weight:700;font-varian
 .ob-step i{width:7px;height:7px;border-radius:99px;background:rgba(255,255,255,.14);transition:background .25s,box-shadow .25s}
 .ob-step.done{color:var(--fluor)}
 .ob-step.done i{background:var(--fluor);box-shadow:0 0 10px rgba(255,94,26,.7)}
+.ob-step.activo{color:var(--tiza)}
+.ob-step.activo i{background:var(--fluor);box-shadow:0 0 10px rgba(255,94,26,.7);animation:tsPulso 2.2s ease-in-out infinite}
 .ob-step-arrow{width:22px;height:1px;background:rgba(255,255,255,.12)}
 .ob-step-arrow::before{content:"";display:block;width:100%;height:100%;background:linear-gradient(90deg,rgba(255,94,26,0),rgba(255,94,26,.65));transform:scaleX(0);transform-origin:left;transition:transform .3s}
 .ob-step.done + .ob-step-arrow::before{transform:scaleX(1)}
