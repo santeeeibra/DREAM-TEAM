@@ -1160,7 +1160,7 @@ const PANTALLAS = {
           }</p>
           <label class="eyebrow">Formación</label>
           <div class="row" style="flex-wrap:wrap;gap:6px">
-            ${FORMACIONES_UI.map((f) => `<button type="button" class="ob-liga${ob.formacion === f.id ? ' activo' : ''}" data-accion="ob-formacion" data-id="${f.id}" style="flex-direction:column;align-items:center;gap:3px;padding:8px 10px;min-width:68px;font-size:13px">${miniDots(f)}<span style="font-size:11px;opacity:.7">${f.desc}</span></button>`).join('')}
+            ${FORMACIONES_UI.map((f) => `<button type="button" class="ob-liga${ob.formacion === f.id ? ' activo' : ''}" data-accion="ob-formacion" data-id="${f.id}" style="flex-direction:column;align-items:center;gap:3px;padding:8px 10px;min-width:68px;font-size:13px">${miniDots(f)}<span style="font-size:12px;font-weight:700;opacity:1;color:var(--humo)">${f.desc}</span></button>`).join('')}
           </div>
           ${ob.error ? `<p class="aviso">${esc(ob.error)}</p>` : ''}
           <button class="btn ob-cta" data-accion="ob-confirmar" ${ob.enviando ? 'disabled' : ''}>${ob.enviando ? 'Creando perfil…' : 'Firmar contrato'}</button>
@@ -1305,7 +1305,7 @@ const PANTALLAS = {
       <div class="eyebrow">${c.temporada === 1 ? 'Paso 2 de 2 · ' : `Temporada ${c.temporada} · `}Once titular · ${formId}</div>
       <h2>Rating del 11: <span style="color:var(--fluor)">${ratingActual(c)}</span></h2>
       <div class="row" style="flex-wrap:wrap;gap:6px;margin-bottom:2px">
-        ${FORMACIONES_UI.map((f) => `<button type="button" class="ob-liga${formId === f.id ? ' activo' : ''}" data-accion="cambiar-formacion" data-formacion="${f.id}" style="flex-direction:column;align-items:center;gap:2px;padding:6px 8px;min-width:52px;font-size:13px">${miniDots(f)}<span style="font-size:11px;opacity:.7">${f.label}</span></button>`).join('')}
+        ${FORMACIONES_UI.map((f) => `<button type="button" class="ob-liga${formId === f.id ? ' activo' : ''}" data-accion="cambiar-formacion" data-formacion="${f.id}" style="flex-direction:column;align-items:center;gap:2px;padding:6px 8px;min-width:52px;font-size:13px">${miniDots(f)}<span style="font-size:12px;font-weight:700;opacity:1;color:var(--humo)">${f.label}</span></button>`).join('')}
       </div>
       ${sinArquero ? '<p class="aviso">No tenés ningún arquero disponible. El arco solo lo puede ocupar un POR: conseguí uno antes de empezar.</p>' : ''}
       ${!sinArquero && vacios.length ? `<p class="aviso">Quedan ${vacios.length} puesto(s) sin cubrir. Tocá el puesto vacío para elegir jugador.</p>` : ''}

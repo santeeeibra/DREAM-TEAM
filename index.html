@@ -578,10 +578,11 @@ td.n{text-align:right;font-family:'Barlow Condensed';font-weight:700;font-varian
 .ob-seg-btn:hover{color:var(--tiza)}
 .ob-seg-btn.activo{background:var(--fluor);color:#0B0704;box-shadow:0 0 14px -2px rgba(255,94,26,.6)}
 .ob-seg.dif-peligro{background:linear-gradient(135deg,rgba(255,74,74,.12),rgba(255,74,74,.04));border-color:rgba(255,74,74,.35);box-shadow:0 0 16px -4px rgba(255,74,74,.3)}
-.form-dots{display:grid;grid-template-columns:repeat(5,4px);gap:3px;justify-content:center;line-height:0}
-.form-dots .dot{width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.15)}
+.form-dots{display:grid;grid-template-columns:repeat(5,5px);gap:3px;justify-content:center;line-height:0}
+.form-dots .dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.2)}
 .form-dots .dot.on{background:var(--humo)}
 .ob-liga.activo .form-dots .dot.on{background:var(--fluor)}
+.ob-liga.activo .form-dots .dot{background:rgba(255,255,255,.3)}
 .ob-cta{position:relative;overflow:hidden;justify-content:center;width:100%;margin-top:4px}
 .ob-cta::after{content:"";position:absolute;top:0;bottom:0;left:0;width:34%;pointer-events:none;background:linear-gradient(100deg,transparent,rgba(255,255,255,.5),transparent);transform:translateX(-170%) skewX(-18deg);animation:obShine 3.8s ease-in-out infinite}
 .ob-cta:disabled::after{display:none}
