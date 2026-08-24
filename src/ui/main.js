@@ -1137,65 +1137,79 @@ const PANTALLAS = {
       </header>
       <div class="ob-layout">
         <div class="panel ob-form stack" role="form">
-          <label class="eyebrow" for="ob-dt">Tu nombre</label>
-          <input id="ob-dt" maxlength="24" placeholder="Nombre del DT" value="${esc(ob.nombre)}" autocomplete="off" />
-          <label class="eyebrow">País de origen</label>
-          <div class="dropdown">
-            <button type="button" id="ob-pais" class="dd-btn${ob.pais ? '' : ' dd-placeholder'}" data-accion="ob-pais" aria-haspopup="listbox" aria-expanded="${ob.abierto === 'pais'}">
-              ${ob.pais ? `${banderaImg(ob.pais)} ${esc(ob.pais)}` : 'Elegí tu país'}
-              <span class="dd-caret">▾</span>
-            </button>
-            ${ob.abierto === 'pais' ? `<ul class="dd-opciones" role="listbox">
-              ${PAISES.map((p) => `<li role="option" data-accion="ob-pais" data-pais="${esc(p[0])}" class="dd-item${ob.pais === p[0] ? ' activo' : ''}">${banderaImg(p[0])} ${esc(p[0])}</li>`).join('')}
-            </ul>` : ''}
+          <div class="form-field">
+            <label class="eyebrow" for="ob-dt">Tu nombre</label>
+            <input id="ob-dt" maxlength="24" placeholder="Nombre del DT" value="${esc(ob.nombre)}" autocomplete="off" />
           </div>
-          <label class="eyebrow">Liga</label>
-          <div class="row">
-            ${LIGAS.map((l) => `
-            <button type="button" class="ob-liga${ob.liga === l.id ? ' activo' : ''}" data-accion="ob-liga" data-liga="${l.id}">
-              <img class="liga-logo" src="${l.logo}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()" />
-              ${l.label}
-            </button>`).join('')}
+          <div class="form-field">
+            <label class="eyebrow">País de origen</label>
+            <div class="dropdown">
+              <button type="button" id="ob-pais" class="dd-btn${ob.pais ? '' : ' dd-placeholder'}" data-accion="ob-pais" aria-haspopup="listbox" aria-expanded="${ob.abierto === 'pais'}">
+                ${ob.pais ? `${banderaImg(ob.pais)} ${esc(ob.pais)}` : 'Elegí tu país'}
+                <span class="dd-caret">▾</span>
+              </button>
+              ${ob.abierto === 'pais' ? `<ul class="dd-opciones" role="listbox">
+                ${PAISES.map((p) => `<li role="option" data-accion="ob-pais" data-pais="${esc(p[0])}" class="dd-item${ob.pais === p[0] ? ' activo' : ''}">${banderaImg(p[0])} ${esc(p[0])}</li>`).join('')}
+              </ul>` : ''}
+            </div>
           </div>
-          <label class="eyebrow">Club</label>
-          <div class="dropdown">
-            <button type="button" id="ob-club" class="dd-btn${clubSel ? '' : ' dd-placeholder'}" data-accion="ob-club" aria-haspopup="listbox" aria-expanded="${ob.abierto === 'club'}" ${!ob.liga || ob.cargando ? 'disabled' : ''}>
-              ${clubSel ? escudoDe(clubSel) : ''}${clubBtn}
-              <span class="dd-caret">▾</span>
-            </button>
-            ${ob.abierto === 'club' && ob.clubes.length > 0 ? `<ul class="dd-opciones" role="listbox">
-              ${ob.clubes.map((cl) => `<li role="option" data-accion="ob-club" data-id="${esc(cl.id)}" class="dd-item${ob.clubId === cl.id ? ' activo' : ''}">${escudoDe(cl)} ${esc(cl.name)}</li>`).join('')}
-            </ul>` : ''}
+          <div class="form-field">
+            <label class="eyebrow">Liga</label>
+            <div class="row">
+              ${LIGAS.map((l) => `
+              <button type="button" class="ob-liga${ob.liga === l.id ? ' activo' : ''}" data-accion="ob-liga" data-liga="${l.id}">
+                <img class="liga-logo" src="${l.logo}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()" />
+                ${l.label}
+              </button>`).join('')}
+            </div>
           </div>
-          <label class="eyebrow">Modo de juego</label>
-          <div class="row" style="flex-wrap:wrap;gap:6px">
-            ${MODOS_JUEGO_UI.map((m) => `<button type="button" class="ob-liga${ob.modoJuego === m.id ? ' activo' : ''}" data-accion="ob-set-modo" data-modo="${m.id}" title="${m.desc}" style="flex-direction:column;align-items:center;gap:3px;padding:10px 14px;min-width:80px;font-size:13px"><span style="font-size:20px">${m.ico}</span><span>${m.nombre}</span></button>`).join('')}
+          <div class="form-field">
+            <label class="eyebrow">Club</label>
+            <div class="dropdown">
+              <button type="button" id="ob-club" class="dd-btn${clubSel ? '' : ' dd-placeholder'}" data-accion="ob-club" aria-haspopup="listbox" aria-expanded="${ob.abierto === 'club'}" ${!ob.liga || ob.cargando ? 'disabled' : ''}>
+                ${clubSel ? escudoDe(clubSel) : ''}${clubBtn}
+                <span class="dd-caret">▾</span>
+              </button>
+              ${ob.abierto === 'club' && ob.clubes.length > 0 ? `<ul class="dd-opciones" role="listbox">
+                ${ob.clubes.map((cl) => `<li role="option" data-accion="ob-club" data-id="${esc(cl.id)}" class="dd-item${ob.clubId === cl.id ? ' activo' : ''}">${escudoDe(cl)} ${esc(cl.name)}</li>`).join('')}
+              </ul>` : ''}
+            </div>
           </div>
-          <p class="hint">${(() => {
-            const nacionId = PAIS_A_NACION_ID.get(ob.pais);
-            return ({
-              liga:      'Solo cartas de la liga elegida. El modo estándar.',
-              global:    'Pool completo: jugadores de todas las ligas.',
-              budget:    'Arrancás con $4M. Cada decisión económica duele.',
-              draft:     'Elegís 1 de 4 cartas por slot. Sin economía inicial.',
-              pais:      ob.pais
-                ? (nacionId ? `Jugadores de ${ob.pais} en todas las ligas del mundo.` : `Pool global — ${ob.pais} aún sin datos de nacionalidad.`)
-                : 'Elegí tu país para ver el pool disponible.',
-              club_real: 'Arrancás con la plantilla oficial del club que elegiste. Recibís 1 sobre de refuerzo para sumar jugadores.',
-            })[ob.modoJuego] || '';
-          })()}</p>
-          <label class="eyebrow">Dificultad</label>
-          <div class="ob-seg${ob.modo === 'dificil' ? ' dif-peligro' : ''}" role="group" aria-label="Dificultad">
-            <button type="button" class="ob-seg-btn${ob.modo === 'facil' ? ' activo' : ''}" data-accion="ob-modo" data-modo="facil">Accesible</button>
-            <button type="button" class="ob-seg-btn${ob.modo === 'dificil' ? ' activo' : ''}" data-accion="ob-modo" data-modo="dificil">Difícil</button>
+          <div class="form-field">
+            <label class="eyebrow">Modo de juego</label>
+            <div class="row" style="flex-wrap:wrap;gap:6px">
+              ${MODOS_JUEGO_UI.map((m) => `<button type="button" class="ob-liga${ob.modoJuego === m.id ? ' activo' : ''}" data-accion="ob-set-modo" data-modo="${m.id}" title="${m.desc}" style="flex-direction:column;align-items:center;gap:3px;padding:10px 14px;min-width:80px;font-size:13px"><span style="font-size:20px">${m.ico}</span><span>${m.nombre}</span></button>`).join('')}
+            </div>
+            <p class="hint">${(() => {
+              const nacionId = PAIS_A_NACION_ID.get(ob.pais);
+              return ({
+                liga:      'Solo cartas de la liga elegida. El modo estándar.',
+                global:    'Pool completo: jugadores de todas las ligas.',
+                budget:    'Arrancás con $4M. Cada decisión económica duele.',
+                draft:     'Elegís 1 de 4 cartas por slot. Sin economía inicial.',
+                pais:      ob.pais
+                  ? (nacionId ? `Jugadores de ${ob.pais} en todas las ligas del mundo.` : `Pool global — ${ob.pais} aún sin datos de nacionalidad.`)
+                  : 'Elegí tu país para ver el pool disponible.',
+                club_real: 'Arrancás con la plantilla oficial del club que elegiste. Recibís 1 sobre de refuerzo para sumar jugadores.',
+              })[ob.modoJuego] || '';
+            })()}</p>
           </div>
-          <p class="${ob.modo === 'dificil' ? 'aviso' : 'hint'}">${ob.modo === 'dificil'
-            ? '⚠️ La presión escala fuerte en cada decisión. Sin épicas en el 11, el rendimiento tiene techo.'
-            : 'Ideal para conocer el juego. Margen de error generoso, presión suave.'
-          }</p>
-          <label class="eyebrow">Formación</label>
-          <div class="row" style="flex-wrap:wrap;gap:6px">
-            ${FORMACIONES_UI.map((f) => `<button type="button" class="ob-liga${ob.formacion === f.id ? ' activo' : ''}" data-accion="ob-formacion" data-id="${f.id}" style="flex-direction:column;align-items:center;gap:3px;padding:8px 10px;min-width:68px;font-size:13px">${miniDots(f)}<span style="font-size:12px;font-weight:700;opacity:1;color:var(--humo)">${f.desc}</span></button>`).join('')}
+          <div class="form-field">
+            <label class="eyebrow">Dificultad</label>
+            <div class="ob-seg${ob.modo === 'dificil' ? ' dif-peligro' : ''}" role="group" aria-label="Dificultad">
+              <button type="button" class="ob-seg-btn${ob.modo === 'facil' ? ' activo' : ''}" data-accion="ob-modo" data-modo="facil">Accesible</button>
+              <button type="button" class="ob-seg-btn${ob.modo === 'dificil' ? ' activo' : ''}" data-accion="ob-modo" data-modo="dificil">Difícil</button>
+            </div>
+            <p class="${ob.modo === 'dificil' ? 'aviso' : 'hint'}">${ob.modo === 'dificil'
+              ? '⚠️ La presión escala fuerte en cada decisión. Sin épicas en el 11, el rendimiento tiene techo.'
+              : 'Ideal para conocer el juego. Margen de error generoso, presión suave.'
+            }</p>
+          </div>
+          <div class="form-field">
+            <label class="eyebrow">Formación</label>
+            <div class="row" style="flex-wrap:wrap;gap:6px">
+              ${FORMACIONES_UI.map((f) => `<button type="button" class="ob-liga${ob.formacion === f.id ? ' activo' : ''}" data-accion="ob-formacion" data-id="${f.id}" style="flex-direction:column;align-items:center;gap:3px;padding:8px 10px;min-width:68px;font-size:13px">${miniDots(f)}<span style="font-size:12px;font-weight:700;opacity:1;color:var(--humo)">${f.desc}</span></button>`).join('')}
+            </div>
           </div>
           ${ob.error ? `<p class="aviso">${esc(ob.error)}</p>` : ''}
           <button class="btn ob-cta" data-accion="ob-confirmar" ${ob.enviando ? 'disabled' : ''}>${ob.enviando ? 'Creando perfil…' : 'Firmar contrato'}</button>
