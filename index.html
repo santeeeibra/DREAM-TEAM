@@ -103,6 +103,23 @@ input,select{
 input:focus,select:focus,button:focus-visible{outline:2px solid var(--fluor);outline-offset:2px}
 .panel{background:var(--panel);border:1px solid var(--linea);border-radius:var(--r);padding:18px}
 .stack{display:flex;flex-direction:column;gap:16px}
+.packs-grid{
+  display:flex;
+  flex-direction:row;
+  justify-content:center;
+  align-items:flex-start;
+  gap:16px;
+  flex-wrap:nowrap;
+}
+.packs-grid .pack-container{
+  flex:0 0 auto;
+  width:clamp(160px, 28vw, 220px);
+}
+.packs-grid .pack-container img{
+  width:100%;
+  height:auto;
+  display:block;
+}
 .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
 .sep{height:1px;background:var(--linea);margin:6px 0}
 .muted{color:var(--humo)}
