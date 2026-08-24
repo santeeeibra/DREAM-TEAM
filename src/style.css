@@ -918,6 +918,32 @@ body {
   animation: none;
 }
 
+/* Sobre abierto: colapsado a versión mini */
+.pack-container.abierto {
+  max-height: 48px;
+  overflow: hidden;
+  opacity: 0.4;
+  cursor: default;
+  pointer-events: none;
+  transition: max-height 0.4s ease, opacity 0.3s ease;
+}
+
+.pack-container.abierto .pack-image {
+  width: 40px;
+  height: 52px;
+  border-radius: 6px;
+  filter: grayscale(1) brightness(0.6);
+}
+
+.pack-container.abierto .pack-label {
+  display: none;
+}
+
+.pack-container.abierto .pack-glow,
+.pack-container.abierto .pack-particles {
+  display: none;
+}
+
 /* La imagen del sobre */
 .pack-image {
   width: 180px;

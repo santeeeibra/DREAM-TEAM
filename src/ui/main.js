@@ -756,7 +756,7 @@ function chipsFijos(opcionCat) {
 function renderPack(index, disabled = false, label = '') {
   const packImagePath = goldPackImageUrl;
   return `
-    <div class="pack-container ${disabled ? 'disabled' : ''}" data-accion="${disabled ? '' : 'abrir-sobre'}" data-i="${index}">
+    <div class="pack-container ${disabled ? 'abierto' : ''}" data-accion="${disabled ? '' : 'abrir-sobre'}" data-i="${index}">
       <div class="pack-glow"></div>
       <div class="pack-particles">
         <div class="pack-particle"></div>
@@ -1805,7 +1805,7 @@ const acciones = {
   'volver-onboarding'() { ui.vista = 'onboarding'; render(); },
   'abrir-sobre'(el) {
     const container = el.closest('.pack-container');
-    if (!container || container.classList.contains('opening') || container.classList.contains('disabled')) return;
+    if (!container || container.classList.contains('opening') || container.classList.contains('abierto')) return;
     
     // Iniciar animación épica (1.2s total)
     container.classList.add('opening');
