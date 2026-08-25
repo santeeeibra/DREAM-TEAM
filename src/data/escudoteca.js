@@ -197,9 +197,9 @@ export const ESCUDOTECA = {
   'Sarmiento':            `${PALADAR}/argentina/primeradivision/png/sarmiento.png`,
   'Barracas Central':     `${PALADAR}/argentina/primeradivision/png/barracas.png`,
   'Deportivo Riestra':    `${PALADAR}/argentina/primeradivision/png/riestra.png`,
-  'Independiente Rivadavia': `${PALADAR}/argentina/primeradivision/png/independienterivadavia.png`,
+  'Independiente Rivadavia': `${PALADAR}/argentina/primeradivision/png/independienteriv.png`,
   'Aldosivi':             `${PALADAR}/argentina/primeradivision/png/aldosivi.png`,
-  'Estudiantes de Río Cuarto': `${PALADAR}/argentina/primeradivision/png/estudiantesriocuarto.png`,
+  'Estudiantes de Río Cuarto': `${PALADAR}/argentina/primeradivision/png/estudiantesrc.png`,
 
   // ── MLS ──
   // Slugs verificados en paladarnegro.net/escudoteca/estadosunidos/mls/.
