@@ -176,10 +176,27 @@ function sortearRama(rng, ramas, paqueteId, opcionId) {
 
 
 /**
- * Selecciona un titular aleatorio con peso uniforme (sin rotación de figura).
+ * Selecciona un titular aleatorio con peso por posición (sin rotación de figura).
  * Usado para lesion_figura_prePartido cuando fatiga >= 65.
+ * Los arqueros tienen 30% de probabilidad (peso 0.3x) vs otras posiciones (peso 1.0x).
  */
 export function jugadorAleatorioDelOnce(rng, onceCards) {
   if (!onceCards.length) return null;
-  return onceCards[Math.floor(rng.next() * onceCards.length)];
+  
+  // Asignar pesos: POR = 0.3, resto = 1.0
+  const jugadoresConPeso = onceCards.map((carta) => ({
+    carta,
+    peso: carta.pos === 'POR' ? 0.3 : 1.0,
+  }));
+  
+  const pesoTotal = jugadoresConPeso.reduce((sum, j) => sum + j.peso, 0);
+  let rand = rng.next() * pesoTotal;
+  
+  for (const j of jugadoresConPeso) {
+    rand -= j.peso;
+    if (rand <= 0) return j.carta;
+  }
+  
+  // Fallback (no debería llegar acá)
+  return jugadoresConPeso[jugadoresConPeso.length - 1].carta;
 }

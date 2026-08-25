@@ -1018,6 +1018,127 @@ export const CATALOGO = [
     texto: 'El presidente del club te citó a su despacho. El mensaje fue breve y sin rodeos: los próximos resultados van a determinar si hay o no hay continuidad. No hay negociación.',
     opciones: [{ id: 'continuar', label: 'Entendido', efectos: { presion: 15, moral: -10 } }],
   }),
+
+  // ══════════════════════ FAMILIA: DIÁLOGOS CON EL DT (estilo FIFA/EA FC) ══════════════════════
+  p('dialogo_pide_titularidad', {
+    tags: ['individual', 'vestuario'],
+    intensidad: INTENSIDAD.MEDIA,
+    filtro: (c) => !!c.figura && c.moral >= 60,
+    titulo: 'Charla en el vestuario',
+    texto: '{figura} te pide una charla después del entrenamiento. "Mister, siento que estoy en un gran momento y puedo aportar mucho más al equipo. Me gustaría tener más continuidad en el once titular."',
+    opciones: [
+      {
+        id: 'promete_titular',
+        label: 'Le prometo titularidad',
+        resultado: [
+          { prob: 70, efectos: { moral: 6, fatiga: -3 }, texto: 'Se fue motivado. La confianza lo levantó.' },
+          { prob: 30, efectos: { presion: 5 }, texto: 'Otros jugadores reclaman lo mismo. El vestuario está picante.' },
+        ],
+      },
+      {
+        id: 'mantiene_rotacion',
+        label: 'La rotación es innegociable',
+        resultado: [
+          { prob: 60, efectos: { moral: -4, fatiga: 2 }, texto: 'Se fue con cara larga pero no hubo quilombo.' },
+          { prob: 40, efectos: { moral: -8, presion: 8 }, texto: 'Se calentó. Ahora lo tenés en contra.' },
+        ],
+      },
+    ],
+  }),
+
+  p('dialogo_banco_caliente', {
+    tags: ['individual', 'vestuario'],
+    intensidad: INTENSIDAD.MEDIA,
+    filtro: (c) => !!c.figura && c.moral < 50,
+    titulo: 'Tensión en el banco',
+    texto: '{figura} está al límite. "No entiendo por qué no juego. Necesito minutos o me voy a plantear otras opciones." El tono no es de pedido, es de ultimátum.',
+    opciones: [
+      {
+        id: 'calma_promesa',
+        label: 'Lo calmo y le prometo cambios',
+        resultado: [
+          { prob: 50, efectos: { moral: 4, presion: -3 }, texto: 'Se bajó del catre. Por ahora.' },
+          { prob: 50, efectos: { presion: 10 }, texto: 'No le creyó. La situación empeoró.' },
+        ],
+      },
+      {
+        id: 'confronta_duro',
+        label: 'Acá se juega lo que yo digo',
+        resultado: [
+          { prob: 40, efectos: { moral: -10, presion: 5 }, texto: 'Se pudrió todo. El vestuario está dividido.' },
+          { prob: 60, efectos: { moral: 3 }, texto: 'El resto del plantel te bancó. Ganaste autoridad.' },
+        ],
+      },
+    ],
+  }),
+
+  p('dialogo_felicitacion', {
+    tags: ['individual', 'vestuario'],
+    intensidad: INTENSIDAD.BAJA,
+    filtro: (c) => !!c.figura && c.racha === 'buena' && c.moral >= 70,
+    titulo: 'El capitán te busca',
+    texto: '{figura} te frena en el pasillo. "Mister, el grupo está re bien. Seguimos así y vamos a hacer historia este año. Gracias por confiar en nosotros."',
+    opciones: [
+      {
+        id: 'motiva_mas',
+        label: 'Esto recién empieza',
+        efectos: { moral: 5, fatiga: -2 },
+      },
+      {
+        id: 'mantiene_pies_tierra',
+        label: 'Sin relajarse, falta mucho',
+        efectos: { moral: 2, presion: -3 },
+      },
+    ],
+  }),
+
+  p('dialogo_despedida_jugador', {
+    tags: ['individual', 'vestuario'],
+    intensidad: INTENSIDAD.ALTA,
+    filtro: (c) => !!c.figura && c.temporada >= 3 && c.posicion <= 5,
+    titulo: 'Una charla difícil',
+    texto: '{figura} te pide hablar en privado. "Mister, vino una oferta de afuera. Es la chance de mi vida. Quiero que sepas que acá fui feliz, pero necesito dar este paso."',
+    opciones: [
+      {
+        id: 'lo_deja_ir',
+        label: 'Andá tranquilo, te lo ganaste',
+        resultado: [
+          { prob: 100, efectos: { moral: -8, money: 15, ratingDelta: -3 }, texto: 'El plantel lo despidió con un aplauso. Queda un hueco grande.' },
+        ],
+      },
+      {
+        id: 'intenta_retener',
+        label: 'Te necesito acá, no te vayas',
+        resultado: [
+          { prob: 30, efectos: { moral: 10, presion: -5 }, texto: 'Se quedó. El vestuario está eufórico.' },
+          { prob: 70, efectos: { moral: -12, presion: 10 }, texto: 'Se fue igual. Ahora está resentido y el plantel también.' },
+        ],
+      },
+    ],
+  }),
+
+  p('dialogo_reclamo_sueldo', {
+    tags: ['individual', 'institucional'],
+    intensidad: INTENSIDAD.MEDIA,
+    filtro: (c) => !!c.figura && c.money >= 20 && c.temporada >= 2,
+    titulo: 'Negociación salarial',
+    texto: '{figura} viene con su representante. "Mister, con todo respeto, estoy rindiendo por encima de lo que cobro. Queremos renegociar el contrato o vamos a escuchar ofertas."',
+    opciones: [
+      {
+        id: 'aumenta_sueldo',
+        label: 'Le subo el sueldo',
+        efectos: { money: -10, moral: 8, fatiga: -3 },
+      },
+      {
+        id: 'rechaza_aumento',
+        label: 'No hay presupuesto',
+        resultado: [
+          { prob: 50, efectos: { moral: -6, presion: 5 }, texto: 'Se enojó pero se quedó callado.' },
+          { prob: 50, efectos: { moral: -10, presion: 10, ratingDelta: -2 }, texto: 'Empezó a fallar en cancha. Está con la cabeza afuera.' },
+        ],
+      },
+    ],
+  }),
 ];
 
 /** Catálogo de eventos graves (forzados, sin elección). Solo aparecen en modo difícil. */

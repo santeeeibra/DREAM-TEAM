@@ -72,6 +72,7 @@ export function cargarCarrera(managerDB, plantelDB, temporadasDB = []) {
     plantel: plantelDB, // Ya formateado por cartas.js
     formacion: managerDB.formacion || '4-3-3',
     once: managerDB.once_ids || [], // Recuperar los IDs del 11 titular
+    lesionados: managerDB.lesionados || [], // [{ cardId, jornadasRestantes, tipo }]
     liga: managerDB.liga_snapshot || null,
     objetivo: managerDB.objetivo_temporada || TEMPORADA.OBJETIVO_INICIAL,
     momentum: managerDB.momentum || 0,
@@ -147,6 +148,7 @@ function getJugadorPorId(id) {
     plantel: plantelFinal,
     sobresIniciales: sobres,
     once: [],
+    lesionados: [], // [{ cardId, jornadasRestantes, tipo: 'grave'|'leve' }]
     liga: null,
     objetivo: TEMPORADA.OBJETIVO_INICIAL,
     momentum: 0,
@@ -285,6 +287,15 @@ export function jugarTramo(c) {
   c.estado = r.estado;
   c.momentum = Math.max(-3, Math.min(3, Math.round((pts - partidos.length * 1.35) / 1.5)));
   c.ultimoTramo = { partidos, pts, ppp, posicion: pos, deltas: r.deltas };
+
+  // Decrementar jornadas de lesión: cada tramo consume las jornadas jugadas
+  const jornadasJugadas = partidos.length;
+  c.lesionados = (c.lesionados || [])
+    .map((lesion) => ({
+      ...lesion,
+      jornadasRestantes: lesion.jornadasRestantes - jornadasJugadas,
+    }))
+    .filter((lesion) => lesion.jornadasRestantes > 0); // Remover lesiones recuperadas
 
   if (c.estado.presion >= DESPIDO.PRESION) return terminarCarrera(c, 'despedido');
   c.fase = FASES.EVENTO;
@@ -434,6 +445,7 @@ export function resolverEvento(c, opcionId) {
  * Elige el reemplazo para un lesionado (fase LESION).
  * reemplazoId: id de la carta del banco que entra al 11.
  * Si no hay suplente (reemplazoId null/undefined o no válido), aplica ratingDelta -= 2.
+ * Registra la lesión en c.lesionados[] para bloquear al jugador por 3 jornadas.
  */
 export function elegirReemplazoLesion(c, reemplazoId) {
   const lesionadoId = c.lesionadoId;
@@ -462,6 +474,16 @@ export function elegirReemplazoLesion(c, reemplazoId) {
     c.estado = r.estado;
     deltas = r.deltas;
   }
+
+  // Registrar lesión persistente: 3 jornadas (aprox. 1 tramo completo)
+  // Las jornadas se irán descontando al avanzar tramos (ver jugarTramo)
+  const jornadasPorTramo = LIGA.TRAMOS[c.tramo] || 7;
+  c.lesionados = c.lesionados || [];
+  c.lesionados.push({
+    cardId: lesionadoId,
+    jornadasRestantes: jornadasPorTramo, // Se bloqueará por el próximo tramo completo
+    tipo: 'grave',
+  });
 
   c.lesionadoId = null;
   c.fase = FASES.TRAMO;

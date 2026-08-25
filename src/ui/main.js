@@ -1325,6 +1325,7 @@ const PANTALLAS = {
     const formSlots = FORMACIONES_SLOTS[formId] || FORMACION;
     const lineas = LINEAS_POR_FORMACION[formId] || LINEAS_POR_FORMACION['4-3-3'];
     const porId = new Map(c.plantel.map((x) => [x.id, x]));
+    const lesionadosSet = new Set((c.lesionados || []).map((l) => l.cardId));
     const banco = c.plantel.filter((x) => !c.once.includes(x.id));
     const vacios = slotsVacios(c.once);
     const sinArquero = vacios.some((i) => formSlots[i] === 'ARQ');
@@ -1358,25 +1359,33 @@ const PANTALLAS = {
       .sort((a, b) =>
         penalidad(a.pos, slotElegido) - penalidad(b.pos, slotElegido) ||
         ratingEnSlot(b, slotElegido) - ratingEnSlot(a, slotElegido));
+    
+    // Avisos de lesionados
+    const lesionadosEnOnce = c.once.filter((id) => lesionadosSet.has(id)).map((id) => porId.get(id)).filter(Boolean);
+    const avisoLesionados = lesionadosEnOnce.length
+      ? `<p class="aviso">⚠️ Tenés ${lesionadosEnOnce.length} lesionado(s) en el 11: ${lesionadosEnOnce.map((x) => x.nombre).join(', ')}. Deben ser reemplazados antes de jugar.</p>`
+      : '';
+    
     return `<div class="stack">
       <div class="eyebrow">${c.temporada === 1 ? 'Paso 2 de 2 · ' : `Temporada ${c.temporada} · `}Once titular · ${formId}</div>
       <h2>Rating del 11: <span style="color:var(--fluor)">${ratingActual(c)}</span></h2>
       <div class="row" style="flex-wrap:wrap;gap:6px;margin-bottom:2px">
         ${FORMACIONES_UI.map((f) => `<button type="button" class="ob-liga${formId === f.id ? ' activo' : ''}" data-accion="cambiar-formacion" data-formacion="${f.id}" style="flex-direction:column;align-items:center;gap:2px;padding:6px 8px;min-width:52px;font-size:13px">${miniDots(f)}<span style="font-size:12px;font-weight:700;opacity:1;color:var(--humo)">${f.label}</span></button>`).join('')}
       </div>
+      ${avisoLesionados}
       ${sinArquero ? '<p class="aviso">No tenés ningún arquero disponible. El arco solo lo puede ocupar un POR: conseguí uno antes de empezar.</p>' : ''}
       ${!sinArquero && vacios.length ? `<p class="aviso">Quedan ${vacios.length} puesto(s) sin cubrir. Tocá el puesto vacío para elegir jugador.</p>` : ''}
       <div class="cancha-grid">${lineas.map((l) => `<div class="linea-f">${l.map(slot).join('')}</div>`).join('')}</div>
       ${banco.length ? `<div class="bench-section">
         <div class="eyebrow">Suplentes (${banco.length})</div>
-        <div class="bench-row">${banco.map((x, i) => carta(x, { draggable: true, i })).join('')}</div>
+        <div class="bench-row">${banco.map((x, i) => carta(x, { bloqueada: lesionadosSet.has(x.id), motivo: lesionadosSet.has(x.id) ? '🚑 Lesionado' : '', draggable: !lesionadosSet.has(x.id), i })).join('')}</div>
       </div>` : ''}
       <p class="hint">${slotElegido
         ? `Elegí quién juega de <b>${slotElegido}</b>. Cada carta muestra su rating real y el que rinde en este puesto: <span class="pen-vecino-tx">ámbar −${FUERZA.PENALIDAD_POSICION.VECINO}</span> si es una línea vecina, <span class="pen-fuera-tx">rojo −${FUERZA.PENALIDAD_POSICION.FUERA}</span> si está fuera de posición.`
         : 'Arrastrá un jugador sobre otro para intercambiarlos, o tocar un puesto para cambiarlo.'}</p>
-      ${slotElegido ? `<div class="grid-cartas">${candidatos.map((x, i) => carta(x, { accion: 'poner', slot: slotElegido, i })).join('')}</div>` : ''}
+      ${slotElegido ? `<div class="grid-cartas">${candidatos.map((x, i) => carta(x, { bloqueada: lesionadosSet.has(x.id), motivo: lesionadosSet.has(x.id) ? '🚑 Lesionado' : '', accion: lesionadosSet.has(x.id) ? '' : 'poner', slot: slotElegido, i })).join('')}</div>` : ''}
       <div class="row">
-        <button class="btn" data-accion="confirmar-once">${c.temporada === 1 ? 'Empezar la temporada' : 'Confirmar y seguir'}</button>
+        <button class="btn" data-accion="confirmar-once" ${lesionadosEnOnce.length ? 'disabled' : ''}>${c.temporada === 1 ? 'Empezar la temporada' : 'Confirmar y seguir'}</button>
         <button class="btn ghost" data-accion="auto-once">Armado automático</button>
       </div>
     </div>`;
