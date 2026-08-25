@@ -219,34 +219,36 @@ function renderSimModal(partido, idx, total, misJugadores, jugadaActual, jugadas
   const fichaActiva = jugadaActual >= 0 && jugadas[jugadaActual]?.jugador?.id;
   const jugadaActiva = jugadaActual >= 0 ? jugadas[jugadaActual] : null;
 
-  const MY_TOP = { POR: 88, DEF: 73, MED: 53, DEL: 33 };
-  const ZONA_TARGET = [88, 73, 53, 33, 10]; // target por zona 0-4
+  // INVERTIDO: POR abajo (88%), DEL arriba (15%)
+  const MY_TOP = { POR: 88, DEF: 60, MED: 40, DEL: 15 };
+  const ZONA_TARGET = [88, 60, 40, 15, 5]; // target por zona 0-4
   const spread = (n) => n <= 1 ? [50] : Array.from({ length: n }, (_, i) => 20 + (60 * i) / (n - 1));
 
   const misFichas = [];
   for (const [pos, jugadores] of Object.entries(posGroups)) {
     const xs = spread(jugadores.length);
     jugadores.forEach((j, i) => {
-      const top = MY_TOP[pos] ?? 53;
+      const top = MY_TOP[pos] ?? 40;
       const left = xs[i];
       const isActive = j.id === fichaActiva;
       const isGol = isActive && jugadaActiva?.tipo === 'gol' && jugadaActiva?.equipo === 'mio';
       const cls = isActive ? (isGol ? ' active gol' : ' active') : '';
       let style = `top:${top}%;left:${left}%`;
       if (isActive && jugadaActiva) {
-        const tTop = ZONA_TARGET[jugadaActiva.zona] ?? 53;
+        const tTop = ZONA_TARGET[jugadaActiva.zona] ?? 40;
         style += `;--to-top:${tTop}%;--to-left:50%`;
       }
       misFichas.push(`<div class="sim-ficha${cls}" style="${style}" data-name="${esc(j.nombre)}">${esc(j.nombre.split(' ').pop())}</div>`);
     });
   }
 
+  // INVERTIDO: rivales arriba (POR rival arriba, DEL rival abajo cerca de nuestro arquero)
   const rivalSpec = [
     { pos: 'POR', top: 8, left: 50 },
-    { pos: 'DEF', top: 20, left: 20 }, { pos: 'DEF', top: 20, left: 40 },
-    { pos: 'DEF', top: 20, left: 60 }, { pos: 'DEF', top: 20, left: 80 },
-    { pos: 'MED', top: 38, left: 25 }, { pos: 'MED', top: 38, left: 50 }, { pos: 'MED', top: 38, left: 75 },
-    { pos: 'DEL', top: 56, left: 35 }, { pos: 'DEL', top: 56, left: 50 }, { pos: 'DEL', top: 56, left: 65 },
+    { pos: 'DEF', top: 23, left: 20 }, { pos: 'DEF', top: 23, left: 40 },
+    { pos: 'DEF', top: 23, left: 60 }, { pos: 'DEF', top: 23, left: 80 },
+    { pos: 'MED', top: 48, left: 25 }, { pos: 'MED', top: 48, left: 50 }, { pos: 'MED', top: 48, left: 75 },
+    { pos: 'DEL', top: 70, left: 35 }, { pos: 'DEL', top: 70, left: 50 }, { pos: 'DEL', top: 70, left: 65 },
   ];
   const rivalFichas = rivalSpec.map((r) => {
     const isRivalGoal = jugadaActiva?.equipo === 'rival' && jugadaActiva?.tipo === 'gol' && r.pos === 'DEL';
@@ -300,8 +302,9 @@ function renderSimModal(partido, idx, total, misJugadores, jugadaActual, jugadas
 
 // ── animación dinámica: mueve fichas + pelota en lugar de re-render ──
 function animarJugadaDinamica(cancha, jugada, fichasMap, ball) {
-  const MY_TOP = { POR: 88, DEF: 73, MED: 53, DEL: 33 };
-  const ZONA_TARGET_TOP = [88, 73, 53, 33, 10]; // zona 0=DEF propia → 4=arco rival
+  // INVERTIDO: POR abajo (88%), DEL arriba (10%)
+  const MY_TOP = { POR: 88, DEF: 60, MED: 40, DEL: 15 };
+  const ZONA_TARGET_TOP = [88, 60, 40, 15, 5]; // zona 0=DEF propia → 4=arco rival
 
   // Resetear clases de fichas
   cancha.querySelectorAll('.sim-ficha').forEach(f => {
@@ -591,13 +594,14 @@ const miniDots = (f) => `<div class="form-dots">${f.dots.flatMap((row) => row.ma
 // Índices de slots por línea para cada formación.
 // Los índices corresponden a la posición en el array de FORMACIONES_SLOTS.
 // El orden dentro de cada línea es izquierda→derecha en la pantalla.
+// ORDEN INVERTIDO: delanteros arriba (ataque rival) → arquero abajo (defensa propia)
 const LINEAS_POR_FORMACION = {
-  '4-3-3':   [[0], [3,1,2,4],   [5,6,7],     [8,10,9]],
-  '4-4-2':   [[0], [3,1,2,4],   [5,6,7,8],   [9,10]],
-  '4-2-3-1': [[0], [3,1,2,4],   [5,6],       [8,7,9],  [10]],
-  '3-5-2':   [[0], [1,2,3],     [7,4,5,6,8], [9,10]],
-  '3-4-2-1': [[0], [1,2,3],     [6,4,5,7],   [8,9],    [10]],
-  '5-3-2':   [[0], [4,1,2,3,5], [6,7,8],     [9,10]],
+  '4-3-3':   [[8,10,9],   [5,6,7],     [3,1,2,4],   [0]],
+  '4-4-2':   [[9,10],     [5,6,7,8],   [3,1,2,4],   [0]],
+  '4-2-3-1': [[10],       [8,7,9],     [5,6],       [3,1,2,4],   [0]],
+  '3-5-2':   [[9,10],     [7,4,5,6,8], [1,2,3],     [0]],
+  '3-4-2-1': [[10],       [8,9],       [6,4,5,7],   [1,2,3],     [0]],
+  '5-3-2':   [[9,10],     [6,7,8],     [4,1,2,3,5], [0]],
 };
 
 const MODOS_JUEGO_UI = [
