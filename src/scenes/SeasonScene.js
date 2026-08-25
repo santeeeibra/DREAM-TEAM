@@ -42,6 +42,7 @@ import {
   getManagerParaTemporada,
   getOrCreateSeasonRow,
   ratingDelOnceTitular,
+  lineasDelOnceTitular,
 } from '../data/seasonsRepo.js';
 import { ULTIMA_TEMPORADA } from '../core/constants.js';
 import { generarRivalesFuerza, RIVALES_NOMBRES } from '../engine/rivals.js';
@@ -274,6 +275,7 @@ export class SeasonScene extends Phaser.Scene {
       }
 
       const ratingBase = await ratingDelOnceTitular(this.managerId, this.seasonNumber);
+      const lineasPlantel = await lineasDelOnceTitular(this.managerId, this.seasonNumber);
 
       this.eventosActivos = eventosActivos;
 
@@ -288,6 +290,7 @@ export class SeasonScene extends Phaser.Scene {
       } else {
         this.estado = {
           ratingBase,
+          lineasPlantel,
           moral: seasonRow.morale,
           fatiga: seasonRow.fatigue,
           wins: 0,

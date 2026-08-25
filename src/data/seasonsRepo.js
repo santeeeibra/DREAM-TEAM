@@ -12,6 +12,8 @@ import {
   FATIGA_INICIAL_POR_DEFECTO as FATIGA_INICIAL,
 } from '../engine/seasonSimulator.js';
 import { DataError } from '../core/errors.js';
+import { ratingPorLineas } from '../engine/once.js';
+import { FORMACIONES_SLOTS } from '../data/posiciones.js';
 
 // getManagerParaTemporada trae los datos del manager que necesita
 // SeasonScene antes de arrancar: `current_season` (para resolver la
@@ -57,6 +59,39 @@ export async function ratingDelOnceTitular(managerId, seasonNumber) {
   if (error) throw new DataError(error.message, { causa: error });
 
   return calcularRatingDelOnce(data.map((fila) => fila.cards));
+}
+
+// lineasDelOnceTitular calcula el rating promedio de cada línea (por, def, med, del)
+// a partir del 11 titular guardado. Similar a ratingDelOnceTitular pero devuelve
+// un objeto con ratings por línea en vez de un promedio único.
+export async function lineasDelOnceTitular(managerId, seasonNumber) {
+  const lineup = await getLineup(managerId, seasonNumber);
+  if (!lineup || !lineup.slots?.starters?.length) {
+    throw new DataError('Este manager todavía no tiene un 11 titular guardado para esta temporada.');
+  }
+
+  const userCardIds = lineup.slots.starters.map((titular) => titular.card_id);
+  const { data, error } = await supabase
+    .from('user_cards')
+    .select('id, cards (overall_rating, position_type)')
+    .in('id', userCardIds);
+  if (error) throw new DataError(error.message, { causa: error });
+
+  // Reconstruir el once como array de 11 IDs en el orden correcto
+  const porId = new Map(data.map((fila) => [fila.id, fila.cards]));
+  const once = lineup.slots.starters.map((titular) => titular.card_id);
+  
+  // Convertir a cartas con la estructura que espera ratingPorLineas
+  const plantel = data.map((fila) => ({
+    id: fila.id,
+    rating: fila.cards.overall_rating,
+    pos: fila.cards.position_type,
+  }));
+
+  // Usar la formación guardada en el lineup
+  const formacion = FORMACIONES_SLOTS[lineup.formation] || FORMACIONES_SLOTS['4-3-3'];
+
+  return ratingPorLineas(once, plantel, formacion);
 }
 
 // ensureSeason guarda el rating snapshot del 11 titular (seasons.rating:

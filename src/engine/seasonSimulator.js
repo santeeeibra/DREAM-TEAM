@@ -8,6 +8,64 @@
 // -----------------------------------------------------------------------
 // LA FÓRMULA DE FUERZA
 // -----------------------------------------------------------------------
+
+import { FUERZA } from './balance.js';
+
+// -----------------------------------------------------------------------
+// PONDERACIÓN POR LÍNEAS
+// -----------------------------------------------------------------------
+
+/**
+ * Calcula la fuerza de ataque de un equipo ponderando las líneas según su
+ * contribución ofensiva: DEL (50%), MED (35%), DEF (10%), POR (5%).
+ * 
+ * @param {object} lineas - { por, def, med, del } con ratings promedio de cada línea
+ * @returns {number} - Fuerza de ataque ponderada
+ */
+function calcularFuerzaAtaque(lineas) {
+  const { PESO_LINEAS_ATAQUE } = FUERZA;
+  return (
+    lineas.del * PESO_LINEAS_ATAQUE.DEL +
+    lineas.med * PESO_LINEAS_ATAQUE.MED +
+    lineas.def * PESO_LINEAS_ATAQUE.DEF +
+    lineas.por * PESO_LINEAS_ATAQUE.POR
+  );
+}
+
+/**
+ * Calcula la fuerza defensiva de un equipo ponderando las líneas según su
+ * contribución defensiva: POR (35%), DEF (45%), MED (15%), DEL (5%).
+ * 
+ * @param {object} lineas - { por, def, med, del } con ratings promedio de cada línea
+ * @returns {number} - Fuerza defensiva ponderada
+ */
+function calcularFuerzaDefensa(lineas) {
+  const { PESO_LINEAS_DEFENSA } = FUERZA;
+  return (
+    lineas.por * PESO_LINEAS_DEFENSA.POR +
+    lineas.def * PESO_LINEAS_DEFENSA.DEF +
+    lineas.med * PESO_LINEAS_DEFENSA.MED +
+    lineas.del * PESO_LINEAS_DEFENSA.DEL
+  );
+}
+
+/**
+ * Convierte un rating único en líneas desglosadas con distribución uniforme.
+ * Usado para los rivales generados (que solo tienen un número de fuerza).
+ * Agrega ruido leve (±2) a cada línea para simular especialización.
+ * 
+ * @param {number} rating - Rating promedio del equipo
+ * @returns {object} - { por, def, med, del } con ratings similares al promedio
+ */
+function ratingALineas(rating) {
+  const ruido = () => (Math.random() - 0.5) * 4; // ±2 de variación
+  return {
+    por: Math.round((rating + ruido()) * 10) / 10,
+    def: Math.round((rating + ruido()) * 10) / 10,
+    med: Math.round((rating + ruido()) * 10) / 10,
+    del: Math.round((rating + ruido()) * 10) / 10,
+  };
+}
 //
 //   fuerza = rating_del_11 + (moral / 10) - (fatiga / 10) + azar
 //
@@ -199,25 +257,59 @@ function sortearGoles(lambda) {
   return Math.min(goles - 1, 9);
 }
 
-// simularJornada juega un partido suelto entre dos fuerzas ya calculadas
-// (fuerzaLocal y fuerzaVisitante = rating_del_11 + moral/10 - fatiga/10 de
-// cada equipo, sin azar todavía: el azar se agrega acá adentro, junto con la
-// ventaja de localía). Devuelve el marcador { golesLocal, golesVisitante }.
-// Si el equipo local está en crisis (estadoLocal con moral/presion/fatiga), el
-// azar se amplifica para simular resultados más impredecibles.
-export function simularJornada(fuerzaLocal, fuerzaVisitante, estadoLocal = null) {
+// simularJornada juega un partido suelto entre dos equipos. En vez de recibir
+// una "fuerza" única, recibe las líneas desglosadas de cada equipo ({ por, def, med, del })
+// más ajustes de estado (moral, fatiga). Los goles a favor dependen del ATAQUE propio
+// (DEL+MED principalmente) vs la DEFENSA rival (POR+DEF principalmente).
+//
+// Parámetros:
+//   - lineasLocal: { por, def, med, del } ratings promedio de cada línea del equipo local
+//   - lineasVisitante: { por, def, med, del } ratings del visitante
+//   - ajusteEstadoLocal: moral/10 - fatiga/10 del local (se suma a todas sus líneas)
+//   - ajusteEstadoVisitante: idem para el visitante
+//   - estadoLocal: { moral, presion, fatiga } para calcular volatilidad por crisis (opcional)
+//
+// Devuelve: { golesLocal, golesVisitante }
+export function simularJornada(lineasLocal, lineasVisitante, ajusteEstadoLocal = 0, ajusteEstadoVisitante = 0, estadoLocal = null) {
   // Calcular volatilidad por crisis del equipo local (si aplica)
   const volatilidad = estadoLocal
     ? calcularVolatilidadPorCrisis(estadoLocal.moral, estadoLocal.presion, estadoLocal.fatiga)
     : 1.0;
+
+  // Aplicar ajustes de estado a todas las líneas
+  const lineasLocalAjustadas = {
+    por: lineasLocal.por + ajusteEstadoLocal,
+    def: lineasLocal.def + ajusteEstadoLocal,
+    med: lineasLocal.med + ajusteEstadoLocal,
+    del: lineasLocal.del + ajusteEstadoLocal,
+  };
   
-  const fuerzaLocalFinal = fuerzaLocal + VENTAJA_LOCAL + generarAzarAcotado(volatilidad);
-  const fuerzaVisitanteFinal = fuerzaVisitante + generarAzarAcotado();
+  const lineasVisitanteAjustadas = {
+    por: lineasVisitante.por + ajusteEstadoVisitante,
+    def: lineasVisitante.def + ajusteEstadoVisitante,
+    med: lineasVisitante.med + ajusteEstadoVisitante,
+    del: lineasVisitante.del + ajusteEstadoVisitante,
+  };
 
-  const diferencia = fuerzaLocalFinal - fuerzaVisitanteFinal;
+  // Fuerza de ataque del local (con ventaja de localía y volatilidad por crisis)
+  const ataqueLocal = calcularFuerzaAtaque(lineasLocalAjustadas) + VENTAJA_LOCAL + generarAzarAcotado(volatilidad);
+  
+  // Fuerza defensiva del visitante (sin bonos especiales)
+  const defensaVisitante = calcularFuerzaDefensa(lineasVisitanteAjustadas) + generarAzarAcotado();
+  
+  // Fuerza de ataque del visitante (sin ventaja de localía, sin volatilidad amplificada)
+  const ataqueVisitante = calcularFuerzaAtaque(lineasVisitanteAjustadas) + generarAzarAcotado();
+  
+  // Fuerza defensiva del local (sin azar adicional, ya tiene ventaja de localía en ataque)
+  const defensaLocal = calcularFuerzaDefensa(lineasLocalAjustadas);
 
-  const lambdaLocal = calcularLambdaDeGoles(diferencia);
-  const lambdaVisitante = calcularLambdaDeGoles(-diferencia);
+  // Diferencia ataque vs defensa para cada equipo
+  const diferenciaLocal = ataqueLocal - defensaVisitante;
+  const diferenciaVisitante = ataqueVisitante - defensaLocal;
+
+  // Lambda de Poisson para cada equipo
+  const lambdaLocal = calcularLambdaDeGoles(diferenciaLocal);
+  const lambdaVisitante = calcularLambdaDeGoles(diferenciaVisitante);
 
   return {
     golesLocal: sortearGoles(lambdaLocal),
@@ -517,6 +609,10 @@ export function simularTramo({ desdeJornada, hastaJornada, rivalesFuerza, rivale
 
   const rivales = resolverRivales(rivalesFuerza, nuevoEstado.ratingPlantel);
 
+  // Convertir el ratingPlantel del jugador a líneas. Si el estado ya trae
+  // lineasPlantel (nuevo formato), usamos eso; si no, convertimos desde el rating único.
+  const lineasPlantel = nuevoEstado.lineasPlantel || ratingALineas(nuevoEstado.ratingPlantel);
+
   for (let jornada = desdeJornada; jornada <= hastaJornada; jornada++) {
     // Ver "INDEXADO DE rivalesFuerza" arriba: jornada 1 => rivales[0].
     const indiceRival = (jornada - 1) % CANTIDAD_RIVALES;
@@ -524,7 +620,12 @@ export function simularTramo({ desdeJornada, hastaJornada, rivalesFuerza, rivale
     const nombreRival = rivalesNombres?.[indiceRival];
     const esLocal = jornada <= CANTIDAD_RIVALES;
 
-    const fuerzaPlantel = nuevoEstado.ratingPlantel + nuevoEstado.moral / 10 - nuevoEstado.fatiga / 10;
+    // Convertir la fuerza del rival a líneas desglosadas
+    const lineasRival = ratingALineas(fuerzaRival);
+
+    // Ajuste de estado: moral/10 - fatiga/10
+    const ajustePlantel = nuevoEstado.moral / 10 - nuevoEstado.fatiga / 10;
+    const ajusteRival = 0; // Los rivales no tienen moral/fatiga (por ahora)
 
     // Pasar el estado del equipo a simularJornada para que calcule volatilidad
     // por crisis. Presión no está en nuevoEstado aún, así que usamos 0 por ahora
@@ -536,8 +637,8 @@ export function simularTramo({ desdeJornada, hastaJornada, rivalesFuerza, rivale
     };
 
     const { golesLocal, golesVisitante } = esLocal
-      ? simularJornada(fuerzaPlantel, fuerzaRival, estadoParaVolatilidad)
-      : simularJornada(fuerzaRival, fuerzaPlantel, null); // cuando es visitante, la volatilidad aplica al rival
+      ? simularJornada(lineasPlantel, lineasRival, ajustePlantel, ajusteRival, estadoParaVolatilidad)
+      : simularJornada(lineasRival, lineasPlantel, ajusteRival, ajustePlantel, null); // cuando es visitante, la volatilidad aplica al rival
 
     const golesPlantel = esLocal ? golesLocal : golesVisitante;
     const golesRival = esLocal ? golesVisitante : golesLocal;

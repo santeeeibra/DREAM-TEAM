@@ -51,6 +51,20 @@ export const FUERZA = {
   GOLES_BASE: 1.35,
   GOLES_ESCALA: 18,               // sensibilidad al diferencial de fuerza
   GOLES_ESCALA_INFERIOR: 12,      // el inferior cae mas abrupto: menos milagros contra los grandes
+  // Ponderación por líneas: cómo influye cada línea en ataque y defensa.
+  // La suma de pesos de ataque debe ser ~1.0, igual que la de defensa.
+  PESO_LINEAS_ATAQUE: {
+    DEL: 0.50,  // Delanteros son los principales goleadores
+    MED: 0.35,  // Mediocampistas crean juego y también anotan
+    DEF: 0.10,  // Defensores ocasionalmente suben
+    POR: 0.05,  // Arquero casi no influye en ataque
+  },
+  PESO_LINEAS_DEFENSA: {
+    POR: 0.35,  // Arquero es crítico para evitar goles
+    DEF: 0.45,  // Defensores son la primera barrera
+    MED: 0.15,  // Mediocampistas marcan y cortan
+    DEL: 0.05,  // Delanteros apenas defienden
+  },
 };
 
 // Deriva pasiva por tramo (sin feedback multiplicativo: evita el "pozo gravitacional" de moral)

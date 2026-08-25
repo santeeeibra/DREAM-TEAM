@@ -23,6 +23,40 @@ export function ratingOnce(once, plantel, formacion = FORMACION) {
   return Math.round((suma / formacion.length) * 10) / 10;
 }
 
+/**
+ * Devuelve el rating promedio de cada línea del 11: { por, def, med, del }.
+ * Usado por el simulador para ponderar ataque/defensa según la calidad de cada línea.
+ */
+export function ratingPorLineas(once, plantel, formacion = FORMACION) {
+  const porId = new Map(plantel.map((c) => [c.id, c]));
+  const lineas = { por: [], def: [], med: [], del: [] };
+
+  for (let i = 0; i < formacion.length; i++) {
+    const slot = formacion[i];
+    const carta = porId.get(once[i]);
+    const rating = ratingEnSlot(carta, slot);
+
+    if (slot === 'ARQ') {
+      lineas.por.push(rating);
+    } else if (['DFC', 'LI', 'LD'].includes(slot)) {
+      lineas.def.push(rating);
+    } else if (['MC', 'MCO'].includes(slot)) {
+      lineas.med.push(rating);
+    } else if (['EI', 'ED', 'DC'].includes(slot)) {
+      lineas.del.push(rating);
+    }
+  }
+
+  const promediar = (arr) => (arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : 0);
+
+  return {
+    por: Math.round(promediar(lineas.por) * 10) / 10,
+    def: Math.round(promediar(lineas.def) * 10) / 10,
+    med: Math.round(promediar(lineas.med) * 10) / 10,
+    del: Math.round(promediar(lineas.del) * 10) / 10,
+  };
+}
+
 export function onceCompleto(once, formacion = FORMACION) {
   return once.length === formacion.length && once.every((id) => !!id);
 }

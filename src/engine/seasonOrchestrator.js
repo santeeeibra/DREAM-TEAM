@@ -168,12 +168,17 @@ function avanzar({ estado, rivalesFuerza, rivalesNombres, eventosDisponibles }) 
   // ningún lado — ratingBase sigue siendo el rating real del plantel.
   const ratingPlantel = careerState.getEffectiveRating(estadoBase.ratingBase);
 
+  // Si el estado trae lineasPlantel (ratings desglosados por línea), lo pasamos
+  // tal cual. Si no (compatibilidad con estados viejos), simularTramo lo generará
+  // desde ratingPlantel usando distribución uniforme.
+  const lineasPlantel = estadoBase.lineasPlantel;
+
   const resultadoTramo = simularTramo({
     desdeJornada,
     hastaJornada,
     rivalesFuerza,
     rivalesNombres,
-    estado: { ...estadoBase, ratingPlantel },
+    estado: { ...estadoBase, ratingPlantel, lineasPlantel },
   });
 
   // simularTramo devuelve solo los campos que él administra (y con
