@@ -2046,7 +2046,15 @@ const acciones = {
     // 3. Cartas extra por ventas de rotación.
     if (c.sobreExtraRotacion > 0) {
       const extra = cartasExtraRefuerzo(c, c.sobreExtraRotacion, pool);
-      c.refuerzo = [...(c.refuerzo || []), ...extra];
+      // Deduplicar extras contra refuerzo existente (mismo fut_id = mismo jugador)
+      const refKeys = new Set((c.refuerzo || []).map(x => x.fut_id ? `fid:${x.fut_id}` : null).filter(Boolean));
+      const extraDedup = extra.filter(x => {
+        if (!x.fut_id) return true;
+        if (refKeys.has(`fid:${x.fut_id}`)) return false;
+        refKeys.add(`fid:${x.fut_id}`);
+        return true;
+      });
+      c.refuerzo = [...(c.refuerzo || []), ...extraDedup];
       c.sobreExtraRotacion = 0;
     }
     ui.sel = new Set(); ui.salen = new Set(); ui.vista = 'refuerzo';

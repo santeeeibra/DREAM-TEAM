@@ -173,11 +173,22 @@ serve(async (req) => {
   }
 
   // 6. Elegir 5 cartas random respetando las probabilidades por banda,
-  // con la 5ta carta garantizada Silver o mejor.
+  // con la 5ta carta garantizada Silver o mejor, sin duplicados dentro del sobre.
   let cards;
   try {
     const bands = [pickBand(), pickBand(), pickBand(), pickBand(), pickBandMinSilver()];
-    cards = await Promise.all(bands.map((band) => getRandomCardInBand(supabaseAdmin, band)));
+    const pickedIds = new Set<number>();
+    cards = [];
+    for (const band of bands) {
+      let card;
+      let attempts = 0;
+      do {
+        card = await getRandomCardInBand(supabaseAdmin, band);
+        attempts++;
+      } while (pickedIds.has(card.id) && attempts < 10);
+      pickedIds.add(card.id);
+      cards.push(card);
+    }
   } catch (err) {
     console.error("Error seleccionando cartas:", err);
     return jsonResponse({ error: "No se pudieron seleccionar las cartas del sobre" }, 500);

@@ -567,11 +567,21 @@ export function registrarRefuerzo(c, cartasCrudasDB) {
 }
 
 export function aplicarRefuerzo(c, idsEntran = [], idsSalen = []) {
-  const entran = (c.refuerzo || []).filter((x) => idsEntran.includes(x.id));
+  const entranRaw = (c.refuerzo || []).filter((x) => idsEntran.includes(x.id));
+  // Defense-in-depth: deduplicar por claveJugador y excluir quienes ya están en plantel
+  const plantelRestante = c.plantel.filter((x) => !idsSalen.includes(x.id));
+  const yaEnPlantel = new Set(plantelRestante.map(claveJugador));
+  const vistos = new Set();
+  const entran = entranRaw.filter((x) => {
+    const k = claveJugador(x);
+    if (yaEnPlantel.has(k) || vistos.has(k)) return false;
+    vistos.add(k);
+    return true;
+  });
   const salen = c.plantel.filter((x) => idsSalen.includes(x.id));
   const ingreso = salen.reduce((s, x) => s + valorDeVenta(x), 0);
   
-  c.plantel = c.plantel.filter((x) => !idsSalen.includes(x.id)).concat(entran);
+  c.plantel = plantelRestante.concat(entran);
   
   if (c.plantel.length > CARRERA.PLANTEL_MAX) {
     const orden = [...c.plantel].sort((a, b) => a.rating - b.rating);
@@ -645,8 +655,13 @@ export function resolverOferta(c, id, vender) {
 /** Genera N cartas extra de refuerzo para compensar ventas de rotación. */
 export function cartasExtraRefuerzo(c, n, pool = null) {
   const pos = c.ultimaTemporada?.posicion ?? 10;
+  // Excluir jugadores del plantel + los que ya están en refuerzo para evitar duplicados
+  const futIdsExcluir = [
+    ...(c.plantel || []).map((x) => x.fut_id).filter(Boolean),
+    ...(c.refuerzo || []).map((x) => x.fut_id).filter(Boolean),
+  ];
   const extra = [];
-  for (let i = 0; i < n; i++) extra.push(...cargarCartasDB(sobreRefuerzo(c.rng, pos, [], pool)));
+  for (let i = 0; i < n; i++) extra.push(...cargarCartasDB(sobreRefuerzo(c.rng, pos, futIdsExcluir, pool)));
   return extra;
 }
 
