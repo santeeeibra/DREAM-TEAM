@@ -113,13 +113,15 @@ export async function ensureSeason(managerId, seasonNumber, rating) {
 // columna (pressure=50, streak=0). Si se pasan null (caso de hoy: crear la
 // temporada 1), no se incluyen esas claves en el insert y siguen cayendo en
 // los defaults de columna como pasa actualmente.
+// Además acepta `zone` (opcional) para ligas con zonas (Liga Profesional Argentina).
 export async function getOrCreateSeasonRow(
   managerId,
   seasonNumber,
   moralHeredada = MORAL_INICIAL,
   fatigaHeredada = FATIGA_INICIAL,
   pressureInicial = null,
-  streakInicial = null
+  streakInicial = null,
+  zone = null
 ) {
   const { data: existente, error: errorBusqueda } = await supabase
     .from('seasons')
@@ -138,6 +140,7 @@ export async function getOrCreateSeasonRow(
   };
   if (pressureInicial !== null) filaNueva.pressure = pressureInicial;
   if (streakInicial !== null) filaNueva.streak = streakInicial;
+  if (zone !== null) filaNueva.zone = zone;
 
   const { data: creada, error: errorCreacion } = await supabase
     .from('seasons')
@@ -179,21 +182,35 @@ export async function guardarEventoResuelto(seasonId, eventCode, matchday, chose
 // cerrarTemporada actualiza la fila de `seasons` con el resultado final de
 // jugar las 38 fechas (lo que devuelve simularTemporadaCompleta) y la
 // moral/fatiga con las que terminó, marcándola completed=true.
-export async function cerrarTemporada(seasonId, resumen, moralFinal, fatigaFinal) {
+// Además, puede recibir `playoffsResult` (opcional) para ligas con play-offs,
+// con la estructura:
+// {
+//   status: 'CAMPEON' | 'ELIMINADO_PLAYOFFS' | 'ELIMINADO_FASE_REGULAR',
+//   fase_eliminado: 'Octavos' | 'Cuartos' | 'Semifinales' | 'Final' | null,
+//   rival_eliminador: 'Nombre del club' | null,
+//   campeon: true | false
+// }
+export async function cerrarTemporada(seasonId, resumen, moralFinal, fatigaFinal, playoffsResult = null) {
+  const updateData = {
+    wins: resumen.wins,
+    draws: resumen.draws,
+    losses: resumen.losses,
+    goals_for: resumen.goals_for,
+    goals_against: resumen.goals_against,
+    points: resumen.points,
+    league_position: resumen.league_position,
+    morale: moralFinal,
+    fatigue: fatigaFinal,
+    completed: true,
+  };
+
+  if (playoffsResult !== null) {
+    updateData.playoffs_result = playoffsResult;
+  }
+
   const { data, error } = await supabase
     .from('seasons')
-    .update({
-      wins: resumen.wins,
-      draws: resumen.draws,
-      losses: resumen.losses,
-      goals_for: resumen.goals_for,
-      goals_against: resumen.goals_against,
-      points: resumen.points,
-      league_position: resumen.league_position,
-      morale: moralFinal,
-      fatigue: fatigaFinal,
-      completed: true,
-    })
+    .update(updateData)
     .eq('id', seasonId)
     .select()
     .single();

@@ -1215,7 +1215,7 @@ export class SeasonScene extends Phaser.Scene {
     try {
       sessionStorage.removeItem(CLAVE_ESTADO_TEMPORADA);
 
-      const { posicionFinal } = this.resultadoPlayoffs;
+      const { posicionFinal, status } = this.resultadoPlayoffs;
 
       const resumen = {
         wins: this.estado.wins,
@@ -1227,8 +1227,16 @@ export class SeasonScene extends Phaser.Scene {
         league_position: posicionFinal,
       };
 
+      // Construir resultado de play-offs para persistencia
+      const playoffsResult = {
+        status,
+        fase_eliminado: this.resultadoPlayoffs.faseEliminado || null,
+        rival_eliminador: this.resultadoPlayoffs.rivalEliminador || null,
+        campeon: false,
+      };
+
       const { morale: moralFinal, fatigue: fatigaFinal } = careerState.getState();
-      await cerrarTemporada(this.seasonRow.id, resumen, moralFinal, fatigaFinal);
+      await cerrarTemporada(this.seasonRow.id, resumen, moralFinal, fatigaFinal, playoffsResult);
 
       const esUltimaTemporada = this.seasonNumber === ULTIMA_TEMPORADA;
       if (!esUltimaTemporada) {
@@ -1271,8 +1279,16 @@ export class SeasonScene extends Phaser.Scene {
         league_position: 1, // Campeón
       };
 
+      // Construir resultado de play-offs para persistencia
+      const playoffsResult = {
+        status: 'CAMPEON',
+        fase_eliminado: null,
+        rival_eliminador: null,
+        campeon: true,
+      };
+
       const { morale: moralFinal, fatigue: fatigaFinal } = careerState.getState();
-      await cerrarTemporada(this.seasonRow.id, resumen, moralFinal, fatigaFinal);
+      await cerrarTemporada(this.seasonRow.id, resumen, moralFinal, fatigaFinal, playoffsResult);
 
       const esUltimaTemporada = this.seasonNumber === ULTIMA_TEMPORADA;
       if (!esUltimaTemporada) {
