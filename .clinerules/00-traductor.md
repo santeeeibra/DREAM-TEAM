@@ -22,6 +22,8 @@ archivos y reglas sin gastar tokens en búsquedas.
 
 **Reglas:** `.clinerules/10-arquitectura.md` → sección "Simulación de resultados"
 
+**Skills:** `dream-team-architecture`, `graphify`
+
 **Qué toca:**
 - Umbrales de crisis (moral, fatiga, presión)
 - Multiplicadores de azar
@@ -46,6 +48,8 @@ archivos y reglas sin gastar tokens en búsquedas.
 - `src/engine/balance.js` (constantes MORAL_*, FATIGA_*, PRESSURE_*)
 
 **Reglas:** `.clinerules/10-arquitectura.md` → sección "Estado"
+
+**Skills:** `dream-team-architecture`, `graphify`
 
 **Qué toca:**
 - Clamps (rangos mínimos/máximos)
@@ -73,6 +77,8 @@ archivos y reglas sin gastar tokens en búsquedas.
 
 **Reglas:** `.clinerules/20-eventos-ia.md` + `.clinerules/60-narrativa.md`
 
+**Skills:** `dream-team-architecture`, `dream-team-events`, `graphify`
+
 **Qué toca:**
 - Agregar/modificar eventos en el catálogo
 - Filtros condicionales (racha, posición, tramo)
@@ -98,6 +104,8 @@ archivos y reglas sin gastar tokens en búsquedas.
 
 **Reglas:** `.clinerules/30-ui.md` → sección "Escudos de clubes"
 
+**Skills:** `dream-team-cards`, `graphify`
+
 **Qué toca:**
 - Agregar URLs de escudos nuevos a ESCUDOTECA
 - Alias de nombre para matchear variantes
@@ -121,6 +129,8 @@ archivos y reglas sin gastar tokens en búsquedas.
 - Buscar por clase CSS (ej: `.decision-card`, `.pack-container`, `.btn`)
 
 **Reglas:** `.clinerules/30-ui.md` + `.clinerules/35-diseno.md`
+
+**Skills:** `dream-team-cards`, `high-end-visual-design`, `graphify`
 
 **Qué toca:**
 - Classes CSS y sus reglas
@@ -150,6 +160,8 @@ archivos y reglas sin gastar tokens en búsquedas.
 
 **Reglas:** `.clinerules/30-ui.md` → sección "Cartas y sobres"
 
+**Skills:** `dream-team-architecture`, `dream-team-cards`, `graphify`
+
 **Qué toca:**
 - Multiplicadores de rareza (bronce/oro_comun/oro_unico/epica)
 - Mínimos de draft (1 POR, 4 DEF, 3 MED, 3 DEL)
@@ -173,6 +185,8 @@ archivos y reglas sin gastar tokens en búsquedas.
 - `src/data/lineupsRepo.js` (persistencia en Supabase)
 
 **Reglas:** `.clinerules/10-arquitectura.md` + `.clinerules/50-context-engineering.md` → sección DDD
+
+**Skills:** `dream-team-architecture`, `graphify`
 
 **Qué toca:**
 - Algoritmo húngaro (asignación óptima)
@@ -199,6 +213,8 @@ archivos y reglas sin gastar tokens en búsquedas.
 
 **Reglas:** `.clinerules/10-arquitectura.md` → sección "Temporada"
 
+**Skills:** `dream-team-architecture`, `graphify`
+
 **Qué toca:**
 - Tramos (típicamente 7 fechas + evento)
 - Slots de eventos (jornadas 7, 14, 21, 28)
@@ -221,6 +237,8 @@ archivos y reglas sin gastar tokens en búsquedas.
 
 **Reglas:** `.clinerules/40-debug.md`
 
+**Skills:** `review`, `review-bugbot`, `graphify`
+
 ---
 
 ### Debug / No anda / Error
@@ -231,6 +249,8 @@ archivos y reglas sin gastar tokens en búsquedas.
 
 **Zona:** Debug  
 **Reglas:** `.clinerules/40-debug.md`
+
+**Skills:** `review`, `review-bugbot`, `graphify`
 
 **Proceso:**
 1. Reproducir el bug primero

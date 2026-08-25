@@ -1,6 +1,21 @@
 # Workflow — OBLIGATORIO EN CADA TAREA
 
-## PASO -1 — Antes de CUALQUIER cosa (NUEVO)
+## PASO -2 — Activación Automática de Skills (NUEVO)
+Leer `D:\dev\dream-team\.clinerules\05-auto-skills.md` para detectar qué skills
+deben activarse según el pedido del usuario.
+
+**Declarar públicamente:**
+```
+🎯 Skills activadas automáticamente:
+✓ skill-nombre-1 (razón)
+✓ skill-nombre-2 (razón)
+```
+
+**Skills SIEMPRE activas en Dream Team:**
+- `dream-team-architecture` (en toda tarea de código)
+- `graphify` (si necesita explorar código)
+
+## PASO -1 — Antes de CUALQUIER cosa
 Leer `D:\dev\dream-team\.clinerules\00-traductor.md` para traducir el pedido
 del usuario a zona técnica + archivos + reglas.
 
