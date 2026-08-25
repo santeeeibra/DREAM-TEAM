@@ -44,22 +44,22 @@ const RATING_MIN = 40;
 const RATING_MAX = 99;
 
 // --- Ruido de un partido puntual ---
-const AZAR_MAX_SWING = 8; // tope base de cuánto puede mover el azar la fuerza de un equipo en un partido
+const AZAR_MAX_SWING = 5; // tope base de cuánto puede mover el azar la fuerza de un equipo en un partido (reducido de 8 para menos volatilidad)
 
 // --- Volatilidad por crisis (sorpresas cuando el equipo está mal) ---
 const VOLATILIDAD_MORAL_UMBRAL = 50; // moral por debajo de esto activa volatilidad
 const VOLATILIDAD_PRESION_UMBRAL = 40; // presión por encima de esto activa volatilidad
 const VOLATILIDAD_FATIGA_UMBRAL = 60; // fatiga por encima de esto activa volatilidad
-const VOLATILIDAD_MAX_MULTIPLICADOR = 1.75; // máximo 75% más de swing cuando todo está mal
+const VOLATILIDAD_MAX_MULTIPLICADOR = 1.5; // máximo 50% más de swing cuando todo está mal (reducido de 1.75)
 
 // --- Ventaja de localía ---
-const VENTAJA_LOCAL = 4; // puntos de fuerza extra por jugar de local
+const VENTAJA_LOCAL = 2.5; // puntos de fuerza extra por jugar de local (reducido de 4 para menos diferencia)
 
 // --- Conversión de fuerza a goles esperados (lambda de Poisson) ---
-const BASE_GOLES_ESPERADOS = 1.3; // goles esperados de un equipo contra un rival de igual fuerza
-const DIVISOR_FUERZA_A_GOLES = 15; // cada 15 puntos de diferencia de fuerza mueven el lambda en 1 gol
-const LAMBDA_MIN = 0.2; // ni el equipo más flojo del mundo puede quedar "sin chances"
-const LAMBDA_MAX = 4.0; // ni el equipo más fuerte del mundo tiene una goleada asegurada
+const BASE_GOLES_ESPERADOS = 1.15; // goles esperados de un equipo contra un rival de igual fuerza (reducido de 1.3 para marcadores más ajustados)
+const DIVISOR_FUERZA_A_GOLES = 18; // cada 18 puntos de diferencia de fuerza mueven el lambda en 1 gol (aumentado de 15 para suavizar el impacto)
+const LAMBDA_MIN = 0.3; // ni el equipo más flojo del mundo puede quedar "sin chances" (aumentado de 0.2)
+const LAMBDA_MAX = 2.8; // ni el equipo más fuerte del mundo tiene una goleada asegurada (reducido de 4.0 para menos goleadas)
 
 // --- Evolución de moral/fatiga a lo largo de la temporada ---
 const MORAL_MIN = 0;
