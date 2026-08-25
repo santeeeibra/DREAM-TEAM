@@ -32,6 +32,8 @@ import Phaser from 'phaser';
 import { TOTAL_MATCHDAYS, construirMomentosDestacados } from '../engine/seasonSimulator.js';
 import { simularHastaProximoEvento, aplicarDecisionYContinuar, simularTemporadaConPlayoffs } from '../engine/seasonOrchestrator.js';
 import { calcularTablaFinal } from '../engine/leagueTable.js';
+import { calcularTablaCompletaLigaPro, obtenerClasificados } from '../engine/zonesTable.js';
+import { simularPlayoffsCompletos } from '../engine/playoffsSimulator.js';
 import * as careerState from '../state/careerState.js';
 import { getLineup } from '../data/lineupsRepo.js';
 import { getManagerCards } from '../data/cardsRepo.js';
@@ -257,6 +259,14 @@ export class SeasonScene extends Phaser.Scene {
       this.tienePlayoffs = ligaConfig?.tienePlayoffs || false;
       this.ligaConfig = ligaConfig;
 
+      // Para LigaPro: determinar la zona del equipo del jugador
+      if (ligaConfig?.tienePlayoffs && ligaConfig?.clubs) {
+        const clubDelManager = ligaConfig.clubs.find(c => c.id === manager.club_id);
+        this.zonaEquipo = clubDelManager?.zona || null;
+      } else {
+        this.zonaEquipo = null;
+      }
+
       // El rating del 11 titular depende del lineup guardado: si el manager
       // todavía no confirmó un 11 para esta temporada, ratingDelOnceTitular
       // lanza (seasons.js). Para no dejar la pantalla congelada en ese caso,
@@ -288,6 +298,13 @@ export class SeasonScene extends Phaser.Scene {
         this.estado = paquete.estadoOrquestador;
         careerStateSnapshot = paquete.careerStateSnapshot;
       } else {
+        // Resolver nombre del club para LigaPro (lo necesita el orquestador para fixture)
+        let clubNombre = null;
+        if (ligaConfig?.tienePlayoffs && manager.club_id) {
+          const clubInfo = ligaConfig.clubs?.find(c => c.id === manager.club_id);
+          clubNombre = clubInfo?.name || null;
+        }
+
         this.estado = {
           ratingBase,
           lineasPlantel,
@@ -304,6 +321,7 @@ export class SeasonScene extends Phaser.Scene {
           eventosDeTemporada: null,
           rivalesFuerza: generarRivalesFuerza(ratingBase),
           rivalesNombres: RIVALES_NOMBRES,
+          clubNombre,
         };
       }
 
@@ -426,12 +444,8 @@ export class SeasonScene extends Phaser.Scene {
       .setInteractive({ useHandCursor: true });
     
     boton.on('pointerdown', () => {
-      // Si es una liga con play-offs, usar flujo especial
-      if (this.tienePlayoffs) {
-        this.simularTemporadaConPlayoffsCompleta();
-      } else {
-        this.avanzarSimulacion();
-      }
+      // Todas las ligas usan el mismo flujo de avance con eventos
+      this.avanzarSimulacion();
     });
 
     this.contenedorDinamico.add(boton);
@@ -667,12 +681,18 @@ export class SeasonScene extends Phaser.Scene {
               rivalesFuerza: this.estado.rivalesFuerza,
               rivalesNombres: this.estado.rivalesNombres,
               eventosDisponibles: this.eventosActivos,
+              ligaConfig: this.ligaConfig,
+              clubes: this.ligaConfig?.clubs,
+              zonaEquipo: this.zonaEquipo,
             })
           : simularHastaProximoEvento({
               estado: this.estado,
               rivalesFuerza: this.estado.rivalesFuerza,
               rivalesNombres: this.estado.rivalesNombres,
               eventosDisponibles: this.eventosActivos,
+              ligaConfig: this.ligaConfig,
+              clubes: this.ligaConfig?.clubs,
+              zonaEquipo: this.zonaEquipo,
             });
         decisionPendiente = null;
 
@@ -724,46 +744,52 @@ export class SeasonScene extends Phaser.Scene {
         if (resultado.status === 'SEASON_COMPLETE') {
           sessionStorage.removeItem(CLAVE_ESTADO_TEMPORADA);
 
-          const { tabla, posicionJugador } = calcularTablaFinal({
-            rivalesFuerza: this.estado.rivalesFuerza,
-            resultadosJugador: this.estado.resultados,
-          });
-          const momentosDestacados = construirMomentosDestacados(this.estado.resultados);
+          // Para LigaPro: calcular tablas por zona y playoffs
+          if (this.tienePlayoffs && this.ligaConfig?.clubs) {
+            await this.cerrarTemporadaLigaPro();
+          } else {
+            // Flujo clásico (ligas sin playoffs)
+            const { tabla, posicionJugador } = calcularTablaFinal({
+              rivalesFuerza: this.estado.rivalesFuerza,
+              resultadosJugador: this.estado.resultados,
+            });
+            const momentosDestacados = construirMomentosDestacados(this.estado.resultados);
 
-          const resumen = {
-            wins: this.estado.wins,
-            draws: this.estado.draws,
-            losses: this.estado.losses,
-            goals_for: this.estado.goalsFor,
-            goals_against: this.estado.goalsAgainst,
-            points: this.estado.points,
-            league_position: posicionJugador,
-          };
-          const { morale: moralFinal, fatigue: fatigaFinal } = careerState.getState();
-          await cerrarTemporada(this.seasonRow.id, resumen, moralFinal, fatigaFinal);
+            const resumen = {
+              wins: this.estado.wins,
+              draws: this.estado.draws,
+              losses: this.estado.losses,
+              goals_for: this.estado.goalsFor,
+              goals_against: this.estado.goalsAgainst,
+              points: this.estado.points,
+              league_position: posicionJugador,
+            };
+            const { morale: moralFinal, fatigue: fatigaFinal } = careerState.getState();
+            await cerrarTemporada(this.seasonRow.id, resumen, moralFinal, fatigaFinal);
 
-          const esUltimaTemporada = this.seasonNumber === ULTIMA_TEMPORADA;
-          if (!esUltimaTemporada) {
-            const { pressureInicial, moraleInicial, fatigueInicial, streakInicial } =
-              careerState.calcularResetParcialTemporada();
-            await crearSiguienteTemporada(
-              this.managerId,
-              this.seasonNumber,
-              moraleInicial,
-              fatigueInicial,
-              pressureInicial,
-              streakInicial
-            );
+            const esUltimaTemporada = this.seasonNumber === ULTIMA_TEMPORADA;
+            if (!esUltimaTemporada) {
+              const { pressureInicial, moraleInicial, fatigueInicial, streakInicial } =
+                careerState.calcularResetParcialTemporada();
+              await crearSiguienteTemporada(
+                this.managerId,
+                this.seasonNumber,
+                moraleInicial,
+                fatigueInicial,
+                pressureInicial,
+                streakInicial
+              );
+            }
+
+            this.scene.start('CareerSummaryScene', {
+              managerId: this.managerId,
+              league_position: posicionJugador,
+              tablaCompleta: tabla,
+              momentosDestacados,
+              seasonNumber: this.seasonNumber,
+              esUltimaTemporada,
+            });
           }
-
-          this.scene.start('CareerSummaryScene', {
-            managerId: this.managerId,
-            league_position: posicionJugador,
-            tablaCompleta: tabla,
-            momentosDestacados,
-            seasonNumber: this.seasonNumber,
-            esUltimaTemporada,
-          });
           break;
         }
       }
@@ -1316,6 +1342,83 @@ export class SeasonScene extends Phaser.Scene {
         esUltimaTemporada,
       });
     } catch (error) {
+      this.mostrarError(error);
+    }
+  }
+
+  // -------------------------------------------------------------------
+  // Cierre de temporada LigaPro vía avanzarSimulacion (con eventos)
+  // -------------------------------------------------------------------
+  async cerrarTemporadaLigaPro() {
+    try {
+      const clubes = this.ligaConfig.clubs;
+      const clubesA = clubes.filter(c => c.zone === 'Zona A').map(c => ({ name: c.name, fuerza: c.fuerza }));
+      const clubesB = clubes.filter(c => c.zone === 'Zona B').map(c => ({ name: c.name, fuerza: c.fuerza }));
+
+      const { tablaA, tablaB } = calcularTablaCompletaLigaPro({
+        clubesA,
+        clubesB,
+        estadoJugador: { moral: this.estado.moral, fatiga: this.estado.fatiga },
+      });
+
+      const posicionA = tablaA.findIndex(f => f.equipo === this.estado.clubNombre);
+      const posicionB = tablaB.findIndex(f => f.equipo === this.estado.clubNombre);
+      const posicionEnZona = posicionA >= 0 ? posicionA : posicionB;
+      const posicionJugador = posicionEnZona + 1;
+      const jugadorClasifica = posicionEnZona >= 0 && posicionEnZona < 8;
+
+      const momentosDestacados = construirMomentosDestacados(this.estado.resultados);
+
+      const resumen = {
+        wins: this.estado.wins,
+        draws: this.estado.draws,
+        losses: this.estado.losses,
+        goals_for: this.estado.goalsFor,
+        goals_against: this.estado.goalsAgainst,
+        points: this.estado.points,
+        league_position: posicionJugador,
+      };
+
+      let playoffsResult = null;
+      if (jugadorClasifica) {
+        const clasificados = obtenerClasificados({ tablaZonaA: tablaA, tablaZonaB: tablaB });
+        const resultadoPlayoffs = simularPlayoffsCompletos(clasificados, this.estado.clubNombre);
+        playoffsResult = {
+          status: resultadoPlayoffs.status,
+          fase_eliminado: resultadoPlayoffs.faseEliminado || null,
+          rival_eliminador: resultadoPlayoffs.rivalEliminador || null,
+          campeon: resultadoPlayoffs.status === 'CAMPEON',
+        };
+      }
+
+      const { morale: moralFinal, fatigue: fatigaFinal } = careerState.getState();
+      await cerrarTemporada(this.seasonRow.id, resumen, moralFinal, fatigaFinal, playoffsResult);
+
+      const esUltimaTemporada = this.seasonNumber === ULTIMA_TEMPORADA;
+      if (!esUltimaTemporada) {
+        const { pressureInicial, moraleInicial, fatigueInicial, streakInicial } =
+          careerState.calcularResetParcialTemporada();
+        await crearSiguienteTemporada(
+          this.managerId,
+          this.seasonNumber,
+          moraleInicial,
+          fatigueInicial,
+          pressureInicial,
+          streakInicial
+        );
+      }
+
+      this.scene.start('CareerSummaryScene', {
+        managerId: this.managerId,
+        league_position: posicionJugador,
+        tablaCompleta: { zonaA: tablaA, zonaB: tablaB },
+        momentosDestacados,
+        seasonNumber: this.seasonNumber,
+        esUltimaTemporada,
+        eliminadoFaseRegular: !jugadorClasifica,
+      });
+    } catch (error) {
+      logger.error('[SeasonScene] Error en cerrarTemporadaLigaPro:', error);
       this.mostrarError(error);
     }
   }

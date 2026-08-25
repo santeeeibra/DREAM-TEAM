@@ -584,7 +584,7 @@ function crearEstadoInicial(estado = {}) {
 // jornada 20 vuelve a rivalesFuerza[0] (la revancha de la fecha 1). La
 // primera rueda (fechas 1-19) se juega de local y la segunda (20-38) de
 // visitante, así cada rival aparece exactamente dos veces.
-export function simularTramo({ desdeJornada, hastaJornada, rivalesFuerza, rivalesNombres, estado, k }) {
+export function simularTramo({ desdeJornada, hastaJornada, rivalesFuerza, rivalesNombres, estado, k, fixture }) {
   const nuevoEstado = crearEstadoInicial(estado);
   const kReversion = resolverKReversion(k);
 
@@ -593,32 +593,41 @@ export function simularTramo({ desdeJornada, hastaJornada, rivalesFuerza, rivale
   // quemar azar generando una liga que no se va a usar.
   if (hastaJornada < desdeJornada) return nuevoEstado;
 
-  // Un tramo que NO arranca en la fecha 1 es, por definición, la continuación
-  // de una temporada que ya se venía jugando: la liga contra la que se juega
-  // ya existe y hay que pasarla. Si no viene, resolverRivales sortearía una
-  // liga NUEVA y el jugador terminaría enfrentando rivales distintos en la
-  // segunda mitad del año sin que nadie se entere. Preferimos romper fuerte y
-  // temprano antes que dejar pasar una temporada silenciosamente incoherente.
-  if (desdeJornada > 1 && !esListaDeRivalesValida(rivalesFuerza)) {
-    throw new Error(
-      `simularTramo: hace falta rivalesFuerza con ${CANTIDAD_RIVALES} elementos para simular desde la jornada ${desdeJornada} ` +
-        '(solo el primer tramo, desdeJornada === 1, puede generar una liga nueva). ' +
-        'Pasá la MISMA lista en todos los tramos de la temporada.'
-    );
+  // Si viene fixture (LigaPro), usamos eso en vez de rivalesFuerza array.
+  // Si no viene fixture, aplicamos la validación clásica.
+  if (!fixture) {
+    if (desdeJornada > 1 && !esListaDeRivalesValida(rivalesFuerza)) {
+      throw new Error(
+        `simularTramo: hace falta rivalesFuerza con ${CANTIDAD_RIVALES} elementos para simular desde la jornada ${desdeJornada} ` +
+          '(solo el primer tramo, desdeJornada === 1, puede generar una liga nueva). ' +
+          'Pasá la MISMA lista en todos los tramos de la temporada.'
+      );
+    }
   }
 
-  const rivales = resolverRivales(rivalesFuerza, nuevoEstado.ratingPlantel);
+  const rivales = fixture ? null : resolverRivales(rivalesFuerza, nuevoEstado.ratingPlantel);
 
   // Convertir el ratingPlantel del jugador a líneas. Si el estado ya trae
   // lineasPlantel (nuevo formato), usamos eso; si no, convertimos desde el rating único.
   const lineasPlantel = nuevoEstado.lineasPlantel || ratingALineas(nuevoEstado.ratingPlantel);
 
   for (let jornada = desdeJornada; jornada <= hastaJornada; jornada++) {
-    // Ver "INDEXADO DE rivalesFuerza" arriba: jornada 1 => rivales[0].
-    const indiceRival = (jornada - 1) % CANTIDAD_RIVALES;
-    const fuerzaRival = rivales[indiceRival];
-    const nombreRival = rivalesNombres?.[indiceRival];
-    const esLocal = jornada <= CANTIDAD_RIVALES;
+    let fuerzaRival, nombreRival, esLocal;
+
+    if (fixture) {
+      // Modo LigaPro: el fixture define rival, fuerza y localía por jornada
+      const entrada = fixture[jornada - 1]; // fixture es 0-indexed, jornada 1→índice 0
+      if (!entrada) continue; // jornada sin partido (bye)
+      fuerzaRival = entrada.rivalFuerza;
+      nombreRival = entrada.rivalNombre;
+      esLocal = entrada.esLocal;
+    } else {
+      // Modo clásico: INDEXADO DE rivalesFuerza — jornada 1 => rivales[0]
+      const indiceRival = (jornada - 1) % CANTIDAD_RIVALES;
+      fuerzaRival = rivales[indiceRival];
+      nombreRival = rivalesNombres?.[indiceRival];
+      esLocal = jornada <= CANTIDAD_RIVALES;
+    }
 
     // Convertir la fuerza del rival a líneas desglosadas
     const lineasRival = ratingALineas(fuerzaRival);
@@ -628,17 +637,16 @@ export function simularTramo({ desdeJornada, hastaJornada, rivalesFuerza, rivale
     const ajusteRival = 0; // Los rivales no tienen moral/fatiga (por ahora)
 
     // Pasar el estado del equipo a simularJornada para que calcule volatilidad
-    // por crisis. Presión no está en nuevoEstado aún, así que usamos 0 por ahora
-    // (TODO: agregar presión al estado si se implementa).
+    // por crisis.
     const estadoParaVolatilidad = {
       moral: nuevoEstado.moral,
-      presion: 0, // presión no está en el estado del simulador (solo en carrera.js)
+      presion: 0,
       fatiga: nuevoEstado.fatiga
     };
 
     const { golesLocal, golesVisitante } = esLocal
       ? simularJornada(lineasPlantel, lineasRival, ajustePlantel, ajusteRival, estadoParaVolatilidad)
-      : simularJornada(lineasRival, lineasPlantel, ajusteRival, ajustePlantel, null); // cuando es visitante, la volatilidad aplica al rival
+      : simularJornada(lineasRival, lineasPlantel, ajusteRival, ajustePlantel, null);
 
     const golesPlantel = esLocal ? golesLocal : golesVisitante;
     const golesRival = esLocal ? golesVisitante : golesLocal;
@@ -668,6 +676,7 @@ export function simularTramo({ desdeJornada, hastaJornada, rivalesFuerza, rivale
       golesPlantel,
       golesRival,
       resultado,
+      tipo: fixture ? fixture[jornada - 1]?.tipo : undefined,
     });
 
     nuevoEstado.moral = actualizarMoral(nuevoEstado.moral, resultado, kReversion);

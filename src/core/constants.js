@@ -37,3 +37,49 @@ export const LIGAPRO_EQUIPOS_POR_ZONA = 15;
 export const LIGAPRO_TOTAL_EQUIPOS = 30;
 export const LIGAPRO_FASE_REGULAR_MATCHDAYS = 16;
 export const LIGAPRO_CLASIFICADOS_POR_ZONA = 8;
+
+// ---------------------------------------------------------------------------
+// Clásicos fijos: cada equipo de Zona A tiene un rival clásico en Zona B.
+// ---------------------------------------------------------------------------
+
+const CLASICOS_ZONA_A = {
+  'River Plate':        'Boca Juniors',
+  'Independiente':      'Racing Club',
+  'San Lorenzo':        'Huracán',
+  'Estudiantes (LP)':   'Gimnasia (LP)',
+  'Vélez Sarsfield':    'Ferro',
+  'All Boys':           'Chacarita Juniors',
+  'Nueva Chicago':      'Almirante Brown',
+  'Deportivo Morón':    'Atlanta',
+};
+
+export const CLASICOS = Object.freeze({
+  'Zona A': Object.freeze(CLASICOS_ZONA_A),
+});
+
+/**
+ * Dado un equipo y su zona, devuelve su rival clásico y la zona del rival.
+ * Si no tiene clásico definido, devuelve null.
+ *
+ * @param {string} nombreEquipo
+ * @param {string} zona — 'Zona A' | 'Zona B'
+ * @returns {{ rival: string, zonaRival: string } | null}
+ */
+export function getClasicoEquipo(nombreEquipo, zona) {
+  const tabla = CLASICOS[zona];
+  if (!tabla) {
+    // Buscar si el equipo está en la zona opuesta
+    const zonaOpuesta = zona === 'Zona A' ? 'Zona B' : 'Zona A';
+    const tablaOpuesta = CLASICOS[zonaOpuesta];
+    if (!tablaOpuesta) return null;
+    for (const [key, rival] of Object.entries(tablaOpuesta)) {
+      if (rival === nombreEquipo) {
+        return { rival: key, zonaRival: zonaOpuesta };
+      }
+    }
+    return null;
+  }
+  const rival = tabla[nombreEquipo];
+  if (!rival) return null;
+  return { rival, zonaRival: zona === 'Zona A' ? 'Zona B' : 'Zona A' };
+}

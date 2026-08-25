@@ -52,3 +52,94 @@ export function generarRivalesFuerza(ratingBase) {
   }
   return rivales;
 }
+
+// ---------------------------------------------------------------------------
+// LigaPro: generación de rivales basada en clubes reales de la config.
+// ---------------------------------------------------------------------------
+
+function shuffle(arr, rng = Math.random) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/**
+ * Genera rivales para un equipo en LigaPro.
+ * @param {string} equipoNombre
+ * @param {string} zona — 'Zona A' | 'Zona B'
+ * @param {Array} clubes — ligaConfig.clubs
+ * @param {function} [rng=Math.random]
+ * @returns {{ rivalesFuerza: Map, rivalesNombres: Map, mismaZona: Array, otraZona: Array }}
+ */
+export function generarRivalesLigaPro(equipoNombre, zona, clubes, rng = Math.random) {
+  const mismaZona = [];
+  const otraZona = [];
+  for (const club of clubes) {
+    if (club.name === equipoNombre) continue;
+    (club.zone === zona ? mismaZona : otraZona).push(club);
+  }
+  const mismaZonaMezclada = shuffle(mismaZona, rng);
+  const otraZonaMezclada = shuffle(otraZona, rng);
+
+  const rivalesFuerza = new Map();
+  const rivalesNombres = new Map();
+  for (const c of mismaZonaMezclada) { rivalesFuerza.set(c.name, c.fuerza); rivalesNombres.set(c.name, c.name); }
+  for (const c of otraZonaMezclada) { rivalesFuerza.set(c.name, c.fuerza); rivalesNombres.set(c.name, c.name); }
+
+  return { rivalesFuerza, rivalesNombres, mismaZona: mismaZonaMezclada, otraZona: otraZonaMezclada };
+}
+
+/**
+ * Genera fixture completo de 16 fechas para LigaPro.
+ * 14 intra-zona + 2 inter-zona (1 clásico + 1 sorteo).
+ * Los partidos inter-zonales se mezclan aleatoriamente entre las 16 jornadas.
+ */
+export function generarFixtureLigaPro(equipoNombre, zona, clubes, rng = Math.random) {
+  const { mismaZona, otraZona } = generarRivalesLigaPro(equipoNombre, zona, clubes, rng);
+
+  // Armar los 16 partidos: 14 intra + 1 clasico + 1 sorteo
+  const partidos = [];
+
+  for (let i = 0; i < mismaZona.length; i++) {
+    partidos.push({
+      rivalNombre: mismaZona[i].name,
+      rivalFuerza: mismaZona[i].fuerza,
+      esLocal: i % 2 === 0,
+      tipo: 'intra',
+    });
+  }
+
+  // Clásico fijo
+  const clasicoInfo = getClasicoEquipo(equipoNombre, zona);
+  if (clasicoInfo) {
+    const clubRival = otraZona.find(c => c.name === clasicoInfo.rival);
+    if (clubRival) {
+      partidos.push({
+        rivalNombre: clubRival.name,
+        rivalFuerza: clubRival.fuerza,
+        esLocal: rng() > 0.5,
+        tipo: 'clasico',
+      });
+    }
+  }
+
+  // Sorteo inter-zonal (excluir clásico)
+  const clasicoNombre = clasicoInfo?.rival;
+  const sorteoPool = otraZona.filter(c => c.name !== clasicoNombre);
+  if (sorteoPool.length > 0) {
+    const sorteo = sorteoPool[Math.floor(rng() * sorteoPool.length)];
+    partidos.push({
+      rivalNombre: sorteo.name,
+      rivalFuerza: sorteo.fuerza,
+      esLocal: rng() > 0.5,
+      tipo: 'sorteo',
+    });
+  }
+
+  // Mezclar los 16 partidos en las 16 jornadas
+  const shuffled = shuffle(partidos, rng);
+  return shuffled.map((p, i) => ({ jornada: i + 1, ...p }));
+}

@@ -22,7 +22,7 @@ import { FORMACIONES_SLOTS } from '../data/posiciones.js';
 export async function getManagerParaTemporada(managerId) {
   const { data, error } = await supabase
     .from('managers')
-    .select('id, money, current_season, reputation')
+    .select('id, money, current_season, reputation, league_id, club_id')
     .eq('id', managerId)
     .single();
   if (error) throw new DataError(error.message, { causa: error });

@@ -78,3 +78,68 @@ export function elegirEventosDeTemporada(eventosDisponibles) {
   resultado.sort((a, b) => a.matchday - b.matchday);
   return resultado;
 }
+
+// ---------------------------------------------------------------------------
+// LigaPro: eventos para temporada de 16 fechas.
+// ---------------------------------------------------------------------------
+
+export const SLOTS_LIGAPRO = [
+  { code: 'APERTURA', matchday: 3 },
+  { code: 'INTERMEDIO', matchday: 9 },
+  { code: 'CLAUSURA', matchday: 15 },
+];
+
+const MIN_EVENTOS_LIGAPRO = 2;
+const MAX_EVENTOS_LIGAPRO = 3;
+
+/**
+ * Elige eventos de temporada para LigaPro (16 fechas).
+ * @param {Array} eventosDisponibles — filas de events_catalog con active=true
+ * @returns {Array<{ slot, matchday, evento }>}
+ */
+export function elegirEventosDeTemporadaLigaPro(eventosDisponibles) {
+  const cantidad = MIN_EVENTOS_LIGAPRO + Math.floor(Math.random() * (MAX_EVENTOS_LIGAPRO - MIN_EVENTOS_LIGAPRO + 1));
+  const disponibles = [...SLOTS_LIGAPRO];
+  const elegidos = [];
+  for (let i = 0; i < cantidad && disponibles.length > 0; i++) {
+    const idx = Math.floor(Math.random() * disponibles.length);
+    elegidos.push(disponibles[idx]);
+    disponibles.splice(idx, 1);
+  }
+
+  const resultado = [];
+  for (const slot of elegidos) {
+    const candidatos = eventosDisponibles.filter(e => e.min_matchday <= slot.matchday);
+    if (candidatos.length === 0) continue;
+    const evento = elegirEventoPonderado(candidatos);
+    resultado.push({ slot: slot.code, matchday: slot.matchday, evento });
+  }
+
+  resultado.sort((a, b) => a.matchday - b.matchday);
+  return resultado;
+}
+
+/**
+ * Construye los momentos destacados para una temporada de LigaPro (16 fechas).
+ * Muestra progreso del equipo en las 3 zonas del torneo.
+ *
+ * @param {number} jugados — cantidad de partidos jugados hasta ahora
+ * @param {number} total — 16
+ * @returns {Array<{ jornada, texto }>}
+ */
+export function construirMomentosLigaPro(jugados, total = 16) {
+  const momentos = [];
+  if (total <= 0) return momentos;
+
+  const tercio = Math.ceil(total / 3);
+  const dosTercios = Math.ceil((total * 2) / 3);
+
+  if (jugados >= tercio) {
+    momentos.push({ jornada: tercio, texto: '📊 Primer tercio completado' });
+  }
+  if (jugados >= dosTercios) {
+    momentos.push({ jornada: dosTercios, texto: '🔥 ¡Recta final!' });
+  }
+
+  return momentos;
+}

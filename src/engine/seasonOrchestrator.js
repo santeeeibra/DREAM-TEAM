@@ -50,10 +50,12 @@
 // cerrar la temporada, en vez de tener que acordarse de leer estado.moral a
 // mano.
 import { simularTramo, TOTAL_MATCHDAYS } from './seasonSimulator.js';
-import { elegirEventosDeTemporada } from './eventSlots.js';
+import { elegirEventosDeTemporada, elegirEventosDeTemporadaLigaPro, construirMomentosLigaPro } from './eventSlots.js';
 import * as careerState from '../state/careerState.js';
-import { calcularTablaPorZona, obtenerClasificados } from './zonesTable.js';
+import { calcularTablaPorZona, calcularTablaCompletaLigaPro, obtenerClasificados } from './zonesTable.js';
 import { simularPlayoffsCompletos } from './playoffsSimulator.js';
+import { generarFixtureLigaPro } from './rivals.js';
+import { LIGAPRO_FASE_REGULAR_MATCHDAYS } from '../core/constants.js';
 
 // -----------------------------------------------------------------------
 // TRADUCCIÓN DE EFFECTS
@@ -131,16 +133,27 @@ function calcularTramoStats(estadoAntes, estadoDespues, desdeJornada, hastaJorna
 // algo". Las dos funciones exportadas terminan acá: simularHastaProximoEvento
 // la llama directo, y aplicarDecisionYContinuar la llama después de aplicar la
 // decisión. No dupliques esta lógica en ninguna de las dos.
-function avanzar({ estado, rivalesFuerza, rivalesNombres, eventosDisponibles }) {
+function avanzar({ estado, rivalesFuerza, rivalesNombres, eventosDisponibles, ligaConfig, clubes, zonaEquipo }) {
   // Copia defensiva: a partir de acá trabajamos sobre lo nuestro y el objeto
   // que nos pasó SeasonScene queda intacto.
   const estadoBase = { ...estado };
+
+  // Detectar LigaPro por config
+  const esLigaPro = ligaConfig?.tienePlayoffs;
+  const matchdaysTotales = esLigaPro ? LIGAPRO_FASE_REGULAR_MATCHDAYS : TOTAL_MATCHDAYS;
 
   // El calendario de eventos se sortea UNA sola vez por temporada, la primera
   // vez que se pide avanzar. Si lo re-sorteáramos en cada corte, los eventos
   // de la segunda mitad cambiarían después de cada decisión del jugador.
   if (estadoBase.eventosDeTemporada == null) {
-    estadoBase.eventosDeTemporada = elegirEventosDeTemporada(eventosDisponibles ?? []);
+    estadoBase.eventosDeTemporada = esLigaPro
+      ? elegirEventosDeTemporadaLigaPro(eventosDisponibles ?? [])
+      : elegirEventosDeTemporada(eventosDisponibles ?? []);
+  }
+
+  // Si es LigaPro y no hay fixture, generarlo
+  if (esLigaPro && !estadoBase.fixture && clubes && zonaEquipo) {
+    estadoBase.fixture = generarFixtureLigaPro(estadoBase.clubNombre || clubes[0]?.name, zonaEquipo, clubes);
   }
 
   // La próxima parada es la primera del calendario que todavía no pasamos.
@@ -160,7 +173,7 @@ function avanzar({ estado, rivalesFuerza, rivalesNombres, eventosDisponibles }) 
   // Con parada, se juega HASTA esa fecha inclusive: el evento se dispara
   // después de jugarse la jornada que lo marca (así, por ejemplo, el slot
   // ECUADOR de la fecha 19 aparece con la primera rueda ya terminada).
-  const hastaJornada = proximaParada ? proximaParada.matchday : TOTAL_MATCHDAYS;
+  const hastaJornada = proximaParada ? proximaParada.matchday : matchdaysTotales;
 
   // Rating efectivo AL VUELO: streak y pressure cambiaron desde el último
   // tramo, así que el rating con el que se juega este tramo se recalcula
@@ -179,6 +192,7 @@ function avanzar({ estado, rivalesFuerza, rivalesNombres, eventosDisponibles }) 
     rivalesFuerza,
     rivalesNombres,
     estado: { ...estadoBase, ratingPlantel, lineasPlantel },
+    fixture: estadoBase.fixture || null,
   });
 
   // simularTramo devuelve solo los campos que él administra (y con
@@ -196,10 +210,8 @@ function avanzar({ estado, rivalesFuerza, rivalesNombres, eventosDisponibles }) 
     goalsAgainst: resultadoTramo.goalsAgainst,
     points: resultadoTramo.points,
     resultados: resultadoTramo.resultados,
-    // Math.max y no una asignación directa: si el tramo vino vacío
-    // (hastaJornada < desdeJornada, que pasa cuando ya se jugaron las 38) no
-    // queremos hacer retroceder el contador.
     jornadaActual: Math.max(estadoBase.jornadaActual, hastaJornada),
+    fixture: estadoBase.fixture || null,
   };
 
   const tramoStats = calcularTramoStats(estadoBase, estadoActualizado, desdeJornada, hastaJornada);
@@ -282,8 +294,8 @@ function avanzar({ estado, rivalesFuerza, rivalesNombres, eventosDisponibles }) 
 //
 // PRECONDICIÓN: careerState.initCareerState() ya tiene que haberse llamado
 // (usamos getEffectiveRating, que lee el estado en memoria).
-export function simularHastaProximoEvento({ estado, rivalesFuerza, rivalesNombres, eventosDisponibles }) {
-  return avanzar({ estado, rivalesFuerza, rivalesNombres, eventosDisponibles });
+export function simularHastaProximoEvento({ estado, rivalesFuerza, rivalesNombres, eventosDisponibles, ligaConfig, clubes, zonaEquipo }) {
+  return avanzar({ estado, rivalesFuerza, rivalesNombres, eventosDisponibles, ligaConfig, clubes, zonaEquipo });
 }
 
 // aplicarDecisionYContinuar resuelve el evento que estaba esperando (aplicando
@@ -298,7 +310,7 @@ export function simularHastaProximoEvento({ estado, rivalesFuerza, rivalesNombre
 //     simularHastaProximoEvento.
 //
 // Devuelve exactamente lo mismo que simularHastaProximoEvento.
-export function aplicarDecisionYContinuar({ estado, decisionElegida, rivalesFuerza, rivalesNombres, eventosDisponibles }) {
+export function aplicarDecisionYContinuar({ estado, decisionElegida, rivalesFuerza, rivalesNombres, eventosDisponibles, ligaConfig, clubes, zonaEquipo }) {
   // 1. BUG 1 FIX — sincronizar careerState con el snapshot más reciente de
   //    moral/fatiga ANTES de aplicar el efecto. `estado` es el que vino
   //    actualizándose tramo a tramo con los resultados de los partidos, así
@@ -325,7 +337,7 @@ export function aplicarDecisionYContinuar({ estado, decisionElegida, rivalesFuer
   const estadoSincronizado = { ...estado, moral: morale, fatiga: fatigue };
 
   // 4. Y a partir de acá es exactamente el mismo avance de siempre.
-  return avanzar({ estado: estadoSincronizado, rivalesFuerza, rivalesNombres, eventosDisponibles });
+  return avanzar({ estado: estadoSincronizado, rivalesFuerza, rivalesNombres, eventosDisponibles, ligaConfig, clubes, zonaEquipo });
 }
 
 // -----------------------------------------------------------------------

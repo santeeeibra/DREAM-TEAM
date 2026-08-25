@@ -10,7 +10,11 @@
 // Lógica pura (sin Phaser, sin Supabase).
 
 import { simularJornada } from './seasonSimulator.js';
-import { LIGAPRO_EQUIPOS_POR_ZONA, LIGAPRO_CLASIFICADOS_POR_ZONA } from '../core/constants.js';
+import {
+  LIGAPRO_EQUIPOS_POR_ZONA,
+  LIGAPRO_CLASIFICADOS_POR_ZONA,
+  CLASICOS,
+} from '../core/constants.js';
 
 // -----------------------------------------------------------------------
 // HELPERS DE TABLA
@@ -150,6 +154,173 @@ export function calcularTablaPorZona({ equiposZona, nombreZona, estadoJugador = 
   });
 
   return tablaOrdenada;
+}
+
+// -----------------------------------------------------------------------
+// FIXTURE INTER-ZONAL
+// -----------------------------------------------------------------------
+
+/**
+ * Genera los 30 partidos inter-zonales (15 clásicos + 15 sorteo).
+ * Cada equipo juega 2 partidos inter-zonales: 1 clásico + 1 sorteo.
+ *
+ * @param {Array} clubesA — equipos de Zona A (con { name, fuerza })
+ * @param {Array} clubesB — equipos de Zona B
+ * @param {function} rng
+ * @returns {Array<{ local: string, visitante: string, tipo: 'clasico'|'sorteo' }>}
+ */
+export function generarFixtureInterZonal(clubesA, clubesB, rng = Math.random) {
+  const partidos = [];
+  const usadosSorteoA = new Set();
+  const usadosSorteoB = new Set();
+
+  // 1. Clásicos fijos
+  const tablaClasicos = CLASICOS['Zona A'] || {};
+  for (const clubA of clubesA) {
+    const rivalNombre = tablaClasicos[clubA.name];
+    if (!rivalNombre) continue;
+    const clubB = clubesB.find(c => c.name === rivalNombre);
+    if (!clubB) continue;
+    // Localía aleatoria
+    const esLocal = rng() > 0.5;
+    partidos.push({
+      local: esLocal ? clubA.name : clubB.name,
+      visitante: esLocal ? clubB.name : clubA.name,
+      tipo: 'clasico',
+    });
+    usadosSorteoA.add(clubA.name);
+    usadosSorteoB.add(clubB.name);
+  }
+
+  // 2. Sorteo: emparejar los que no tienen clásico
+  const sinClasicoA = clubesA.filter(c => !usadosSorteoA.has(c.name));
+  const sinClasicoB = clubesB.filter(c => !usadosSorteoB.has(c.name));
+
+  // Shuffle la lista B para sorteo
+  const shuffledB = [...sinClasicoB];
+  for (let i = shuffledB.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [shuffledB[i], shuffledB[j]] = [shuffledB[j], shuffledB[i]];
+  }
+
+  for (let i = 0; i < sinClasicoA.length; i++) {
+    const clubA = sinClasicoA[i];
+    const clubB = shuffledB[i % shuffledB.length];
+    if (!clubB) continue;
+    const esLocal = rng() > 0.5;
+    partidos.push({
+      local: esLocal ? clubA.name : clubB.name,
+      visitante: esLocal ? clubB.name : clubA.name,
+      tipo: 'sorteo',
+    });
+  }
+
+  return partidos;
+}
+
+/**
+ * Simula un partido inter-zonal y aplica resultado a ambas tablas.
+ */
+function aplicarInterZonal(tablaLocal, tablaVisitante, nombreLocal, nombreVisitante,
+  fuerzaLocal, fuerzaVisitante, rng) {
+  const resultado = simularJornada({
+    fuerzaPlantel: fuerzaLocal,
+    fuerzaRival: fuerzaVisitante,
+    esLocal: true,
+    moral: 50,
+    fatiga: 50,
+    presion: 0,
+    rng,
+  });
+  sumarResultado(tablaLocal, resultado.golesPlantel, resultado.golesRival);
+  sumarResultado(tablaVisitante, resultado.golesRival, resultado.golesPlantel);
+}
+
+// -----------------------------------------------------------------------
+// TABLA COMPLETA LIGAPRO (intra + inter)
+// -----------------------------------------------------------------------
+
+/**
+ * Calcula la tabla completa de LigaPro incluyendo intra-zona + inter-zonal.
+ *
+ * @param {Object} params
+ * @param {Array} params.clubesA — equipos de Zona A [{ name, fuerza, esJugador? }]
+ * @param {Array} params.clubesB — equipos de Zona B
+ * @param {Object} params.estadoJugador — { moral, fatiga }
+ * @param {function} params.rng
+ * @returns {{ tablaA: Array, tablaB: Array, fixtureInterZonal: Array }}
+ */
+export function calcularTablaCompletaLigaPro({ clubesA, clubesB, estadoJugador = {}, rng = Math.random }) {
+  // Helper para armar el mapa de fuerzas y names
+  const fuerzaMap = {};
+  const todos = [...clubesA, ...clubesB];
+  for (const c of todos) { fuerzaMap[c.name] = c.fuerza; }
+
+  // --- Intra-zona ---
+  const tablaAResult = calcularTablaPorZona({
+    equiposZona: clubesA,
+    nombreZona: 'A',
+    estadoJugador,
+    rng,
+  });
+  const tablaBResult = calcularTablaPorZona({
+    equiposZona: clubesB,
+    nombreZona: 'B',
+    estadoJugador,
+    rng,
+  });
+
+  // Convertir a mapas para acceso rápido
+  const tablaAMap = {};
+  for (const fila of tablaAResult) tablaAMap[fila.equipo] = fila;
+  const tablaBMap = {};
+  for (const fila of tablaBResult) tablaBMap[fila.equipo] = fila;
+
+  // --- Inter-zonal ---
+  const fixtureInter = generarFixtureInterZonal(
+    clubesA.map(c => ({ name: c.name })),
+    clubesB.map(c => ({ name: c.name })),
+    rng,
+  );
+
+  for (const partido of fixtureInter) {
+    const filaLocal = tablaAMap[partido.local] || tablaBMap[partido.local];
+    const filaVisitante = tablaAMap[partido.visitante] || tablaBMap[partido.visitante];
+    if (!filaLocal || !filaVisitante) continue;
+
+    const fLocal = fuerzaMap[partido.local] ?? 75;
+    const fVisitante = fuerzaMap[partido.visitante] ?? 75;
+
+    const resultado = simularJornada({
+      fuerzaPlantel: fLocal,
+      fuerzaRival: fVisitante,
+      esLocal: true,
+      moral: 50,
+      fatiga: 50,
+      presion: 0,
+      rng,
+    });
+
+    sumarResultado(filaLocal, resultado.golesPlantel, resultado.golesRival);
+    sumarResultado(filaVisitante, resultado.golesRival, resultado.golesPlantel);
+  }
+
+  // Reordenar ambas tablas tras inter-zonal
+  const reordenar = (tabla) => {
+    tabla.sort((a, b) => {
+      if (b.puntos !== a.puntos) return b.puntos - a.puntos;
+      if (b.dg !== a.dg) return b.dg - a.dg;
+      return b.gf - a.gf;
+    });
+    tabla.forEach((f, i) => { f.posicion = i + 1; });
+    return tabla;
+  };
+
+  return {
+    tablaA: reordenar(Object.values(tablaAMap)),
+    tablaB: reordenar(Object.values(tablaBMap)),
+    fixtureInterZonal: fixtureInter,
+  };
 }
 
 // -----------------------------------------------------------------------
