@@ -126,6 +126,11 @@ let tsVistaAnterior = null;
 
 // ───────────────────────── helpers de vista ─────────────────────────
 const esc = (s) => String(s).replace(/[&<>"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
+const capitalize = (s) => {
+  if (!s || typeof s !== 'string') return s;
+  return s.charAt(0).toUpperCase() + s.slice(1);
+};
+
 const ICONO = { money: '💰', moral: '😊', fatiga: '🔋', presion: '🔥', ratingDelta: '⭐' };
 const NOMBRE_VAR = { money: 'Plata', moral: 'Moral', fatiga: 'Fatiga', presion: 'Presión', ratingDelta: 'Nivel' };
 // fatiga y presión: subir es malo. El resto: subir es bueno.
@@ -733,7 +738,13 @@ function chipEsperado(k, v) {
   if (Math.abs(r) < 0.05) return `<span class="chip">${ICONO[k]} ${NOMBRE_VAR[k]} ±0</span>`;
   const bueno = MALO_SI_SUBE.has(k) ? r < 0 : r > 0;
   const mag = Number.isInteger(r) ? Math.abs(r) : Math.abs(r).toFixed(1);
-  return `<span class="chip ${bueno ? 'pos' : 'neg'}" title="Promedio esperado según probabilidad de cada resultado">${ICONO[k]} ${NOMBRE_VAR[k]} ${signoDelta(k, r)}${mag}</span>`;
+  
+  // Etiqueta descriptiva: "Baja" vs "Sube" para variables donde subir es malo
+  const etiqueta = MALO_SI_SUBE.has(k) 
+    ? (r < 0 ? 'Baja' : 'Sube')
+    : (r > 0 ? 'Sube' : 'Baja');
+  
+  return `<span class="chip ${bueno ? 'pos' : 'neg'}" title="Promedio esperado según probabilidad de cada resultado">${ICONO[k]} ${NOMBRE_VAR[k]} ${etiqueta} ${mag}</span>`;
 }
 
 function chipsEsperados(opcionCat) {
@@ -751,7 +762,13 @@ function chipsFijos(opcionCat) {
   const chips = entradas.map(([k, val]) => {
     const bueno = MALO_SI_SUBE.has(k) ? val < 0 : val > 0;
     const mag = Number.isInteger(val) ? Math.abs(val) : Math.abs(val).toFixed(1);
-    return `<span class="chip ${bueno ? 'pos' : 'neg'}">${ICONO[k]} ${NOMBRE_VAR[k]} ${signoDelta(k, val)}${mag}</span>`;
+    
+    // Etiqueta descriptiva: "Baja" vs "Sube"
+    const etiqueta = MALO_SI_SUBE.has(k)
+      ? (val < 0 ? 'Baja' : 'Sube')
+      : (val > 0 ? 'Sube' : 'Baja');
+    
+    return `<span class="chip ${bueno ? 'pos' : 'neg'}">${ICONO[k]} ${NOMBRE_VAR[k]} ${etiqueta} ${mag}</span>`;
   }).join('');
   return `<div class="decision-effects-fixed">${chips}<span class="effect-note">✓ Efectos garantizados</span></div>`;
 }
@@ -1476,7 +1493,7 @@ const PANTALLAS = {
           <div class="decision-grid single">
             <button class="decision-card grave" data-accion="elegir" data-op="${opcionCat.id}">
               <div class="form-field">
-                <span class="decision-label">${esc(opLabel)}</span>
+                <span class="decision-label">${esc(capitalize(opLabel))}</span>
                 <div class="decision-chips">${chipsEsperados(opcionCat)}</div>
               </div>
             </button>
@@ -1510,7 +1527,7 @@ const PANTALLAS = {
             
             return `<button class="decision-card${claseAdicional}" data-accion="elegir" data-op="${o.id}">
               <div class="form-field">
-                <span class="decision-label">${esc(o.label)}</span>
+                <span class="decision-label">${esc(capitalize(o.label))}</span>
                 ${tieneEfectosFijos ? chipsFijos(opcionCat) : ''}
                 ${tieneResultados ? `<div class="decision-chips">${decisionResultChips(opcionCat)}</div>` : ''}
                 ${esConservadora ? `<div class="decision-effects-neutral">
