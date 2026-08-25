@@ -251,6 +251,11 @@ export class SeasonScene extends Phaser.Scene {
       const manager = await getManagerParaTemporada(this.managerId);
       this.seasonNumber = this.seasonNumberSolicitado ?? manager.current_season;
 
+      // Detectar si la liga tiene play-offs
+      const ligaConfig = getLeagueById(manager.league_id);
+      this.tienePlayoffs = ligaConfig?.tienePlayoffs || false;
+      this.ligaConfig = ligaConfig;
+
       // El rating del 11 titular depende del lineup guardado: si el manager
       // todavía no confirmó un 11 para esta temporada, ratingDelOnceTitular
       // lanza (seasons.js). Para no dejar la pantalla congelada en ese caso,
@@ -384,6 +389,18 @@ export class SeasonScene extends Phaser.Scene {
 
     this.contenedorDinamico.add([titulo, subtitulo]);
 
+    // Si es una liga con play-offs, mostrar información específica
+    if (this.tienePlayoffs) {
+      const infoPlayoffs = this.add
+        .text(anchoPantalla / 2, altoPantalla / 2 - 10, 'Liga con play-offs • Clasifican 8 por zona', {
+          fontFamily: 'Arial',
+          fontSize: '13px',
+          color: '#2ecc71',
+        })
+        .setOrigin(0.5);
+      this.contenedorDinamico.add(infoPlayoffs);
+    }
+
     // El botón muestra por adelantado el rango de fechas que va a resolver:
     // deriva el próximo corte desde el estado (misma regla que el
     // orquestador) en vez de esperar a que el tramo ya esté simulado.
@@ -404,7 +421,15 @@ export class SeasonScene extends Phaser.Scene {
       })
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true });
-    boton.on('pointerdown', () => this.avanzarSimulacion());
+    
+    boton.on('pointerdown', () => {
+      // Si es una liga con play-offs, usar flujo especial
+      if (this.tienePlayoffs) {
+        this.simularTemporadaConPlayoffsCompleta();
+      } else {
+        this.avanzarSimulacion();
+      }
+    });
 
     this.contenedorDinamico.add(boton);
   }
@@ -1058,31 +1083,221 @@ export class SeasonScene extends Phaser.Scene {
   }
 
   // ---------------------------------------------------------------------
-  // Métodos auxiliares para play-offs (stubs - implementar lógica)
+  // Flujo completo de temporada con play-offs (Liga Profesional Argentina)
+  // ---------------------------------------------------------------------
+  async simularTemporadaConPlayoffsCompleta() {
+    this.mostrarCargando();
+
+    try {
+      // Obtener el club del manager para saber su zona
+      const manager = await getManagerParaTemporada(this.managerId);
+      const clubDelManager = this.ligaConfig.clubs.find(c => c.id === manager.club_id);
+      
+      if (!clubDelManager) {
+        throw new Error('No se pudo encontrar el club del manager en la configuración de la liga');
+      }
+
+      // Simular toda la temporada con play-offs
+      const resultado = simularTemporadaConPlayoffs({
+        nombreClubJugador: clubDelManager.name,
+        zonaJugador: clubDelManager.zone,
+        ligaConfig: this.ligaConfig,
+        ratingBase: this.estado.ratingBase,
+        moral: this.estado.moral,
+        fatiga: this.estado.fatiga,
+      });
+
+      // Guardar resultado para usar en las pantallas
+      this.resultadoPlayoffs = resultado;
+
+      // Actualizar estado con resultados de fase regular
+      this.estado = {
+        ...this.estado,
+        wins: resultado.faseRegular.wins,
+        draws: resultado.faseRegular.draws,
+        losses: resultado.faseRegular.losses,
+        goalsFor: resultado.faseRegular.goalsFor,
+        goalsAgainst: resultado.faseRegular.goalsAgainst,
+        points: resultado.faseRegular.points,
+        resultados: resultado.faseRegular.resultados || [],
+      };
+
+      // Mostrar tabla de zonas
+      this.mostrarTablaZonas(
+        resultado.faseRegular.tablas,
+        clubDelManager.zone,
+        resultado.posicionFinal
+      );
+
+    } catch (error) {
+      logger.error('[SeasonScene] Error en simularTemporadaConPlayoffsCompleta:', error);
+      this.mostrarError(error);
+    }
+  }
+
+  // ---------------------------------------------------------------------
+  // Métodos auxiliares para play-offs
   // ---------------------------------------------------------------------
 
   continuarDespuesDeTabla() {
-    // TODO: Verificar si clasificó y llamar a mostrarClasificacionOEliminacion
-    logger.log('[SeasonScene] continuarDespuesDeTabla - stub');
+    // Verificar si el jugador clasificó a play-offs (debe estar en el top 8 de su zona)
+    if (!this.resultadoPlayoffs) {
+      logger.error('[SeasonScene] No hay resultado de play-offs disponible');
+      return;
+    }
+
+    const { posicionFinal, clasificado } = this.resultadoPlayoffs;
+    this.mostrarClasificacionOEliminacion(clasificado, posicionFinal);
   }
 
   iniciarPlayoffs() {
-    // TODO: Iniciar simulación de play-offs y mostrar bracket
-    logger.log('[SeasonScene] iniciarPlayoffs - stub');
+    // Iniciar simulación de play-offs mostrando el bracket de octavos
+    if (!this.resultadoPlayoffs || !this.resultadoPlayoffs.playoffs) {
+      logger.error('[SeasonScene] No hay datos de play-offs disponibles');
+      return;
+    }
+
+    this.faseActualIndex = 0; // Octavos
+    const fases = ['Octavos', 'Cuartos', 'Semifinales', 'Final'];
+    this.mostrarFasePlayoffs(fases[this.faseActualIndex]);
+  }
+
+  mostrarFasePlayoffs(nombreFase) {
+    const playoffs = this.resultadoPlayoffs.playoffs;
+    const faseData = playoffs[nombreFase.toLowerCase()];
+
+    if (!faseData) {
+      logger.error('[SeasonScene] Fase no encontrada:', nombreFase);
+      return;
+    }
+
+    // Convertir partidos a formato para la UI
+    const partidos = faseData.map((partido) => ({
+      local: partido.local,
+      visitante: partido.visitante,
+      esJugadorLocal: partido.esJugador && partido.localGana,
+      esJugadorVisitante: partido.esJugador && !partido.localGana,
+      resultado: `${partido.golesLocal}-${partido.golesVisitante}${partido.penales ? ' (pen.)' : ''}`,
+    }));
+
+    this.mostrarBracketPlayoffs({ nombre: nombreFase, partidos });
   }
 
   simularFasePlayoffs(nombreFase) {
-    // TODO: Simular la fase actual y avanzar
-    logger.log('[SeasonScene] simularFasePlayoffs:', nombreFase);
+    // Avanzar a la siguiente fase
+    const fases = ['Octavos', 'Cuartos', 'Semifinales', 'Final'];
+    this.faseActualIndex++;
+
+    if (this.faseActualIndex >= fases.length) {
+      // Ya se jugó la final, verificar si ganó
+      const status = this.resultadoPlayoffs.status;
+      if (status === 'CAMPEON') {
+        this.mostrarCampeon();
+      } else {
+        // Eliminado en alguna fase de play-offs
+        this.finalizarTemporadaSinPlayoffs();
+      }
+      return;
+    }
+
+    // Verificar si el jugador sigue en competencia
+    const status = this.resultadoPlayoffs.status;
+    if (status === 'ELIMINADO_PLAYOFFS') {
+      this.finalizarTemporadaSinPlayoffs();
+      return;
+    }
+
+    // Mostrar la siguiente fase
+    this.mostrarFasePlayoffs(fases[this.faseActualIndex]);
   }
 
-  finalizarTemporadaSinPlayoffs() {
-    // TODO: Cerrar temporada sin campeonato
-    logger.log('[SeasonScene] finalizarTemporadaSinPlayoffs - stub');
+  async finalizarTemporadaSinPlayoffs() {
+    try {
+      sessionStorage.removeItem(CLAVE_ESTADO_TEMPORADA);
+
+      const { posicionFinal } = this.resultadoPlayoffs;
+
+      const resumen = {
+        wins: this.estado.wins,
+        draws: this.estado.draws,
+        losses: this.estado.losses,
+        goals_for: this.estado.goalsFor,
+        goals_against: this.estado.goalsAgainst,
+        points: this.estado.points,
+        league_position: posicionFinal,
+      };
+
+      const { morale: moralFinal, fatigue: fatigaFinal } = careerState.getState();
+      await cerrarTemporada(this.seasonRow.id, resumen, moralFinal, fatigaFinal);
+
+      const esUltimaTemporada = this.seasonNumber === ULTIMA_TEMPORADA;
+      if (!esUltimaTemporada) {
+        const { pressureInicial, moraleInicial, fatigueInicial, streakInicial } =
+          careerState.calcularResetParcialTemporada();
+        await crearSiguienteTemporada(
+          this.managerId,
+          this.seasonNumber,
+          moraleInicial,
+          fatigueInicial,
+          pressureInicial,
+          streakInicial
+        );
+      }
+
+      this.scene.start('CareerSummaryScene', {
+        managerId: this.managerId,
+        league_position: posicionFinal,
+        tablaCompleta: [], // TODO: construir tabla con play-offs
+        momentosDestacados: construirMomentosDestacados(this.estado.resultados),
+        seasonNumber: this.seasonNumber,
+        esUltimaTemporada,
+      });
+    } catch (error) {
+      this.mostrarError(error);
+    }
   }
 
-  finalizarTemporadaConCampeonato() {
-    // TODO: Cerrar temporada como campeón
-    logger.log('[SeasonScene] finalizarTemporadaConCampeonato - stub');
+  async finalizarTemporadaConCampeonato() {
+    try {
+      sessionStorage.removeItem(CLAVE_ESTADO_TEMPORADA);
+
+      const resumen = {
+        wins: this.estado.wins,
+        draws: this.estado.draws,
+        losses: this.estado.losses,
+        goals_for: this.estado.goalsFor,
+        goals_against: this.estado.goalsAgainst,
+        points: this.estado.points,
+        league_position: 1, // Campeón
+      };
+
+      const { morale: moralFinal, fatigue: fatigaFinal } = careerState.getState();
+      await cerrarTemporada(this.seasonRow.id, resumen, moralFinal, fatigaFinal);
+
+      const esUltimaTemporada = this.seasonNumber === ULTIMA_TEMPORADA;
+      if (!esUltimaTemporada) {
+        const { pressureInicial, moraleInicial, fatigueInicial, streakInicial } =
+          careerState.calcularResetParcialTemporada();
+        await crearSiguienteTemporada(
+          this.managerId,
+          this.seasonNumber,
+          moraleInicial,
+          fatigueInicial,
+          pressureInicial,
+          streakInicial
+        );
+      }
+
+      this.scene.start('CareerSummaryScene', {
+        managerId: this.managerId,
+        league_position: 1,
+        tablaCompleta: [], // TODO: construir tabla con play-offs
+        momentosDestacados: construirMomentosDestacados(this.estado.resultados),
+        seasonNumber: this.seasonNumber,
+        esUltimaTemporada,
+      });
+    } catch (error) {
+      this.mostrarError(error);
+    }
   }
 }

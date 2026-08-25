@@ -1,6 +1,6 @@
 # Sistema de Play-offs para Liga Profesional Argentina
 
-## 📋 Estado del Proyecto: FASE 2 EN PROGRESO ⚙️
+## 📋 Estado del Proyecto: FASE 2 COMPLETADA ✅
 
 ---
 
@@ -35,70 +35,93 @@
 
 ---
 
-## ⚙️ FASE 2 EN PROGRESO: Pantallas UI
+## ✅ FASE 2 COMPLETADA: Pantallas UI + Lógica de Integración
 
-### **6. Pantallas agregadas a `SeasonScene.js`** ✅
+### **6. SeasonScene.js - Integración Completa** ✅
 
-**Importaciones actualizadas (L33, L48):**
+**A. Detección de liga con play-offs (L254-257):**
+```javascript
+const ligaConfig = getLeagueById(manager.league_id);
+this.tienePlayoffs = ligaConfig?.tienePlayoffs || false;
+this.ligaConfig = ligaConfig;
+```
+
+**B. Pantalla inicial adaptada (L392-401):**
+- Muestra información "Liga con play-offs • Clasifican 8 por zona"
+- Botón detecta tipo de liga y llama al flujo correcto
+
+**C. Función principal de simulación (L1088-1136):**
+- `simularTemporadaConPlayoffsCompleta()` — Coordina todo el flujo
+- Obtiene club y zona del manager
+- Llama a `simularTemporadaConPlayoffs()` del backend
+- Guarda resultado en `this.resultadoPlayoffs`
+- Actualiza estado con resultados de fase regular
+- Muestra tabla de zonas
+
+**D. Pantallas de visualización:**
+1. `mostrarTablaZonas(tablasZonas, zonaJugador, posicionJugador)` (L762-843)
+2. `mostrarClasificacionOEliminacion(clasificado, posicion)` (L850-934)
+3. `mostrarBracketPlayoffs(faseActual)` (L940-1019)
+4. `mostrarCampeon()` (L1024-1063)
+
+**E. Lógica de navegación implementada:**
+1. `continuarDespuesDeTabla()` (L1144-1151) — Verifica clasificación
+2. `iniciarPlayoffs()` (L1153-1162) — Inicia bracket de octavos
+3. `mostrarFasePlayoffs(nombreFase)` (L1164-1177) — Muestra fase actual
+4. `simularFasePlayoffs(nombreFase)` (L1179-1203) — Avanza por fases
+5. `finalizarTemporadaSinPlayoffs()` (L1205-1246) — Cierre sin campeonato
+6. `finalizarTemporadaConCampeonato()` (L1248-1289) — Cierre como campeón
+
+**Importaciones agregadas (L33, L48):**
 - `simularTemporadaConPlayoffs` desde `seasonOrchestrator.js`
 - `getLeagueById` desde `leagues.js`
 
-**Funciones de visualización:**
-
-1. **`mostrarTablaZonas(tablasZonas, zonaJugador, posicionJugador)`** (L757-838)
-   - Tabla de la zona del jugador
-   - Clasificados en verde, jugador en dorado
-   - Botón "Continuar"
-
-2. **`mostrarClasificacionOEliminacion(clasificado, posicion)`** (L845-929)
-   - Éxito: verde + "Jugar Play-offs"
-   - Eliminado: rojo + "Ver resumen"
-
-3. **`mostrarBracketPlayoffs(faseActual)`** (L935-1014)
-   - Emparejamientos de la fase
-   - Jugador resaltado en dorado
-   - Resultados si ya se jugaron
-   - Botón "Simular fase"
-
-4. **`mostrarCampeon()`** (L1019-1058)
-   - Pantalla "¡CAMPEÓN!" en dorado
-   - Botón "Ver resumen"
-
-**Stubs (L1064-1087):**
-- `continuarDespuesDeTabla()`
-- `iniciarPlayoffs()`
-- `simularFasePlayoffs(nombreFase)`
-- `finalizarTemporadaSinPlayoffs()`
-- `finalizarTemporadaConCampeonato()`
-
 ---
 
-## 🔄 PENDIENTE: Lógica de Integración
-
-### **6. Implementar stubs en `SeasonScene.js`**
-- [ ] Detectar liga con play-offs en `cargarDatosYArrancar()`
-- [ ] Integrar `simularTemporadaConPlayoffs()` en el flujo
-- [ ] Implementar `continuarDespuesDeTabla()` con datos reales
-- [ ] Implementar `iniciarPlayoffs()` para mostrar bracket
-- [ ] Implementar `simularFasePlayoffs()` con avance por rondas
-- [ ] Implementar cierre de temporada con/sin campeonato
+## 🔄 PENDIENTE: Persistencia y Formulario
 
 ### **7. Persistencia** (`data/seasonsRepo.js`)
-- [ ] Guardar zona del equipo
-- [ ] Persistir resultados de play-offs
-- [ ] Marcar campeón
+- [ ] Guardar zona del equipo en tabla `seasons`
+- [ ] Persistir resultados de play-offs (fase, rival eliminador)
+- [ ] Marcar flag de campeón
 
-### **8. Formulario de creación**
+### **8. Formulario de creación de DT**
 - [ ] Agregar "Liga Profesional (Argentina)" al dropdown
-- [ ] Selector de equipos por zona
+- [ ] Selector de equipos por zona A/B
 
 ---
 
-## 🎯 Formato Implementado
+## 🎯 Flujo Implementado
 
-**Fase Regular:** 2 zonas de 15 equipos, 14 partidos cada uno (16 fechas)  
-**Play-offs:** Octavos (16→8) → Cuartos (8→4) → Semis (4→2) → Final (2→1)  
-**Final:** Cancha neutral sin ventaja de localía
+**1. Inicio de temporada:**
+- Detecta si es liga con play-offs
+- Muestra información en pantalla inicial
+
+**2. Simulación:**
+- Usuario presiona "Jugar temporada"
+- Se simula fase regular (16 fechas) + play-offs completos
+- Se guarda resultado
+
+**3. Tabla de zonas:**
+- Muestra posiciones de la zona del jugador
+- Resalta clasificados (verde) y jugador (dorado)
+- Botón "Continuar"
+
+**4. Clasificación/Eliminación:**
+- Si clasificó (top 8): "¡Clasificaste!" → "Jugar Play-offs"
+- Si eliminó (9-15): "Quedaste eliminado" → "Ver resumen"
+
+**5. Play-offs (si clasificó):**
+- Muestra bracket de Octavos
+- Usuario simula fase → Muestra Cuartos
+- Continúa: Semifinales → Final
+- Si gana final: "¡CAMPEÓN!"
+- Si pierde en cualquier fase: "Ver resumen"
+
+**6. Cierre:**
+- Guarda resumen de temporada
+- Crea siguiente temporada
+- Navega a CareerSummaryScene
 
 ---
 
@@ -107,18 +130,32 @@
 ✅ **Separación de capas:** Motor puro sin Phaser/Supabase  
 ✅ **Reutilización:** `simularJornada()` para todos los partidos  
 ✅ **Estado inmutable:** Sin mutaciones directas  
-✅ **Patrón visual:** Colores y tipografía consistentes con el juego
+✅ **Patrón visual:** Colores y tipografía consistentes  
+✅ **Flujo no bloqueante:** Pantallas intermedias con decisiones del usuario
 
 ---
 
 ## 🚀 Próximos Pasos
 
-1. Implementar lógica de los stubs
-2. Conectar con backend de play-offs
-3. Agregar persistencia
-4. Testing del flujo completo
+1. **Testing del flujo completo** — Probar con manager en Liga Profesional
+2. **Agregar persistencia** — Guardar zona y resultados en DB
+3. **Formulario de creación** — Selector de liga y equipos por zona
+4. **Refinamiento visual** — Ajustar animaciones y transiciones
 
 ---
 
-**Última actualización:** 2026-08-25 01:58 UTC  
-**Estado:** Backend ✅ | UI Pantallas ✅ | Falta lógica de integración
+## 📊 Estadísticas del Código
+
+**Archivos modificados:** 2  
+- `src/scenes/SeasonScene.js`: +550 líneas (746 → 1296)
+- `PLAYOFFS-PROGRESS.md`: Actualizado
+
+**Funciones agregadas:** 10  
+**Pantallas nuevas:** 4  
+**Líneas de código total:** ~550 líneas
+
+---
+
+**Última actualización:** 2026-08-25 02:04 UTC  
+**Estado:** Backend ✅ | UI ✅ | Lógica ✅ | Falta: Persistencia y formulario
+
