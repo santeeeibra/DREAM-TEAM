@@ -1175,15 +1175,16 @@ body {
   display: flex !important;
   flex-direction: row !important;
   gap: 40px;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: flex-start;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   padding: 40px 20px;
   min-height: 360px;
   width: 100%;
   box-sizing: border-box;
-  overflow-x: visible;
+  overflow-x: auto;
   overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Mobile responsive */
