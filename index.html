@@ -106,6 +106,7 @@ input:focus,select:focus,button:focus-visible{outline:2px solid var(--fluor);out
 .packs-grid{
   display:flex;
   flex-direction:row;
+  flex-wrap:wrap;
   justify-content:center;
   align-items:flex-start;
   gap:20px;
@@ -373,33 +374,35 @@ input:focus,select:focus,button:focus-visible{outline:2px solid var(--fluor);out
 .bench-row::-webkit-scrollbar{height:4px}
 .bench-row::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:4px}
 .bench-card-slot{
-  flex:0 0 72px;cursor:grab;transition:transform .18s cubic-bezier(.2,.7,.2,1)
+  flex:0 0 72px;max-width:72px;cursor:grab;transition:transform .18s cubic-bezier(.2,.7,.2,1)
 }
 .bench-card-slot:hover{transform:translateY(-3px)}
 .bench-card-slot .card{border-radius:12px;padding:2px;width:100%;max-width:72px;box-sizing:border-box}
-.bench-card-slot .card-inner{border-radius:10px}
+.bench-card-slot .card-inner{border-radius:10px;max-width:100%}
 .bench-card-slot .card .ovr{padding:4px 6px 2px}
 .bench-card-slot .card .ovr .num{font-size:16px}
 .bench-card-slot .card .ovr .pos{font-size:9px}
 .bench-card-slot .card .foot{padding:0 6px 5px}
 .bench-card-slot .card .foot .name{font-size:10px}
 .bench-card-slot .card .foot .metarow{font-size:9px}
-.bench-card-slot .card .photo-well{aspect-ratio:1/1}
+.bench-card-slot .card .photo-well{aspect-ratio:1/1;width:100%;max-width:100%;overflow:hidden}
+.bench-card-slot .card .photo-well img{width:100%;height:100%;object-fit:cover;object-position:50% 16%}
 
 /* Estilos para cartas directas en bench-row (sin wrapper .bench-card-slot) */
 .bench-row > .carta-slot{
-  flex:0 0 72px;cursor:grab;transition:transform .18s cubic-bezier(.2,.7,.2,1)
+  flex:0 0 72px;max-width:72px;cursor:grab;transition:transform .18s cubic-bezier(.2,.7,.2,1)
 }
 .bench-row > .carta-slot:hover{transform:translateY(-3px)}
 .bench-row > .carta-slot .card{border-radius:12px;padding:2px;width:100%;max-width:72px;box-sizing:border-box}
-.bench-row > .carta-slot .card-inner{border-radius:10px}
+.bench-row > .carta-slot .card-inner{border-radius:10px;max-width:100%}
 .bench-row > .carta-slot .card .ovr{padding:4px 6px 2px}
 .bench-row > .carta-slot .card .ovr .num{font-size:16px}
 .bench-row > .carta-slot .card .ovr .pos{font-size:9px}
 .bench-row > .carta-slot .card .foot{padding:0 6px 5px}
 .bench-row > .carta-slot .card .foot .name{font-size:10px}
 .bench-row > .carta-slot .card .foot .metarow{font-size:9px}
-.bench-row > .carta-slot .card .photo-well{aspect-ratio:1/1}
+.bench-row > .carta-slot .card .photo-well{aspect-ratio:1/1;width:100%;max-width:100%;overflow:hidden}
+.bench-row > .carta-slot .card .photo-well img{width:100%;height:100%;object-fit:cover;object-position:50% 16%}
 
 @media (hover:hover) and (pointer:fine){
   .bench-card-slot .card:hover{transform:translateY(-4px)}

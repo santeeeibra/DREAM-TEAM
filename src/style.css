@@ -1177,12 +1177,12 @@ body {
   gap: 40px;
   justify-content: center;
   align-items: flex-start;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   padding: 40px 20px;
   min-height: 360px;
   width: 100%;
   box-sizing: border-box;
-  overflow-x: auto;
+  overflow-x: visible;
   overflow-y: visible;
 }
 
