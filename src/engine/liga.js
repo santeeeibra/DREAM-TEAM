@@ -24,16 +24,28 @@ function normalizarNombreClub(nombre) {
     .trim();
 }
 
-// Los 19 rivales del DT: los otros clubes de su liga en leagues.js (la misma
+// Los rivales del DT: los otros clubes de su liga en leagues.js (la misma
 // lista que alimenta el draft y los escudos). Con liga desconocida, Premier.
-function candidatosRivales(club) {
-  const liga = club.leagueId ? getLeagueById(club.leagueId) : null;
+// Para LigaPro (30 equipos en zonas), filtra solo la misma zona (14 rivales).
+function candidatosRivales(club, ligaConfig) {
+  const liga = ligaConfig || (club.leagueId ? getLeagueById(club.leagueId) : null);
   const lista = (liga || getLeagueById(LIGA_FALLBACK)).clubs;
   const miId = club.id;
   const miNombre = normalizarNombreClub(club.name);
-  return lista
+  
+  // Para LigaPro: filtrar solo equipos de mi zona
+  let candidatos = lista;
+  if (liga?.tienePlayoffs) {
+    const miClub = lista.find((c) => miId ? c.id === miId : normalizarNombreClub(c.name) === miNombre);
+    const miZona = miClub?.zona;
+    if (miZona) {
+      candidatos = lista.filter((c) => c.zona === miZona);
+    }
+  }
+  
+  return candidatos
     .filter((c) => (miId ? c.id !== miId : true) && normalizarNombreClub(c.name) !== miNombre)
-    .map((c) => ({ id: c.id, nombre: c.name }));
+    .map((c) => ({ id: c.id, nombre: c.name, zona: c.zona }));
 }
 
 /**
@@ -43,6 +55,10 @@ function candidatosRivales(club) {
  * nunca por el nombre mostrado.
  */
 export function crearLiga(rng, club, { temporada = 1, posAnterior = null, ovrDT = null } = {}) {
+  const ligaConfig = club.leagueId ? getLeagueById(club.leagueId) : null;
+  const esLigaPro = ligaConfig?.tienePlayoffs;
+  const numEquipos = esLigaPro ? (ligaConfig.equiposPorZona || 15) : LIGA.EQUIPOS;
+
   const media = ESCALADA_LIGA.BASE
     + ESCALADA_LIGA.POR_TEMPORADA * (temporada - 1)
     + (posAnterior && posAnterior <= 5 ? ESCALADA_LIGA.CASTIGO_AL_LIDER : 0)
@@ -55,9 +71,9 @@ export function crearLiga(rng, club, { temporada = 1, posAnterior = null, ovrDT 
     ? Math.min(MAX_BOOST, Math.max(0, (ovrDT - media - UMBRAL_DELTA) * FACTOR))
     : 0;
 
-  const rivales = rng.shuffle(candidatosRivales(club)).slice(0, LIGA.EQUIPOS - 1);
+  const rivales = rng.shuffle(candidatosRivales(club, ligaConfig)).slice(0, numEquipos - 1);
   let equipos = [
-    { id: 0, nombre: club.name, fuerza: 0, esMio: true, clubId: club.id || null },
+    { id: 0, nombre: club.name, fuerza: 0, esMio: true, clubId: club.id || null, zona: rivales[0]?.zona },
     ...rivales.map((r, i) => {
       // Jerarquía real por club: cada rival saca su fuerza de la banda de su
       // tier (TIER_LIGA → FUERZA_POR_TIER). Las bandas son separadas a
@@ -68,6 +84,7 @@ export function crearLiga(rng, club, { temporada = 1, posAnterior = null, ovrDT 
         id: i + 1,
         clubId: r.id,
         nombre: r.nombre,
+        zona: r.zona,
         fuerza: Math.round(clampNum(gauss(rng, media + cfg.off + mediaBoost, cfg.sd), 54, 90) * 10) / 10,
         esMio: false,
       };
@@ -76,9 +93,21 @@ export function crearLiga(rng, club, { temporada = 1, posAnterior = null, ovrDT 
   // El fixture se arma con la cantidad REAL de equipos. Bundesliga tiene 18,
   // no 20: si fijamos n=LIGA.EQUIPOS aparecen ids sin fila y simularTramo
   // explota al leer .esMio de undefined.
-  if (equipos.length % 2 !== 0) equipos = equipos.slice(0, equipos.length - 1);
+  // Para ligas con número impar (LigaPro 15 equipos), NO recortar: el
+  // generador de fixture maneja el "equipo libre" (bye) automáticamente.
+  if (!esLigaPro && equipos.length % 2 !== 0) {
+    equipos = equipos.slice(0, equipos.length - 1);
+  }
   const n = Math.max(2, equipos.length);
-  return { equipos, fixture: generarFixture(rng, n), tabla: tablaVacia(equipos) };
+  
+  return {
+    equipos,
+    fixture: generarFixture(rng, n),
+    tabla: tablaVacia(equipos),
+    ligaConfig,
+    esLigaPro,
+    zona: rivales[0]?.zona, // zona del DT
+  };
 }
 
 function gauss(rng, media, sd) {
@@ -217,9 +246,40 @@ function anotar(tabla, id, gf, gc) {
 }
 
 export function posiciones(liga) {
+  // Si es LigaPro, retornar solo equipos de mi zona
+  const equiposAMostrar = liga.esLigaPro
+    ? liga.equipos.filter((e) => e.zona === liga.zona)
+    : liga.equipos;
+  
+  const idsAMostrar = new Set(equiposAMostrar.map((e) => e.id));
+  
   return liga.tabla
+    .filter((t) => idsAMostrar.has(t.id))
     .map((t) => ({ ...t, nombre: liga.equipos[t.id].nombre, dg: t.gf - t.gc }))
     .sort((a, b) => b.pts - a.pts || b.dg - a.dg || b.gf - a.gf || a.id - b.id);
+}
+
+// Posiciones de TODAS las zonas para LigaPro (usado en UI para mostrar ambas tablas)
+export function posicionesPorZona(liga) {
+  if (!liga.esLigaPro) return { 'Zona A': posiciones(liga) };
+  
+  const zonas = {};
+  for (const equipo of liga.equipos) {
+    if (!equipo.zona) continue;
+    if (!zonas[equipo.zona]) zonas[equipo.zona] = [];
+    zonas[equipo.zona].push(equipo.id);
+  }
+  
+  const resultado = {};
+  for (const [zona, ids] of Object.entries(zonas)) {
+    const idsSet = new Set(ids);
+    resultado[zona] = liga.tabla
+      .filter((t) => idsSet.has(t.id))
+      .map((t) => ({ ...t, nombre: liga.equipos[t.id].nombre, dg: t.gf - t.gc }))
+      .sort((a, b) => b.pts - a.pts || b.dg - a.dg || b.gf - a.gf || a.id - b.id);
+  }
+  
+  return resultado;
 }
 
 export function miPosicion(liga) {

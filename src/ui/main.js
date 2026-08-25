@@ -3,7 +3,7 @@ import {
   iniciarCarrera, confirmarOnce, jugarTramo, candidatosDelTramo, fijarNarracion,
   resolverEvento, abrirRefuerzo, registrarRefuerzo, aplicarRefuerzo, resumenCarrera, ratingActual,
   elegirReemplazoLesion, calcularOfertasPlantel, resolverOferta, cartasExtraRefuerzo,
-  contexto, FASES, autoOnce, FORMACION, FORMACIONES_SLOTS, ratingEnSlot, penalidad, slotsVacios, posiciones, miPosicion,
+  contexto, FASES, autoOnce, FORMACION, FORMACIONES_SLOTS, ratingEnSlot, penalidad, slotsVacios, posiciones, posicionesPorZona, miPosicion,
   paquete, valorDeVenta, CARRERA, LIGA, RANGOS, FUERZA,
 } from '../engine/index.js';
 import { CLUBES_JUGABLES } from '../data/nombres.js';
@@ -1045,6 +1045,46 @@ function marcador() {
 // En móvil se ocultan G/E/P (patrón de las apps de fútbol).
 function tablaPosiciones() {
   if (!c.liga) return '';
+  
+  // LigaPro: mostrar ambas zonas
+  if (c.liga.esLigaPro) {
+    const zonas = posicionesPorZona(c.liga);
+    const miZona = c.liga.zona;
+    const riesgo = 3;
+    
+    return `<div class="panel stack ts-panel">
+      <div class="row" style="justify-content:space-between">
+        <div class="eyebrow">Tabla de posiciones</div>
+        <button class="btn ghost" data-accion="tabla">${ui.tabla ? 'Ocultar' : 'Ver tabla'}</button>
+      </div>
+      ${ui.tabla ? Object.entries(zonas).map(([nombreZona, tabla]) => {
+        const esMiZona = nombreZona === miZona;
+        return `<div class="stack" style="gap:8px;margin-top:${esMiZona ? '0' : '16px'}">
+          <div class="eyebrow" style="color:${esMiZona ? 'var(--fluor)' : 'var(--humo)'}">
+            ${nombreZona}${esMiZona ? ' (tu zona)' : ''}
+          </div>
+          <table class="ts-tabla pro"><thead><tr>
+            <th class="n th-pos">#</th><th>Equipo</th><th class="n">PJ</th><th class="n oc">G</th><th class="n oc">E</th><th class="n oc">P</th><th class="n">DG</th><th class="n th-pts">Pts</th>
+          </tr></thead>
+          <tbody>${tabla.map((e, i) => {
+            const pos = i + 1;
+            const zona = e.id !== 0
+              ? (esMiZona && pos <= c.objetivo ? 'zona-obj' : pos > tabla.length - riesgo ? 'zona-riesgo' : '')
+              : '';
+            return `<tr class="${e.id === 0 ? 'mio' : zona}">
+              <td class="n pos-num">${pos}</td>
+              <td class="eq">${escudoClub(e.nombre)}<span>${esc(e.nombre)}</span></td>
+              <td class="n">${e.pj}</td><td class="n oc">${e.g}</td><td class="n oc">${e.e}</td><td class="n oc">${e.p}</td>
+              <td class="n ${e.dg > 0 ? 'dg-pos' : e.dg < 0 ? 'dg-neg' : ''}">${e.dg > 0 ? '+' + e.dg : e.dg < 0 ? e.dg : '0'}</td>
+              <td class="n pts">${e.pts}</td>
+            </tr>`;
+          }).join('')}</tbody></table>
+        </div>`;
+      }).join('') : ''}
+    </div>`;
+  }
+  
+  // Liga normal: una sola tabla
   const t = posiciones(c.liga);
   const n = t.length;
   const riesgo = 3;
