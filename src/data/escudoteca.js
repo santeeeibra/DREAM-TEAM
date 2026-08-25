@@ -53,12 +53,12 @@ export const ESCUDOTECA = {
   'Leicester City': `${PALADAR}/inglaterra/premier/png/leicester.png`,
   'Leicester': `${PALADAR}/inglaterra/premier/png/leicester.png`,
   'Southampton': `${PALADAR}/inglaterra/premier/png/southampton.png`,
-  'Ipswich Town': `${PALADAR}/inglaterra/premier/png/ipswich.png`,
-  'Ipswich': `${PALADAR}/inglaterra/premier/png/ipswich.png`,
-  'Coventry City': `${PALADAR}/inglaterra/championship/png/coventry.png`,
-  'Coventry': `${PALADAR}/inglaterra/championship/png/coventry.png`,
-  'Hull City': `${PALADAR}/inglaterra/championship/png/hull.png`,
-  'Hull': `${PALADAR}/inglaterra/championship/png/hull.png`,
+  'Ipswich Town': `${PALADAR}/inglaterra/premier/png/ipswich_town.png`,
+  'Ipswich': `${PALADAR}/inglaterra/premier/png/ipswich_town.png`,
+  'Coventry City': `${PALADAR}/inglaterra/premier/png/coventry.png`,
+  'Coventry': `${PALADAR}/inglaterra/premier/png/coventry.png`,
+  'Hull City': `${PALADAR}/inglaterra/premier/png/hull_city.png`,
+  'Hull': `${PALADAR}/inglaterra/premier/png/hull_city.png`,
 
   // ── LaLiga ──
   'Alavés': `${PALADAR}/espana/laliga/png/alaves.png`,
