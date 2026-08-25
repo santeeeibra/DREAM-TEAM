@@ -52,6 +52,8 @@
 import { simularTramo, TOTAL_MATCHDAYS } from './seasonSimulator.js';
 import { elegirEventosDeTemporada } from './eventSlots.js';
 import * as careerState from '../state/careerState.js';
+import { calcularTablaPorZona, obtenerClasificados } from './zonesTable.js';
+import { simularPlayoffsCompletos } from './playoffsSimulator.js';
 
 // -----------------------------------------------------------------------
 // TRADUCCIÓN DE EFFECTS
@@ -319,4 +321,122 @@ export function aplicarDecisionYContinuar({ estado, decisionElegida, rivalesFuer
 
   // 4. Y a partir de acá es exactamente el mismo avance de siempre.
   return avanzar({ estado: estadoSincronizado, rivalesFuerza, rivalesNombres, eventosDisponibles });
+}
+
+// -----------------------------------------------------------------------
+// LIGAS CON PLAY-OFFS (Liga Profesional Argentina)
+// -----------------------------------------------------------------------
+
+// simularTemporadaConPlayoffs coordina una liga con formato de zonas + play-offs:
+//   1. Fase regular por zonas (16 fechas)
+//   2. Clasificación de los 8 mejores de cada zona
+//   3. Play-offs de eliminación directa (octavos → final)
+//
+// Parámetros:
+//   - ligaConfig: objeto de leagues.js con { tienePlayoffs, equiposPorZona, etc. }
+//   - clubJugador: nombre del club del jugador
+//   - estado: estado inicial de temporada (igual que simularHastaProximoEvento)
+//   - eventosDisponibles: catálogo de eventos (opcional en fase regular)
+//
+// Devuelve:
+//   {
+//     status: 'CLASIFICO_PLAYOFFS' | 'ELIMINADO_FASE_REGULAR' | 'CAMPEON' | 'ELIMINADO_PLAYOFFS',
+//     faseRegular: { tablaZonaA, tablaZonaB, posicionJugador, clasificados },
+//     playoffs: { bracket, campeon, eliminadoEn } | null,
+//     estado: estado final de temporada,
+//   }
+export function simularTemporadaConPlayoffs({
+  ligaConfig,
+  clubJugador,
+  estado,
+  eventosDisponibles = [],
+}) {
+  // 1. Calcular tabla de la fase regular por zonas
+  const { tablaZonaA, tablaZonaB } = calcularTablaPorZona({
+    equipos: ligaConfig.clubs.map(c => c.name),
+    zonas: ligaConfig.clubs.reduce((acc, c) => {
+      acc[c.name] = c.zona;
+      return acc;
+    }, {}),
+    clubJugador,
+    ratingPlantel: careerState.getEffectiveRating(),
+    moral: estado.moral ?? 50,
+    fatiga: estado.fatiga ?? 50,
+    presion: careerState.getState().pressure ?? 0,
+    matchdays: ligaConfig.faseRegularMatchdays,
+  });
+
+  // 2. Determinar en qué zona está el jugador
+  const zonaJugador = ligaConfig.clubs.find(c => c.name === clubJugador)?.zona;
+  const tablaJugador = zonaJugador === 'A' ? tablaZonaA : tablaZonaB;
+  const equipoJugador = tablaJugador.find(eq => eq.nombre === clubJugador);
+  const posicionJugador = equipoJugador?.posicion ?? 99;
+
+  // 3. Obtener los 16 clasificados (8 por zona)
+  const clasificados = obtenerClasificados({
+    tablaZonaA,
+    tablaZonaB,
+    cantidadPorZona: ligaConfig.clasificadosPorZona,
+  });
+
+  // 4. Verificar si el jugador clasificó
+  const jugadorClasifica = posicionJugador <= ligaConfig.clasificadosPorZona;
+
+  if (!jugadorClasifica) {
+    return {
+      status: 'ELIMINADO_FASE_REGULAR',
+      faseRegular: {
+        tablaZonaA,
+        tablaZonaB,
+        posicionJugador,
+        clasificados,
+      },
+      playoffs: null,
+      estado: {
+        ...estado,
+        wins: equipoJugador.ganados,
+        draws: equipoJugador.empatados,
+        losses: equipoJugador.perdidos,
+        goalsFor: equipoJugador.golesFavor,
+        goalsAgainst: equipoJugador.golesContra,
+        points: equipoJugador.puntos,
+        jornadaActual: ligaConfig.faseRegularMatchdays,
+      },
+    };
+  }
+
+  // 5. Simular play-offs
+  const resultadoPlayoffs = simularPlayoffsCompletos({
+    clasificados,
+    clubJugador,
+    estadoJugador: {
+      moral: estado.moral ?? 50,
+      fatiga: estado.fatiga ?? 50,
+    },
+  });
+
+  // 6. Determinar resultado final
+  const esCampeon = resultadoPlayoffs.campeon.nombre === clubJugador;
+  const status = esCampeon ? 'CAMPEON' : 'ELIMINADO_PLAYOFFS';
+
+  return {
+    status,
+    faseRegular: {
+      tablaZonaA,
+      tablaZonaB,
+      posicionJugador,
+      clasificados,
+    },
+    playoffs: resultadoPlayoffs,
+    estado: {
+      ...estado,
+      wins: equipoJugador.ganados,
+      draws: equipoJugador.empatados,
+      losses: equipoJugador.perdidos,
+      goalsFor: equipoJugador.golesFavor,
+      goalsAgainst: equipoJugador.golesContra,
+      points: equipoJugador.puntos,
+      jornadaActual: ligaConfig.faseRegularMatchdays,
+    },
+  };
 }

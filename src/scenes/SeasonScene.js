@@ -30,7 +30,7 @@
 // ni seasonSimulator.js.
 import Phaser from 'phaser';
 import { TOTAL_MATCHDAYS, construirMomentosDestacados } from '../engine/seasonSimulator.js';
-import { simularHastaProximoEvento, aplicarDecisionYContinuar } from '../engine/seasonOrchestrator.js';
+import { simularHastaProximoEvento, aplicarDecisionYContinuar, simularTemporadaConPlayoffs } from '../engine/seasonOrchestrator.js';
 import { calcularTablaFinal } from '../engine/leagueTable.js';
 import * as careerState from '../state/careerState.js';
 import { getLineup } from '../data/lineupsRepo.js';
@@ -45,6 +45,7 @@ import {
 } from '../data/seasonsRepo.js';
 import { ULTIMA_TEMPORADA } from '../core/constants.js';
 import { generarRivalesFuerza, RIVALES_NOMBRES } from '../engine/rivals.js';
+import { getLeagueById } from '../data/leagues.js';
 import * as logger from '../core/logger.js';
 
 // Clave de sessionStorage donde se guarda el `estado` de la temporada en
@@ -741,5 +742,347 @@ export class SeasonScene extends Phaser.Scene {
     } catch (error) {
       this.mostrarError(error);
     }
+  }
+
+  // ---------------------------------------------------------------------
+  // Pantallas de Play-offs
+  // ---------------------------------------------------------------------
+
+  /**
+   * Muestra la tabla de zonas al finalizar la fase regular
+   * @param {Object} tablasZonas - { zonaA: [...], zonaB: [...] }
+   * @param {string} zonaJugador - 'A' o 'B'
+   * @param {number} posicionJugador - Posición en su zona
+   */
+  mostrarTablaZonas(tablasZonas, zonaJugador, posicionJugador) {
+    this.limpiarPantalla();
+    const anchoPantalla = this.scale.width;
+    const altoPantalla = this.scale.height;
+
+    const titulo = this.add
+      .text(anchoPantalla / 2, 60, 'Fase Regular Finalizada', {
+        fontFamily: 'Arial',
+        fontSize: '24px',
+        fontStyle: 'bold',
+        color: '#d4af37',
+      })
+      .setOrigin(0.5);
+
+    const subtitulo = this.add
+      .text(anchoPantalla / 2, 95, `Tu zona: Zona ${zonaJugador} — Posición: ${posicionJugador}°`, {
+        fontFamily: 'Arial',
+        fontSize: '16px',
+        color: '#ffffff',
+      })
+      .setOrigin(0.5);
+
+    // Mostrar tabla de la zona del jugador
+    const tabla = tablasZonas[`zona${zonaJugador}`] || [];
+    const yInicio = 140;
+    const altoFila = 24;
+
+    tabla.slice(0, 10).forEach((equipo, idx) => {
+      const pos = idx + 1;
+      const esJugador = equipo.esJugador;
+      const clasificado = pos <= 8;
+
+      const color = esJugador ? '#d4af37' : clasificado ? '#2ecc71' : '#ffffff';
+      const bgColor = esJugador ? 0x2c2c3e : clasificado ? 0x1e3a28 : 0x1a1a2e;
+
+      // Fondo de fila
+      this.add.rectangle(anchoPantalla / 2, yInicio + idx * altoFila, anchoPantalla - 60, altoFila - 2, bgColor);
+
+      // Texto de posición y equipo
+      const textoFila = this.add
+        .text(
+          60,
+          yInicio + idx * altoFila,
+          `${pos}. ${equipo.nombre}  ${equipo.puntos}pts  ${equipo.gf}-${equipo.gc}`,
+          {
+            fontFamily: 'Arial',
+            fontSize: '14px',
+            color,
+            fontStyle: esJugador ? 'bold' : 'normal',
+          }
+        )
+        .setOrigin(0, 0.5);
+
+      this.contenedorDinamico.add(textoFila);
+    });
+
+    const leyenda = this.add
+      .text(anchoPantalla / 2, yInicio + 10 * altoFila + 20, 'Los 8 primeros clasifican a Play-offs', {
+        fontFamily: 'Arial',
+        fontSize: '13px',
+        color: '#2ecc71',
+      })
+      .setOrigin(0.5);
+
+    const botonContinuar = this.add
+      .text(anchoPantalla / 2, altoPantalla - 60, 'Continuar →', {
+        fontFamily: 'Arial',
+        fontSize: '16px',
+        fontStyle: 'bold',
+        color: '#1a1a2e',
+        backgroundColor: '#d4af37',
+        padding: { x: 20, y: 12 },
+      })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true });
+
+    botonContinuar.on('pointerdown', () => {
+      this.continuarDespuesDeTabla();
+    });
+
+    this.contenedorDinamico.add([titulo, subtitulo, leyenda, botonContinuar]);
+  }
+
+  /**
+   * Pantalla de clasificación o eliminación
+   * @param {boolean} clasificado - true si clasificó a playoffs
+   * @param {number} posicion - Posición final en la zona
+   */
+  mostrarClasificacionOEliminacion(clasificado, posicion) {
+    this.limpiarPantalla();
+    const anchoPantalla = this.scale.width;
+    const altoPantalla = this.scale.height;
+
+    if (clasificado) {
+      const titulo = this.add
+        .text(anchoPantalla / 2, altoPantalla / 2 - 60, '¡Clasificaste a los Play-offs!', {
+          fontFamily: 'Arial',
+          fontSize: '26px',
+          fontStyle: 'bold',
+          color: '#2ecc71',
+        })
+        .setOrigin(0.5);
+
+      const subtitulo = this.add
+        .text(anchoPantalla / 2, altoPantalla / 2 - 10, `Posición: ${posicion}° en tu zona`, {
+          fontFamily: 'Arial',
+          fontSize: '16px',
+          color: '#ffffff',
+        })
+        .setOrigin(0.5);
+
+      const boton = this.add
+        .text(anchoPantalla / 2, altoPantalla / 2 + 50, 'Jugar Play-offs →', {
+          fontFamily: 'Arial',
+          fontSize: '16px',
+          fontStyle: 'bold',
+          color: '#1a1a2e',
+          backgroundColor: '#2ecc71',
+          padding: { x: 20, y: 12 },
+        })
+        .setOrigin(0.5)
+        .setInteractive({ useHandCursor: true });
+
+      boton.on('pointerdown', () => {
+        this.iniciarPlayoffs();
+      });
+
+      this.contenedorDinamico.add([titulo, subtitulo, boton]);
+    } else {
+      const titulo = this.add
+        .text(anchoPantalla / 2, altoPantalla / 2 - 60, 'Quedaste eliminado', {
+          fontFamily: 'Arial',
+          fontSize: '26px',
+          fontStyle: 'bold',
+          color: '#e74c3c',
+        })
+        .setOrigin(0.5);
+
+      const subtitulo = this.add
+        .text(anchoPantalla / 2, altoPantalla / 2 - 10, `Posición final: ${posicion}° en tu zona`, {
+          fontFamily: 'Arial',
+          fontSize: '16px',
+          color: '#ffffff',
+        })
+        .setOrigin(0.5);
+
+      const mensaje = this.add
+        .text(anchoPantalla / 2, altoPantalla / 2 + 20, 'No clasificaste a los Play-offs', {
+          fontFamily: 'Arial',
+          fontSize: '14px',
+          color: '#9aa0b4',
+        })
+        .setOrigin(0.5);
+
+      const boton = this.add
+        .text(anchoPantalla / 2, altoPantalla / 2 + 70, 'Ver resumen de temporada →', {
+          fontFamily: 'Arial',
+          fontSize: '16px',
+          fontStyle: 'bold',
+          color: '#1a1a2e',
+          backgroundColor: '#e74c3c',
+          padding: { x: 20, y: 12 },
+        })
+        .setOrigin(0.5)
+        .setInteractive({ useHandCursor: true });
+
+      boton.on('pointerdown', () => {
+        this.finalizarTemporadaSinPlayoffs();
+      });
+
+      this.contenedorDinamico.add([titulo, subtitulo, mensaje, boton]);
+    }
+  }
+
+  /**
+   * Muestra el bracket de play-offs con los emparejamientos actuales
+   * @param {Object} faseActual - { nombre: 'Octavos', partidos: [...] }
+   */
+  mostrarBracketPlayoffs(faseActual) {
+    this.limpiarPantalla();
+    const anchoPantalla = this.scale.width;
+    const altoPantalla = this.scale.height;
+
+    const titulo = this.add
+      .text(anchoPantalla / 2, 50, `Play-offs — ${faseActual.nombre}`, {
+        fontFamily: 'Arial',
+        fontSize: '22px',
+        fontStyle: 'bold',
+        color: '#d4af37',
+      })
+      .setOrigin(0.5);
+
+    const yInicio = 120;
+    const altoPartido = 60;
+
+    faseActual.partidos.forEach((partido, idx) => {
+      const yPos = yInicio + idx * altoPartido;
+
+      // Nombres de equipos
+      const local = this.add
+        .text(anchoPantalla / 2 - 80, yPos, partido.local, {
+          fontFamily: 'Arial',
+          fontSize: '14px',
+          color: partido.esJugadorLocal ? '#d4af37' : '#ffffff',
+          fontStyle: partido.esJugadorLocal ? 'bold' : 'normal',
+        })
+        .setOrigin(1, 0.5);
+
+      const vs = this.add
+        .text(anchoPantalla / 2, yPos, 'vs', {
+          fontFamily: 'Arial',
+          fontSize: '12px',
+          color: '#9aa0b4',
+        })
+        .setOrigin(0.5);
+
+      const visitante = this.add
+        .text(anchoPantalla / 2 + 80, yPos, partido.visitante, {
+          fontFamily: 'Arial',
+          fontSize: '14px',
+          color: partido.esJugadorVisitante ? '#d4af37' : '#ffffff',
+          fontStyle: partido.esJugadorVisitante ? 'bold' : 'normal',
+        })
+        .setOrigin(0, 0.5);
+
+      // Resultado si ya se jugó
+      if (partido.resultado) {
+        const resultado = this.add
+          .text(anchoPantalla / 2, yPos + 20, partido.resultado, {
+            fontFamily: 'Arial',
+            fontSize: '13px',
+            color: '#2ecc71',
+          })
+          .setOrigin(0.5);
+        this.contenedorDinamico.add(resultado);
+      }
+
+      this.contenedorDinamico.add([local, vs, visitante]);
+    });
+
+    const botonSimular = this.add
+      .text(anchoPantalla / 2, altoPantalla - 60, 'Simular fase →', {
+        fontFamily: 'Arial',
+        fontSize: '16px',
+        fontStyle: 'bold',
+        color: '#1a1a2e',
+        backgroundColor: '#d4af37',
+        padding: { x: 20, y: 12 },
+      })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true });
+
+    botonSimular.on('pointerdown', () => {
+      this.simularFasePlayoffs(faseActual.nombre);
+    });
+
+    this.contenedorDinamico.add([titulo, botonSimular]);
+  }
+
+  /**
+   * Pantalla de campeón de play-offs
+   */
+  mostrarCampeon() {
+    this.limpiarPantalla();
+    const anchoPantalla = this.scale.width;
+    const altoPantalla = this.scale.height;
+
+    const titulo = this.add
+      .text(anchoPantalla / 2, altoPantalla / 2 - 80, '¡CAMPEÓN!', {
+        fontFamily: 'Arial',
+        fontSize: '32px',
+        fontStyle: 'bold',
+        color: '#d4af37',
+      })
+      .setOrigin(0.5);
+
+    const subtitulo = this.add
+      .text(anchoPantalla / 2, altoPantalla / 2 - 20, 'Ganaste la Liga Profesional', {
+        fontFamily: 'Arial',
+        fontSize: '18px',
+        color: '#2ecc71',
+      })
+      .setOrigin(0.5);
+
+    const boton = this.add
+      .text(anchoPantalla / 2, altoPantalla / 2 + 60, 'Ver resumen →', {
+        fontFamily: 'Arial',
+        fontSize: '16px',
+        fontStyle: 'bold',
+        color: '#1a1a2e',
+        backgroundColor: '#d4af37',
+        padding: { x: 20, y: 12 },
+      })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true });
+
+    boton.on('pointerdown', () => {
+      this.finalizarTemporadaConCampeonato();
+    });
+
+    this.contenedorDinamico.add([titulo, subtitulo, boton]);
+  }
+
+  // ---------------------------------------------------------------------
+  // Métodos auxiliares para play-offs (stubs - implementar lógica)
+  // ---------------------------------------------------------------------
+
+  continuarDespuesDeTabla() {
+    // TODO: Verificar si clasificó y llamar a mostrarClasificacionOEliminacion
+    logger.log('[SeasonScene] continuarDespuesDeTabla - stub');
+  }
+
+  iniciarPlayoffs() {
+    // TODO: Iniciar simulación de play-offs y mostrar bracket
+    logger.log('[SeasonScene] iniciarPlayoffs - stub');
+  }
+
+  simularFasePlayoffs(nombreFase) {
+    // TODO: Simular la fase actual y avanzar
+    logger.log('[SeasonScene] simularFasePlayoffs:', nombreFase);
+  }
+
+  finalizarTemporadaSinPlayoffs() {
+    // TODO: Cerrar temporada sin campeonato
+    logger.log('[SeasonScene] finalizarTemporadaSinPlayoffs - stub');
+  }
+
+  finalizarTemporadaConCampeonato() {
+    // TODO: Cerrar temporada como campeón
+    logger.log('[SeasonScene] finalizarTemporadaConCampeonato - stub');
   }
 }

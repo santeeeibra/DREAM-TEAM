@@ -243,6 +243,51 @@ export const leagues = [
       { id: 'lorient',     name: 'Lorient' },
     ],
   },
+  // --- Liga Profesional Argentina ---
+  // Formato especial: 30 equipos en 2 zonas, fase regular de 16 fechas + play-offs
+  {
+    id: 'ligapro',
+    league: 'Liga Profesional',
+    country: 'Argentina',
+    tienePlayoffs: true,
+    equiposPorZona: 15,
+    faseRegularMatchdays: 16,
+    clasificadosPorZona: 8,
+    clubs: [
+      // Zona A (15 equipos)
+      { id: 'racing', name: 'Racing Club', zona: 'A' },
+      { id: 'river', name: 'River Plate', zona: 'A' },
+      { id: 'san-lorenzo', name: 'San Lorenzo', zona: 'A' },
+      { id: 'huracan', name: 'Huracán', zona: 'A' },
+      { id: 'independiente', name: 'Independiente', zona: 'A' },
+      { id: 'lanus', name: 'Lanús', zona: 'A' },
+      { id: 'tigre', name: 'Tigre', zona: 'A' },
+      { id: 'platense', name: 'Platense', zona: 'A' },
+      { id: 'instituto', name: 'Instituto', zona: 'A' },
+      { id: 'belgrano', name: 'Belgrano', zona: 'A' },
+      { id: 'talleres', name: 'Talleres', zona: 'A' },
+      { id: 'central-cordoba', name: 'Central Córdoba', zona: 'A' },
+      { id: 'gimnasia', name: 'Gimnasia LP', zona: 'A' },
+      { id: 'union', name: 'Unión', zona: 'A' },
+      { id: 'sarmiento', name: 'Sarmiento', zona: 'A' },
+      // Zona B (15 equipos)
+      { id: 'boca', name: 'Boca Juniors', zona: 'B' },
+      { id: 'estudiantes', name: 'Estudiantes LP', zona: 'B' },
+      { id: 'velez', name: 'Vélez Sarsfield', zona: 'B' },
+      { id: 'argentinos', name: 'Argentinos Juniors', zona: 'B' },
+      { id: 'defensa', name: 'Defensa y Justicia', zona: 'B' },
+      { id: 'banfield', name: 'Banfield', zona: 'B' },
+      { id: 'arsenal', name: 'Arsenal', zona: 'B' },
+      { id: 'colon', name: 'Colón', zona: 'B' },
+      { id: 'rosario-central', name: 'Rosario Central', zona: 'B' },
+      { id: 'newells', name: "Newell's", zona: 'B' },
+      { id: 'godoy-cruz', name: 'Godoy Cruz', zona: 'B' },
+      { id: 'independiente-rv', name: 'Independiente Rivadavia', zona: 'B' },
+      { id: 'barracas', name: 'Barracas Central', zona: 'B' },
+      { id: 'deportivo-riestra', name: 'Deportivo Riestra', zona: 'B' },
+      { id: 'atletico-tucuman', name: 'Atlético Tucumán', zona: 'B' },
+    ],
+  },
 ];
 
 // --- Helpers de lookup ---------------------------------------------------
