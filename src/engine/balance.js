@@ -170,6 +170,17 @@ export const PRESION_INICIAL_TIER = {
   // Serie A
   'juventus': 38, 'inter': 38, 'milan': 36, 'napoli': 32,
   'roma': 26, 'atalanta': 22, 'lazio': 20, 'fiorentina': 18, 'bologna': 16,
+  // Liga Profesional Argentina — Los 5 Grandes
+  'boca': 36, 'river': 38, 'racing': 34, 'independiente': 32, 'san-lorenzo': 30,
+  // Liga Profesional — Medianos exitosos
+  'velez': 28, 'estudiantes': 26,
+  // Liga Profesional — Medianos
+  'talleres': 22, 'huracan': 20, 'rosario': 20, 'belgrano': 20, 'gimnasia-lp': 18,
+  'argentinos': 18, 'lanus': 18, 'newells': 18, 'banfield': 16, 'defensa': 16,
+  // Liga Profesional — Chicos
+  'instituto': 15, 'tigre': 15, 'platense': 14, 'union': 14, 'atletico-tucuman': 14,
+  'sarmiento': 13, 'barracas': 13, 'central-cordoba': 13, 'riestra': 12,
+  'gimnasia-mza': 12, 'ind-rivadavia': 12, 'aldosivi': 12, 'estudiantes-rc': 12,
 };
 // Clubs no listados (chicos): menor presión inicial pero techo de título muy bajo
 export const PRESION_INICIAL_DIFICIL_DEFAULT = 15;
@@ -237,6 +248,40 @@ export const ESTILOS_CLUB = {
   'bologna':        { goles_mod: +0.04, concedidos_mod: +0.06, presion_extra: 1 },
   'torino':         { goles_mod: +0.02, concedidos_mod: +0.04, presion_extra: 1 },
   'sassuolo':       { goles_mod: +0.02, concedidos_mod: +0.08, presion_extra: 1 },
+  // Liga Profesional Argentina — Los 5 Grandes
+  'boca':           { goles_mod: +0.14, concedidos_mod: +0.12, presion_extra: 4 },
+  'river':          { goles_mod: +0.16, concedidos_mod: +0.12, presion_extra: 4 },
+  'racing':         { goles_mod: +0.12, concedidos_mod: +0.10, presion_extra: 3 },
+  'independiente':  { goles_mod: +0.10, concedidos_mod: +0.10, presion_extra: 3 },
+  'san-lorenzo':    { goles_mod: +0.10, concedidos_mod: +0.08, presion_extra: 3 },
+  // Liga Profesional — Medianos exitosos
+  'velez':          { goles_mod: +0.08, concedidos_mod: +0.08, presion_extra: 2 },
+  'estudiantes':    { goles_mod: +0.08, concedidos_mod: +0.06, presion_extra: 2 },
+  // Liga Profesional — Medianos
+  'talleres':       { goles_mod: +0.06, concedidos_mod: +0.06, presion_extra: 1 },
+  'huracan':        { goles_mod: +0.05, concedidos_mod: +0.06, presion_extra: 1 },
+  'rosario':        { goles_mod: +0.05, concedidos_mod: +0.06, presion_extra: 1 },
+  'belgrano':       { goles_mod: +0.04, concedidos_mod: +0.06, presion_extra: 1 },
+  'gimnasia-lp':    { goles_mod: +0.04, concedidos_mod: +0.08, presion_extra: 1 },
+  'argentinos':     { goles_mod: +0.04, concedidos_mod: +0.06, presion_extra: 1 },
+  'lanus':          { goles_mod: +0.04, concedidos_mod: +0.06, presion_extra: 1 },
+  'newells':        { goles_mod: +0.04, concedidos_mod: +0.06, presion_extra: 1 },
+  'banfield':       { goles_mod: +0.02, concedidos_mod: +0.08, presion_extra: 1 },
+  'defensa':        { goles_mod: +0.02, concedidos_mod: +0.08, presion_extra: 1 },
+  // Liga Profesional — Chicos
+  'instituto':      { goles_mod: -0.02, concedidos_mod: +0.10, presion_extra: 0 },
+  'tigre':          { goles_mod: -0.02, concedidos_mod: +0.10, presion_extra: 0 },
+  'platense':       { goles_mod: -0.04, concedidos_mod: +0.12, presion_extra: 0 },
+  'union':          { goles_mod: -0.04, concedidos_mod: +0.10, presion_extra: 0 },
+  'atletico-tucuman': { goles_mod: -0.06, concedidos_mod: +0.12, presion_extra: 0 },
+  'sarmiento':      { goles_mod: -0.08, concedidos_mod: +0.14, presion_extra: 0 },
+  'barracas':       { goles_mod: -0.08, concedidos_mod: +0.14, presion_extra: 0 },
+  'central-cordoba': { goles_mod: -0.10, concedidos_mod: +0.14, presion_extra: 0 },
+  'riestra':        { goles_mod: -0.10, concedidos_mod: +0.15, presion_extra: 0 },
+  'gimnasia-mza':   { goles_mod: -0.10, concedidos_mod: +0.15, presion_extra: 0 },
+  'ind-rivadavia':  { goles_mod: -0.12, concedidos_mod: +0.16, presion_extra: 0 },
+  'aldosivi':       { goles_mod: -0.12, concedidos_mod: +0.16, presion_extra: 0 },
+  'estudiantes-rc': { goles_mod: -0.12, concedidos_mod: +0.16, presion_extra: 0 },
   'udinese':        { goles_mod: +0.02, concedidos_mod: +0.08, presion_extra: 1 },
   // Serie A — defensivos / candidatos al descenso
   'genoa':          { goles_mod: -0.04, concedidos_mod: +0.08, presion_extra: 0 },

@@ -130,33 +130,47 @@ export const leagues = [
     ],
   },
   // --- Liga Profesional Argentina ---
-  // EA usa nombres fantasía para varios clubes sin licencia. Verificar con:
-  // node scripts/import-futgg-league.mjs ligapro --dry-run
+  // 30 equipos divididos en 2 zonas de 15 (formato argentino real).
+  // Los 5 Grandes: Boca, River, Racing, Independiente, San Lorenzo.
+  // Verificar con: node scripts/import-futgg-league.mjs ligapro --dry-run
   {
     id: 'ligapro',
     league: 'Liga Profesional Argentina',
     country: 'Argentina',
     clubs: [
-      { id: 'boca',           name: 'Boca Juniors' },
-      { id: 'racing',         name: 'Racing Club' },
-      { id: 'river',          name: 'River Plate' },
-      { id: 'independiente',  name: 'Independiente' },
-      { id: 'san-lorenzo',    name: 'San Lorenzo' },
-      { id: 'estudiantes',    name: 'Estudiantes' },
-      { id: 'velez',          name: 'Vélez Sarsfield' },
-      { id: 'talleres',       name: 'Talleres' },
-      { id: 'defensa',        name: 'Defensa y Justicia' },
-      { id: 'lanus',          name: 'Lanús' },
-      { id: 'godoy-cruz',     name: 'Godoy Cruz' },
-      { id: 'huracan',        name: 'Huracán' },
-      { id: 'newells',        name: "Newell's Old Boys" },
-      { id: 'rosario',        name: 'Rosario Central' },
-      { id: 'belgrano',       name: 'Belgrano' },
-      { id: 'argentinos',     name: 'Argentinos Juniors' },
-      { id: 'tigre',          name: 'Tigre' },
-      { id: 'platense',       name: 'Platense' },
-      { id: 'banfield',       name: 'Banfield' },
-      { id: 'atletico-tucuman', name: 'Atlético Tucumán' },
+      // ZONA A (15 equipos)
+      { id: 'boca',           name: 'Boca Juniors' },        // Grande
+      { id: 'independiente',  name: 'Independiente' },       // Grande
+      { id: 'san-lorenzo',    name: 'San Lorenzo' },         // Grande
+      { id: 'velez',          name: 'Vélez Sarsfield' },     // Mediano exitoso
+      { id: 'estudiantes',    name: 'Estudiantes' },         // Mediano exitoso
+      { id: 'talleres',       name: 'Talleres' },            // Mediano
+      { id: 'lanus',          name: 'Lanús' },               // Mediano
+      { id: 'newells',        name: "Newell's Old Boys" },   // Mediano
+      { id: 'platense',       name: 'Platense' },            // Chico
+      { id: 'instituto',      name: 'Instituto' },           // Chico
+      { id: 'union',          name: 'Unión' },               // Chico
+      { id: 'defensa',        name: 'Defensa y Justicia' },  // Mediano
+      { id: 'central-cordoba', name: 'Central Córdoba' },    // Chico
+      { id: 'riestra',        name: 'Deportivo Riestra' },   // Chico
+      { id: 'gimnasia-mza',   name: 'Gimnasia de Mendoza' }, // Chico
+      
+      // ZONA B (15 equipos)
+      { id: 'river',          name: 'River Plate' },         // Grande
+      { id: 'racing',         name: 'Racing Club' },         // Grande
+      { id: 'huracan',        name: 'Huracán' },             // Mediano
+      { id: 'rosario',        name: 'Rosario Central' },     // Mediano
+      { id: 'argentinos',     name: 'Argentinos Juniors' },  // Mediano
+      { id: 'belgrano',       name: 'Belgrano' },            // Mediano
+      { id: 'gimnasia-lp',    name: 'Gimnasia La Plata' },   // Mediano
+      { id: 'tigre',          name: 'Tigre' },               // Chico
+      { id: 'banfield',       name: 'Banfield' },            // Mediano
+      { id: 'atletico-tucuman', name: 'Atlético Tucumán' },  // Chico
+      { id: 'sarmiento',      name: 'Sarmiento' },           // Chico
+      { id: 'barracas',       name: 'Barracas Central' },    // Chico
+      { id: 'ind-rivadavia',  name: 'Independiente Rivadavia' }, // Chico
+      { id: 'aldosivi',       name: 'Aldosivi' },            // Chico
+      { id: 'estudiantes-rc', name: 'Estudiantes de Río Cuarto' }, // Chico
     ],
   },
   // --- MLS ---

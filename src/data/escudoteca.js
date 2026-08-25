@@ -167,7 +167,7 @@ export const ESCUDOTECA = {
 
   // ── Liga Profesional Argentina ──
   // Path real: argentina/primeradivision/png/ (no liga-profesional).
-  // Godoy Cruz no existe en Paladar → api-sports.
+  // 30 equipos: 5 grandes históricos + medianos exitosos + resto.
   'Boca Juniors':         `${PALADAR}/argentina/primeradivision/png/boca.png`,
   'Racing Club':          `${PALADAR}/argentina/primeradivision/png/racing.png`,
   'River Plate':          `${PALADAR}/argentina/primeradivision/png/river.png`,
@@ -175,10 +175,10 @@ export const ESCUDOTECA = {
   'San Lorenzo':          `${PALADAR}/argentina/primeradivision/png/sanlorenzo.png`,
   'Estudiantes':          `${PALADAR}/argentina/primeradivision/png/estudiantes.png`,
   'Vélez Sarsfield':      `${PALADAR}/argentina/primeradivision/png/velez.png`,
+  'Vélez':                `${PALADAR}/argentina/primeradivision/png/velez.png`,
   'Talleres':             `${PALADAR}/argentina/primeradivision/png/talleres.png`,
   'Defensa y Justicia':   `${PALADAR}/argentina/primeradivision/png/defensa.png`,
   'Lanús':                `${PALADAR}/argentina/primeradivision/png/lanus.png`,
-  'Godoy Cruz':           `${WIKI}/commons/thumb/8/89/Logo_of_CD_Godoy_Cruz_Antonio_Tomba.png/330px-Logo_of_CD_Godoy_Cruz_Antonio_Tomba.png`,
   'Huracán':              `${PALADAR}/argentina/primeradivision/png/huracan.png`,
   "Newell's Old Boys":    `${PALADAR}/argentina/primeradivision/png/newells.png`,
   'Rosario Central':      `${PALADAR}/argentina/primeradivision/png/rosariocentral.png`,
@@ -188,6 +188,18 @@ export const ESCUDOTECA = {
   'Atlético Tucumán':     `${PALADAR}/argentina/primeradivision/png/atleticotucuman.png`,
   'Platense':             `${PALADAR}/argentina/primeradivision/png/platense.png`,
   'Tigre':                `${PALADAR}/argentina/primeradivision/png/tigre.png`,
+  'Gimnasia La Plata':    `${PALADAR}/argentina/primeradivision/png/gimnasia.png`,
+  'Gimnasia':             `${PALADAR}/argentina/primeradivision/png/gimnasia.png`,
+  'Gimnasia de Mendoza':  `${PALADAR}/argentina/primeradivision/png/gimnasiamendoza.png`,
+  'Instituto':            `${PALADAR}/argentina/primeradivision/png/instituto.png`,
+  'Unión':                `${PALADAR}/argentina/primeradivision/png/union.png`,
+  'Central Córdoba':      `${PALADAR}/argentina/primeradivision/png/centralcordoba.png`,
+  'Sarmiento':            `${PALADAR}/argentina/primeradivision/png/sarmiento.png`,
+  'Barracas Central':     `${PALADAR}/argentina/primeradivision/png/barracas.png`,
+  'Deportivo Riestra':    `${PALADAR}/argentina/primeradivision/png/riestra.png`,
+  'Independiente Rivadavia': `${PALADAR}/argentina/primeradivision/png/independienterivadavia.png`,
+  'Aldosivi':             `${PALADAR}/argentina/primeradivision/png/aldosivi.png`,
+  'Estudiantes de Río Cuarto': `${PALADAR}/argentina/primeradivision/png/estudiantesriocuarto.png`,
 
   // ── MLS ──
   // Slugs verificados en paladarnegro.net/escudoteca/estadosunidos/mls/.
