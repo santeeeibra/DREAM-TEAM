@@ -1061,7 +1061,7 @@ function tablaPosiciones() {
         const esMiZona = nombreZona === miZona;
         return `<div class="stack" style="gap:8px;margin-top:${esMiZona ? '0' : '16px'}">
           <div class="eyebrow" style="color:${esMiZona ? 'var(--fluor)' : 'var(--humo)'}">
-            ${nombreZona}${esMiZona ? ' (tu zona)' : ''}
+            ZONA ${nombreZona}
           </div>
           <table class="ts-tabla pro"><thead><tr>
             <th class="n th-pos">#</th><th>Equipo</th><th class="n">PJ</th><th class="n oc">G</th><th class="n oc">E</th><th class="n oc">P</th><th class="n">DG</th><th class="n th-pts">Pts</th>

@@ -39,8 +39,9 @@
 #### `tablaPosiciones()` (L1046-1107)
 - Detecta `c.liga.esLigaPro`
 - **LigaPro:** Renderiza dos tablas (Zona A + Zona B) con headers separados
-  - Zona del DT tiene color fluor y texto "(tu zona)"
-  - La otra zona tiene color humo
+  - Ambas zonas se muestran con el formato "ZONA A" / "ZONA B"
+  - Zona del DT tiene color fluor (--fluor)
+  - La otra zona tiene color humo (--humo)
   - Cada tabla muestra 15 equipos
 - **Liga normal:** Una sola tabla como antes
 
