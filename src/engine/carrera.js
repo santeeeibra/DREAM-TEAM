@@ -317,6 +317,9 @@ function presionExtraDerrotas(partidos) {
   return partidos.reduce((s, p) => (p.res === 'P' ? s + getEstiloRival({ clubId: p.rivalId, nombre: p.rival }).presion_extra : s), 0);
 }
 
+// Redondear a 1 decimal (antes estaba después de driftMoral, causando undefined)
+const redondear = (v) => Math.round(v * 10) / 10;
+
 function driftMoral(moral) {
   // Aditivo y acotado: nunca multiplicativo (así no se forma el 'pozo gravitacional').
   if (moral === 50) return 0;
@@ -324,7 +327,6 @@ function driftMoral(moral) {
   const fuerza = d >= 30 ? 3 : d >= 20 ? TRAMO.MORAL_DRIFT_A_50 : 1;
   return moral > 50 ? -fuerza : fuerza;
 }
-const redondear = (v) => Math.round(v * 10) / 10;
 
 /** Devuelve los candidatos del punto de decisión. En modo difícil puede ser un evento grave (forzado). */
 export function candidatosDelTramo(c) {
