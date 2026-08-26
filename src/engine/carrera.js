@@ -226,6 +226,17 @@ function racha(partidos) {
   return pts >= 11 ? 'buena' : pts <= 4 ? 'mala' : 'neutra';
 }
 
+// Redondear a 1 decimal (usado por driftMoral y cálculo de efectos de tramo)
+const redondear = (v) => Math.round(v * 10) / 10;
+
+function driftMoral(moral) {
+  // Aditivo y acotado: nunca multiplicativo (así no se forma el 'pozo gravitacional').
+  if (moral === 50) return 0;
+  const d = Math.abs(moral - 50);
+  const fuerza = d >= 30 ? 3 : d >= 20 ? TRAMO.MORAL_DRIFT_A_50 : 1;
+  return moral > 50 ? -fuerza : fuerza;
+}
+
 /** Juega el tramo actual y deja la carrera en fase EVENTO. */
 export function jugarTramo(c) {
   const [desde, hasta] = limitesTramo[c.tramo];
@@ -315,17 +326,6 @@ function acumularEstadisticas(c, delTramo) {
 /** Presión extra por perder contra rivales de peso (ESTILOS_CLUB.presion_extra). */
 function presionExtraDerrotas(partidos) {
   return partidos.reduce((s, p) => (p.res === 'P' ? s + getEstiloRival({ clubId: p.rivalId, nombre: p.rival }).presion_extra : s), 0);
-}
-
-// Redondear a 1 decimal (antes estaba después de driftMoral, causando undefined)
-const redondear = (v) => Math.round(v * 10) / 10;
-
-function driftMoral(moral) {
-  // Aditivo y acotado: nunca multiplicativo (así no se forma el 'pozo gravitacional').
-  if (moral === 50) return 0;
-  const d = Math.abs(moral - 50);
-  const fuerza = d >= 30 ? 3 : d >= 20 ? TRAMO.MORAL_DRIFT_A_50 : 1;
-  return moral > 50 ? -fuerza : fuerza;
 }
 
 /** Devuelve los candidatos del punto de decisión. En modo difícil puede ser un evento grave (forzado). */
