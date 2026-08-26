@@ -261,25 +261,64 @@ export function posiciones(liga) {
 
 // Posiciones de TODAS las zonas para LigaPro (usado en UI para mostrar ambas tablas)
 export function posicionesPorZona(liga) {
-  if (!liga.esLigaPro) return { 'Zona A': posiciones(liga) };
+  if (!liga.esLigaPro) return { 'A': posiciones(liga) };
   
-  const zonas = {};
-  for (const equipo of liga.equipos) {
-    if (!equipo.zona) continue;
-    if (!zonas[equipo.zona]) zonas[equipo.zona] = [];
-    zonas[equipo.zona].push(equipo.id);
+  // Para LigaPro: devolver SIEMPRE zona A y zona B, incluso si el jugador solo
+  // tiene equipos de una zona en liga.equipos (porque solo juega contra 14 rivales
+  // de su zona). La otra zona se llena con equipos simulados de la ligaConfig.
+  const ligaConfig = liga.ligaConfig || (liga.equipos[0]?.leagueId ? getLeagueById(liga.equipos[0].leagueId) : null);
+  if (!ligaConfig) {
+    // Fallback: solo mostrar la zona del jugador
+    const zonas = {};
+    for (const equipo of liga.equipos) {
+      if (!equipo.zona) continue;
+      if (!zonas[equipo.zona]) zonas[equipo.zona] = [];
+      zonas[equipo.zona].push(equipo.id);
+    }
+    
+    const resultado = {};
+    for (const [zona, ids] of Object.entries(zonas)) {
+      const idsSet = new Set(ids);
+      resultado[zona] = liga.tabla
+        .filter((t) => idsSet.has(t.id))
+        .map((t) => ({ ...t, nombre: liga.equipos[t.id].nombre, dg: t.gf - t.gc }))
+        .sort((a, b) => b.pts - a.pts || b.dg - a.dg || b.gf - a.gf || a.id - b.id);
+    }
+    return resultado;
   }
   
-  const resultado = {};
-  for (const [zona, ids] of Object.entries(zonas)) {
-    const idsSet = new Set(ids);
-    resultado[zona] = liga.tabla
-      .filter((t) => idsSet.has(t.id))
-      .map((t) => ({ ...t, nombre: liga.equipos[t.id].nombre, dg: t.gf - t.gc }))
-      .sort((a, b) => b.pts - a.pts || b.dg - a.dg || b.gf - a.gf || a.id - b.id);
+  // Construir ambas zonas desde ligaConfig.clubs
+  const zonaA = [];
+  const zonaB = [];
+  
+  for (const club of ligaConfig.clubs) {
+    if (club.zona === 'A') {
+      // Buscar si este equipo está en liga.equipos
+      const equipo = liga.equipos.find((e) => e.clubId === club.id || normalizarNombreClub(e.nombre) === normalizarNombreClub(club.name));
+      if (equipo) {
+        const fila = liga.tabla[equipo.id];
+        zonaA.push({ ...fila, nombre: equipo.nombre, dg: fila.gf - fila.gc });
+      } else {
+        // Equipo de la otra zona: simular datos vacíos
+        zonaA.push({ id: -1, nombre: club.name, pj: 0, g: 0, e: 0, p: 0, gf: 0, gc: 0, pts: 0, dg: 0 });
+      }
+    } else if (club.zona === 'B') {
+      const equipo = liga.equipos.find((e) => e.clubId === club.id || normalizarNombreClub(e.nombre) === normalizarNombreClub(club.name));
+      if (equipo) {
+        const fila = liga.tabla[equipo.id];
+        zonaB.push({ ...fila, nombre: equipo.nombre, dg: fila.gf - fila.gc });
+      } else {
+        zonaB.push({ id: -1, nombre: club.name, pj: 0, g: 0, e: 0, p: 0, gf: 0, gc: 0, pts: 0, dg: 0 });
+      }
+    }
   }
   
-  return resultado;
+  // Ordenar ambas zonas por puntos
+  const ordenar = (a, b) => b.pts - a.pts || b.dg - a.dg || b.gf - a.gf || a.id - b.id;
+  zonaA.sort(ordenar);
+  zonaB.sort(ordenar);
+  
+  return { 'A': zonaA, 'B': zonaB };
 }
 
 export function miPosicion(liga) {

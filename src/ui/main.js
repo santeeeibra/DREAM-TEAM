@@ -1046,20 +1046,25 @@ function marcador() {
 function tablaPosiciones() {
   if (!c.liga) return '';
   
-  // LigaPro: mostrar ambas zonas
+  // LigaPro: mostrar ambas zonas (A y B)
   if (c.liga.esLigaPro) {
     const zonas = posicionesPorZona(c.liga);
     const miZona = c.liga.zona;
     const riesgo = 3;
+    
+    // Orden fijo: Zona A primero, Zona B después
+    const ordenZonas = ['A', 'B'];
     
     return `<div class="panel stack ts-panel">
       <div class="row" style="justify-content:space-between">
         <div class="eyebrow">Tabla de posiciones</div>
         <button class="btn ghost" data-accion="tabla">${ui.tabla ? 'Ocultar' : 'Ver tabla'}</button>
       </div>
-      ${ui.tabla ? Object.entries(zonas).map(([nombreZona, tabla]) => {
+      ${ui.tabla ? ordenZonas.map(nombreZona => {
+        const tabla = zonas[nombreZona];
+        if (!tabla) return '';
         const esMiZona = nombreZona === miZona;
-        return `<div class="stack" style="gap:8px;margin-top:${esMiZona ? '0' : '16px'}">
+        return `<div class="stack" style="gap:8px;margin-top:${nombreZona === 'A' ? '0' : '16px'}">
           <div class="eyebrow" style="color:${esMiZona ? 'var(--fluor)' : 'var(--humo)'}">
             ZONA ${nombreZona}
           </div>
