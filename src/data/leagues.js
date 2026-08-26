@@ -234,7 +234,7 @@ export const leagues = [
       { id: 'argentinos', name: 'Argentinos Juniors', zona: 'B' },
       { id: 'defensa', name: 'Defensa y Justicia', zona: 'B' },
       { id: 'banfield', name: 'Banfield', zona: 'B' },
-      { id: 'arsenal', name: 'Arsenal', zona: 'B' },
+      { id: 'arsenal', name: 'Arsenal de Sarandí', zona: 'B' },
       { id: 'colon', name: 'Colón', zona: 'B' },
       { id: 'rosario-central', name: 'Rosario Central', zona: 'B' },
       { id: 'newells', name: "Newell's", zona: 'B' },
