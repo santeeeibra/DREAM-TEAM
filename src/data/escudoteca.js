@@ -167,7 +167,7 @@ export const ESCUDOTECA = {
 
   // ── Liga Profesional Argentina ──
   // Path real: argentina/primeradivision/png/ (no liga-profesional).
-  // 30 equipos: 5 grandes históricos + medianos exitosos + resto.
+  // 30 equipos en 2 zonas (A y B).
   'Boca Juniors':         `${PALADAR}/argentina/primeradivision/png/boca.png`,
   'Racing Club':          `${PALADAR}/argentina/primeradivision/png/racing.png`,
   'River Plate':          `${PALADAR}/argentina/primeradivision/png/river.png`,
@@ -192,21 +192,20 @@ export const ESCUDOTECA = {
   'Platense':             `${PALADAR}/argentina/primeradivision/png/platense.png`,
   'Tigre':                `${PALADAR}/argentina/primeradivision/png/tigre.png`,
   'Gimnasia La Plata':    `${PALADAR}/argentina/primeradivision/png/gimnasia.png`,
+  'Gimnasia y Esgrima La Plata': `${PALADAR}/argentina/primeradivision/png/gimnasia.png`,
   'Gimnasia':             `${PALADAR}/argentina/primeradivision/png/gimnasia.png`,
-  'Gimnasia LP':          `${PALADAR}/argentina/primeradivision/png/gimnasia.png`,
+  'Gimnasia y Esgrima (Mendoza)': `${PALADAR}/argentina/primeradivision/png/gimnasiamendoza.png`,
   'Gimnasia de Mendoza':  `${PALADAR}/argentina/primeradivision/png/gimnasiamendoza.png`,
-  'Arsenal de Sarandí':   `${PALADAR}/argentina/primeradivision/png/arsenal.png`,
-  'Arsenal Sarandí':      `${PALADAR}/argentina/primeradivision/png/arsenal.png`,
-  'Godoy Cruz':           `${PALADAR}/argentina/primeradivision/png/godoycruz.png`,
-  'Colón':                `${PALADAR}/argentina/primeradivision/png/colon.png`,
   'Instituto':            `${PALADAR}/argentina/primeradivision/png/instituto.png`,
   'Unión':                `${PALADAR}/argentina/primeradivision/png/union.png`,
+  'Central Córdoba (Santiago del Estero)': `${PALADAR}/argentina/primeradivision/png/centralcordoba.png`,
   'Central Córdoba':      `${PALADAR}/argentina/primeradivision/png/centralcordoba.png`,
   'Sarmiento':            `${PALADAR}/argentina/primeradivision/png/sarmiento.png`,
   'Barracas Central':     `${PALADAR}/argentina/primeradivision/png/barracas.png`,
   'Deportivo Riestra':    `${PALADAR}/argentina/primeradivision/png/riestra.png`,
   'Independiente Rivadavia': `${PALADAR}/argentina/primeradivision/png/independienteriv.png`,
   'Aldosivi':             `${PALADAR}/argentina/primeradivision/png/aldosivi.png`,
+  'Estudiantes (Río Cuarto)': `${PALADAR}/argentina/primeradivision/png/estudiantesrc.png`,
   'Estudiantes de Río Cuarto': `${PALADAR}/argentina/primeradivision/png/estudiantesrc.png`,
 
   // ── MLS ──
